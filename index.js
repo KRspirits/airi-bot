@@ -136,7 +136,7 @@ async function askAI(prompt, systemPrompt = null) {
       `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia streetwise, santai, padu. Pemilik rasmi kau CEO Amar dari Shadow Legacy Co., Ltd. Balas secara ringkas, padat dan natural.`;
     
     const res = await groq.chat.completions.create({
-      model: "llama3-70b-8192",
+      model: "llama-3.1-8b-instant",
       messages: [
         { role: "system", content: persona },
         { role: "user", content: prompt }
@@ -497,7 +497,7 @@ async function startBotEngine() {
       const isSuccess = Math.random() * 100 <= Math.max(15, Math.min(90, stealRate));
 
       if (isSuccess) {
-        const percent = (Math.floor(Math.random() * 16) + 10) / 100; // 10% - 25%
+        const percent = (Math.floor(Math.random() * 16) + 10) / 100;
         const stolen = Math.floor(targetUser.cash * percent);
         targetUser.cash -= stolen;
         user.cash += stolen;
@@ -916,7 +916,7 @@ async function startBotEngine() {
         `• \`.bicara free/pro\` - Rayuan peguam lokap\n` +
         `• \`.ikatjamin\` - Bayar jaminan lokap\n\n` +
         `*5. KECERDASAN BUATAN*\n` +
-        `• \`.ai [soalan]\` - Groq LLaMA 3 Engine\n` +
+        `• \`.ai [soalan]\` - Groq LLaMA 3.1 Instant\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
         `_Dimiliki oleh CEO Amar • Shadow Legacy Co., Ltd._`;
 
