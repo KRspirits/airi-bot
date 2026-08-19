@@ -252,9 +252,9 @@ const VEHICLES = [
 const HOUSES = [
   { id: 1, name: "Bilik Sewa Flat PPR", price: 15000, rentPay: 250, safeBonus: 5 },
   { id: 2, name: "Apartment Vista Siber", price: 65000, rentPay: 850, safeBonus: 10 },
-  { id: 3, name: "Kondo Mewah KLCC", price: 250000, rentPay: 3200, safeBonus: 20 },
-  { id: 4, name: "Banglo Dua Tingkat Damansara", price: 750000, rentPay: 9500, safeBonus: 35 },
-  { id: 5, name: "Penthouse Elit Shadow Legacy", price: 2000000, rentPay: 28000, safeBonus: 50 }
+  { id: "3", name: "Kondo Mewah KLCC", price: 250000, rentPay: 3200, safeBonus: 20 },
+  { id: "4", name: "Banglo Dua Tingkat Damansara", price: 750000, rentPay: 9500, safeBonus: 35 },
+  { id: "5", name: "Penthouse Elit Shadow Legacy", price: 2000000, rentPay: 28000, safeBonus: 50 }
 ];
 
 const FOODS = [
@@ -287,12 +287,12 @@ const CRIMES = [
   { id: 2, name: "Rompak Kedai Emas & Bank", baseChance: 55, rewardMin: 3500, rewardMax: 9000, reqType: "car", reqDesc: "Kereta (Myvi/FK8)", stars: 2 },
   { id: 3, name: "Seludup Rokok Kontraban", baseChance: 70, rewardMin: 6500, rewardMax: 6500, reqItem: "nokia", reqDesc: "Nokia 3310", stars: 2 },
   { id: 4, name: "Seludup Komponen Gelap", baseChance: 50, rewardMin: 24000, rewardMax: 24000, reqItem: "eclipse", reqDesc: "Shadow Eclipse", stars: 3 },
-  { id: 5, name: "Seludup Haiwan Eksotik", baseChance: 35, rewardMin: 80000, rewardMax: 80000, reqItem: "drone", reqDesc: "Drone DJI", stars: 4 },
-  { id: 6, name: "Seludup Cip AI Cyberjaya", baseChance: 25, rewardMin: 300000, rewardMax: 300000, reqItem: "iqoo", reqDesc: "iQOO 12 / iPhone", stars: 5 },
-  { id: 7, name: "Skimming Mesin ATM", baseChance: 45, rewardMin: 18000, rewardMax: 35000, reqItem: "pi5", reqDesc: "Raspberry Pi 5", stars: 3 },
-  { id: 8, name: "Godam Pangkalan Korporat", baseChance: 30, rewardMin: 60000, rewardMax: 120000, reqItem: "rog", reqDesc: "ROG / RTX 5090", stars: 4 },
-  { id: 9, name: "Heist Bilik Kebal Kasino", baseChance: 20, rewardMin: 200000, rewardMax: 500000, reqType: "supercar", reqDesc: "Supercar (GTR/GT3)", stars: 5 },
-  { id: 10, name: "Eksploitasi Darkweb Zero", baseChance: 15, rewardMin: 600000, rewardMax: 1500000, reqItem: "flipper", reqDesc: "Flipper Zero (BM)", stars: 5 }
+  { id: "5", name: "Seludup Haiwan Eksotik", baseChance: 35, rewardMin: 80000, rewardMax: 80000, reqItem: "drone", reqDesc: "Drone DJI", stars: 4 },
+  { id: "6", name: "Seludup Cip AI Cyberjaya", baseChance: 25, rewardMin: 300000, rewardMax: 300000, reqItem: "iqoo", reqDesc: "iQOO 12 / iPhone", stars: 5 },
+  { id: "7", name: "Skimming Mesin ATM", baseChance: 45, rewardMin: 18000, rewardMax: 35000, reqItem: "pi5", reqDesc: "Raspberry Pi 5", stars: 3 },
+  { id: "8", name: "Godam Pangkalan Korporat", baseChance: 30, rewardMin: 60000, rewardMax: 120000, reqItem: "rog", reqDesc: "ROG / RTX 5090", stars: 4 },
+  { id: "9", name: "Heist Bilik Kebal Kasino", baseChance: 20, rewardMin: 200000, rewardMax: 500000, reqType: "supercar", reqDesc: "Supercar (GTR/GT3)", stars: 5 },
+  { id: "10", name: "Eksploitasi Darkweb Zero", baseChance: 15, rewardMin: 600000, rewardMax: 1500000, reqItem: "flipper", reqDesc: "Flipper Zero (BM)", stars: 5 }
 ];
 
 function isBlackMarketOpen() {
@@ -329,6 +329,8 @@ async function startBotEngine() {
     logger: pino({ level: "silent" }),
     printQRInTerminal: true,
     browser: Browsers.macOS("Desktop"),
+    syncFullHistory: false,
+    markOnlineOnConnect: true,
   });
 
   sock.ev.on("creds.update", saveCreds);
@@ -448,16 +450,12 @@ async function startBotEngine() {
     const now = Date.now();
     const isCEO = checkIsCEO(m, sender);
 
-    // Arahan Diagnosis ID Pengguna
     if (cmd === "myid") {
       return sock.sendMessage(from, { 
         text: `*🔍 MAKLUMAT IDENTITI*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Nama Profil:* ${formatUserName(cleanSender, pushName)}\n• *Status CEO:* ${isCEO ? "👑 DISAHKAN (CEO AMAR)" : "❌ PENGGUNA BIASA"}\n━━━━━━━━━━━━━━━━━━━━━━` 
       }, { quoted: m });
     }
 
-    // ==========================================
-    // 🛡️ AMARAN KESELAMATAN & KUASA VETO CEO
-    // ==========================================
     if (cmd.startsWith("ceo_") && !isCEO) {
       const warningUI = 
         `*🚨 PENCEROBOHAN SISTEM DIKESAN*\n` +
@@ -646,7 +644,7 @@ async function startBotEngine() {
 
     if (cmd === "kutip_sewa" || cmd === "claim_rent") {
       if (!user.house) return sock.sendMessage(from, { text: `❌ Anda tiada sebarang hartanah! Beli di \`.hartanah\`` });
-      const cd = 3 * 60 * 60 * 1000; // 3 Jam
+      const cd = 3 * 60 * 60 * 1000;
       if (now - (user.cooldowns.rent || 0) < cd) {
         const remMinutes = Math.ceil((cd - (now - (user.cooldowns.rent || 0))) / 60000);
         return sock.sendMessage(from, { text: `⏳ Kutipan sewa seterusnya dalam *${remMinutes} minit*.` });
