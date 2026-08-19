@@ -1,6 +1,7 @@
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from "@whiskeysockets/baileys";
 import pino from "pino";
 import qrcode from "qrcode-terminal";
+import Groq from "groq-sdk";
 import fs from "fs";
 import http from "http";
 import dotenv from "dotenv";
@@ -63,6 +64,10 @@ http.createServer((req, res) => {
 // ==========================================
 // 2. CONFIGURATION & DATABASE
 // ==========================================
+// Masukkan API Key Groq di sini jika repo sudah Private, atau biarkan ia baca dari Render
+const GROQ_KEY = process.env.GROQ_API_KEY || "MASUKKAN_KEY_GROQ_KAT_SINI";
+
+const groq = new Groq({ apiKey: GROQ_KEY });
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
 
@@ -127,30 +132,24 @@ function getUserTitle(user) {
   return "🧢 Gelandangan Moden";
 }
 
-// Integrasi Gemini API Direct REST (Node.js Native Fetch)
 async function askAI(prompt, systemPrompt = null) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return "⚡ Ralat: GEMINI_API_KEY tidak ditetapkan dalam Environment Render.";
-
     const persona = systemPrompt || 
-      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia bergaya streetwise, berpengetahuan luas, santai tapi padu. Pemilik rasmi kau adalah CEO Amar dari syarikat Shadow Legacy Co., Ltd. Jawab soalan secara santai, padat, berkarisma dan gunakan slanga Malaysia harian.`;
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: persona }] },
-        contents: [{ parts: [{ text: prompt }] }]
-      })
+      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia bergaya streetwise, berpengetahuan luas, santai tapi padu. Pemilik rasmi kau adalah CEO Amar dari syarikat Shadow Legacy Co., Ltd. Jawab soalan secara santai, padat, berkarisma dan gunakan bahasa santai harian.`;
+    
+    const res = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: persona },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
     });
-
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Tiada respon dari AI.";
+    return res.choices[0]?.message?.content || "Tiada respon dari AI.";
   } catch (e) {
-    console.error("Gemini Direct Error:", e);
-    return "⚡ Ralat sambungan API Gemini.";
+    console.error("Groq Error:", e);
+    return `⚡ Ralat Groq AI: ${e.message}`;
   }
 }
 
@@ -308,7 +307,7 @@ async function startBotEngine() {
     } else if (connection === "open") {
       isConnected = true;
       currentQR = null;
-      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE 24/7 DENGAN GOOGLE GEMINI!]\n`);
+      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE 24/7 DENGAN GROQ AI!]\n`);
     }
   });
 
@@ -398,6 +397,9 @@ async function startBotEngine() {
     const now = Date.now();
     const isCEO = checkIsCEO(sender);
 
+    // ==========================================
+    // 🛡️ AMARAN KESELAMATAN & KUASA VETO CEO
+    // ==========================================
     if (cmd.startsWith("ceo_") && !isCEO) {
       const warningUI = 
         `╔══════════════════════════════════╗\n` +
@@ -789,7 +791,7 @@ async function startBotEngine() {
         `▸ \`.buat_jenayah [id]\`\n` +
         `▸ \`.bicara free/pro\` (Lawan kes lokap)\n` +
         `▸ \`.ikatjamin\` | \`.hack @user\`\n\n` +
-        `*5. GOOGLE GEMINI AI*\n` +
+        `*5. GROQ AI*\n` +
         `▸ \`.ai [soalan]\`\n\n` +
         `_Dimiliki oleh CEO Amar • Shadow Legacy Co., Ltd._`;
 
