@@ -1,7 +1,6 @@
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from "@whiskeysockets/baileys";
 import pino from "pino";
 import qrcode from "qrcode-terminal";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import http from "http";
 import dotenv from "dotenv";
@@ -64,7 +63,6 @@ http.createServer((req, res) => {
 // ==========================================
 // 2. CONFIGURATION & DATABASE
 // ==========================================
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
 
@@ -129,22 +127,30 @@ function getUserTitle(user) {
   return "🧢 Gelandangan Moden";
 }
 
+// Integrasi Gemini API Direct REST (Node.js Native Fetch)
 async function askAI(prompt, systemPrompt = null) {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return "⚡ Ralat: GEMINI_API_KEY tidak ditetapkan dalam Environment Render.";
+
     const persona = systemPrompt || 
       `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia bergaya streetwise, berpengetahuan luas, santai tapi padu. Pemilik rasmi kau adalah CEO Amar dari syarikat Shadow Legacy Co., Ltd. Jawab soalan secara santai, padat, berkarisma dan gunakan slanga Malaysia harian.`;
-    
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: persona
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: persona }] },
+        contents: [{ parts: [{ text: prompt }] }]
+      })
     });
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text() || "Tiada respon dari AI.";
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Tiada respon dari AI.";
   } catch (e) {
-    console.error("Gemini AI Error:", e);
-    return "⚡ Ralat komunikasi dengan pelayan Google Gemini AI. Sila semak API Key.";
+    console.error("Gemini Direct Error:", e);
+    return "⚡ Ralat sambungan API Gemini.";
   }
 }
 
@@ -392,9 +398,6 @@ async function startBotEngine() {
     const now = Date.now();
     const isCEO = checkIsCEO(sender);
 
-    // ==========================================
-    // 🛡️ AMARAN KESELAMATAN & KUASA VETO CEO
-    // ==========================================
     if (cmd.startsWith("ceo_") && !isCEO) {
       const warningUI = 
         `╔══════════════════════════════════╗\n` +
@@ -457,9 +460,7 @@ async function startBotEngine() {
       }, { quoted: m });
     }
 
-    // ==========================================
-    // 1. SISTEM 10 JENAYAH & OPERASI GELAP
-    // ==========================================
+    // 1. 10 JENAYAH
     if (cmd === "jenayah_menu" || cmd === "crime_menu") {
       let ui = `╔════════════════════════════╗\n║ 🔫 SENARAI 10 OPERASI GELAP║\n╚════════════════════════════╝\n\n`;
       CRIMES.forEach((c, i) => {
@@ -548,9 +549,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🔓 Bebas ikat jamin RM ${bail.toLocaleString()}!` });
     }
 
-    // ==========================================
-    // 2. KEDAI MAKANAN, DEVICE & PAJAK GADAI
-    // ==========================================
+    // 2. KEDAI & PAJAK GADAI
     if (cmd === "kedai") {
       let ui = `╔════════════════════════════╗\n║ 🏪 KEDAI MAKANAN (BOOSTER) ║\n╚════════════════════════════╝\n\n`;
       FOODS.forEach((f, i) => {
@@ -652,9 +651,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🏴‍☠️ Seludup masuk *${targetB.name}* secara rahsia.` }, { quoted: m });
     }
 
-    // ==========================================
-    // 3. KEWANGAN, KERJA & PROFIL
-    // ==========================================
+    // 3. KEWANGAN & KERJAYA
     if (cmd === "dompet" || cmd === "wallet") {
       const title = getUserTitle(user);
       const ui = 
