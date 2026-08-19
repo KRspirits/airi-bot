@@ -1,5 +1,6 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers, delay } from "@whiskeysockets/baileys";
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from "@whiskeysockets/baileys";
 import pino from "pino";
+import qrcode from "qrcode-terminal";
 import Groq from "groq-sdk";
 import fs from "fs";
 import http from "http";
@@ -7,23 +8,66 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // ==========================================
-// 1. DUMMY WEB SERVER (PORT BINDING)
+// 1. PAPARAN QR CODE DI LINK WEB (PURPLE URL)
 // ==========================================
+let currentQR = null;
+let isConnected = false;
+
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("Airi WhatsApp Bot Berjalan 24/7!");
+  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+
+  if (isConnected) {
+    res.end(`
+      <html>
+        <head><title>Airi Bot Online</title><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="background:#0f172a; color:#22c55e; font-family:sans-serif; text-align:center; padding:50px 20px;">
+          <h1 style="font-size:2rem;">🔥 AIRI BOT AKTIF & BERSAMBUNG!</h1>
+          <p style="color:#94a3b8; font-size:1.1rem;">WhatsApp Bot sedang beroperasi 24/7 di Render.</p>
+        </body>
+      </html>
+    `);
+  } else if (currentQR) {
+    // Menjana kod QR visual menggunakan Google Chart API
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentQR)}`;
+    res.end(`
+      <html>
+        <head>
+          <title>Imbas QR Airi Bot</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="refresh" content="15">
+        </head>
+        <body style="background:#0f172a; color:#f8fafc; font-family:sans-serif; text-align:center; padding:30px 15px;">
+          <h2 style="color:#38bdf8;">⚡ IMBAS QR CODE AIRI BOT</h2>
+          <p style="color:#94a3b8;">Buka WhatsApp > Linked Devices > Link a Device > Imbas kod di bawah:</p>
+          <div style="background:white; display:inline-block; padding:15px; border-radius:12px; margin-top:15px;">
+            <img src="${qrImageUrl}" alt="WhatsApp QR Code" style="display:block;" />
+          </div>
+          <p style="color:#64748b; font-size:0.85rem; margin-top:15px;">Halaman auto-refresh setiap 15 saat.</p>
+        </body>
+      </html>
+    `);
+  } else {
+    res.end(`
+      <html>
+        <head><title>Menjana QR...</title><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="refresh" content="4"></head>
+        <body style="background:#0f172a; color:#f8fafc; font-family:sans-serif; text-align:center; padding:50px 20px;">
+          <h2 style="color:#fbbf24;">⏳ Sedang menjana QR Code...</h2>
+          <p style="color:#94a3b8;">Sila tunggu beberapa saat, halaman ini akan refresh secara automatik.</p>
+        </body>
+      </html>
+    `);
+  }
 }).listen(PORT, () => {
-  console.log(`🌐 Server aktif pada port: ${PORT}`);
+  console.log(`🌐 Web QR Service aktif pada port: ${PORT}`);
 });
 
 // ==========================================
-// 2. CONFIGURATION & DATABASE
+// 2. INISIALISASI GROQ AI & DATABASE
 // ==========================================
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
-const BOT_NUMBER = "60183490975"; // Nombor bot tanpa simbol '+' atau '-'
 
 function loadDB() {
   if (!fs.existsSync(DB_FILE)) {
@@ -64,7 +108,7 @@ function updateUser(userId, data) {
 async function askGroq(prompt, systemPrompt = null) {
   try {
     const persona = systemPrompt || 
-      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia yang santai, streetwise, berpengetahuan luas tentang tech, kereta, dan hal jalanan. Jangan kaku atau skema.`;
+      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia yang santai, gaya streetwise, berpengetahuan luas pasal tech, kereta, dan info tempatan. Jangan kaku.`;
     const res = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [
@@ -82,7 +126,7 @@ async function askGroq(prompt, systemPrompt = null) {
 }
 
 // ==========================================
-// 3. MASTER DATA
+// 3. MASTER DATA EKONOMI
 // ==========================================
 const JOBS = [
   { id: 1, name: "Rider GrabFood", pay: 180 },
@@ -150,22 +194,22 @@ const VEHICLES = [
 const GADGETS = [
   { id: "burner", name: "Nokia 3310 (Burner Phone)", price: 250, stealthBonus: 15, desc: "Kebal trace polis" },
   { id: "iqoo", name: "iQOO 12 Flagship", price: 3400, workBonus: 25, desc: "Boost 25% gaji kerja & trading" },
-  { id: "rog", name: "Laptop ROG Zephyrus", price: 8500, hackBonus: 30, desc: "Tingkatkan peluang godam" }
+  { id: "rog", name: "Laptop ROG Zephyrus", price: 8500, hackBonus: 30, desc: "Alat khas tingkatkan peluang godam" }
 ];
 
 const SMUGGLE_ROUTES = [
   { id: "rokok", name: "Rokok & Vape Kontraban", baseChance: 70, reward: 6500 },
   { id: "gajet", name: "Komponen Telefon Gelap", baseChance: 50, reward: 24000 },
-  { id: "eksotik", name: "Haiwan Eksotik Sempadan", baseChance: 35, reward: 80000 },
+  { id: "eksotik", name: "Haiwan Eksotik Rentas Sempadan", baseChance: 35, reward: 80000 },
   { id: "cip", name: "Cip AI Rahsia Cyberjaya", baseChance: 20, reward: 300000 }
 ];
 
 const CRIME_TARGETS = [
-  "Maybank Menara Raja Chulan",
-  "Habib Jewels KLCC",
-  "Petronas Bukit Bintang",
-  "7-Eleven Chow Kit",
-  "CIMB Dataran Merdeka"
+  "Maybank Cawangan Menara Raja Chulan",
+  "Kedai Emas Habib Jewels KLCC",
+  "Stesen Minyak Petronas Bukit Bintang",
+  "Kedai 7-Eleven Chow Kit",
+  "CIMB Bank Cawangan Dataran Merdeka"
 ];
 
 function calculateChance(user, baseChance = 50) {
@@ -177,7 +221,7 @@ function calculateChance(user, baseChance = 50) {
 }
 
 // ==========================================
-// 4. ENGINE DENGAN PAIRING CODE STABIL
+// 4. ENJIN BAILEYS WHATSAPP
 // ==========================================
 async function startBotEngine() {
   const { state, saveCreds } = await useMultiFileAuthState("auth_session");
@@ -185,41 +229,32 @@ async function startBotEngine() {
   const sock = makeWASocket({
     auth: state,
     logger: pino({ level: "silent" }),
-    printQRInTerminal: false,
-    browser: Browsers.ubuntu("Chrome"),
-    markOnlineOnConnect: true,
+    printQRInTerminal: true,
+    browser: Browsers.macOS("Desktop"),
   });
-
-  if (!sock.authState.creds.registered) {
-    console.log("Menunggu WebSocket stabil sebelum meminta Pairing Code...");
-    await delay(6000);
-    try {
-      const code = await sock.requestPairingCode(BOT_NUMBER);
-      console.log(`\n=========================================`);
-      console.log(`🔑 PAIRING CODE KAU: \x1b[32m\x1b[1m${code}\x1b[0m`);
-      console.log(`Buka WhatsApp > Linked Devices > Link with phone number`);
-      console.log(`=========================================\n`);
-    } catch (err) {
-      console.error("Gagal mendapatkan pairing code:", err.message);
-    }
-  }
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("connection.update", async (update) => {
-    const { connection, lastDisconnect } = update;
+  sock.ev.on("connection.update", (update) => {
+    const { connection, lastDisconnect, qr } = update;
+    
+    if (qr) {
+      currentQR = qr; // Simpan QR untuk dipaparkan di pelayar web
+      console.log("\n⚡ Kod QR baru telah dijana untuk paparan Web Link.");
+    }
 
     if (connection === "close") {
-      const statusCode = lastDisconnect?.error?.output?.statusCode;
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-      console.log(`Sambungan terputus (Status: ${statusCode}). Reconnect: ${shouldReconnect}`);
-      if (shouldReconnect) {
+      isConnected = false;
+      const reason = lastDisconnect?.error?.output?.statusCode;
+      if (reason !== DisconnectReason.loggedOut) {
         startBotEngine();
       } else {
-        console.log("Sesi tamat. Sila padam folder auth_session dan jalankan semula.");
+        console.log("Sesi tamat.");
       }
     } else if (connection === "open") {
-      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE & READY!]\n`);
+      isConnected = true;
+      currentQR = null;
+      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE & READY 24/7!]\n`);
     }
   });
 
@@ -241,7 +276,7 @@ async function startBotEngine() {
     if (user.cooldowns.jailUntil > now && !["ikatjamin", "lokap"].includes(cmd)) {
       const rem = Math.ceil((user.cooldowns.jailUntil - now) / 1000);
       return sock.sendMessage(from, { 
-        text: `🔒 *[LOKAP POLIS DANG WANGI]*\nLu ditahan! Baki hukuman: *${rem}s*.\nTaip \`.ikatjamin\` untuk bebas.` 
+        text: `🔒 *[LOKAP POLIS DANG WANGI]*\nLu ditahan! Baki hukuman: *${rem}s*.\nTaip \`.ikatjamin\` untuk bebas segera.` 
       }, { quoted: m });
     }
 
@@ -386,7 +421,7 @@ async function startBotEngine() {
         user.stats.jailCount = (user.stats.jailCount || 0) + 1;
         updateUser(sender, user);
         return sock.sendMessage(from, {
-          text: `🚨 *[TERPERANGKAP]* Kereta polis memintas! Lu dihantar ke Lokap Dang Wangi (5 Minit).`
+          text: `🚨 *[TERPERANGKAP]* Kereta polis memintas! Lu ke Lokap Dang Wangi (5 Minit).`
         }, { quoted: m });
       }
     }
