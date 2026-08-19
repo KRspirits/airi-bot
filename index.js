@@ -64,9 +64,7 @@ http.createServer((req, res) => {
 // ==========================================
 // 2. CONFIGURATION & DATABASE
 // ==========================================
-// Masukkan API Key Groq di sini jika repo sudah Private, atau biarkan ia baca dari Render
 const GROQ_KEY = process.env.GROQ_API_KEY || "MASUKKAN_KEY_GROQ_KAT_SINI";
-
 const groq = new Groq({ apiKey: GROQ_KEY });
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
@@ -135,7 +133,7 @@ function getUserTitle(user) {
 async function askAI(prompt, systemPrompt = null) {
   try {
     const persona = systemPrompt || 
-      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia bergaya streetwise, berpengetahuan luas, santai tapi padu. Pemilik rasmi kau adalah CEO Amar dari syarikat Shadow Legacy Co., Ltd. Jawab soalan secara santai, padat, berkarisma dan gunakan bahasa santai harian.`;
+      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia streetwise, santai, padu. Pemilik rasmi kau CEO Amar dari Shadow Legacy Co., Ltd. Balas secara ringkas, padat dan natural.`;
     
     const res = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
@@ -149,7 +147,7 @@ async function askAI(prompt, systemPrompt = null) {
     return res.choices[0]?.message?.content || "Tiada respon dari AI.";
   } catch (e) {
     console.error("Groq Error:", e);
-    return `⚡ Ralat Groq AI: ${e.message}`;
+    return `⚡ Ralat AI: ${e.message}`;
   }
 }
 
@@ -164,7 +162,7 @@ const JOBS = [
   { id: 5, name: "Kurier J&T Express", pay: 190 },
   { id: 6, name: "Penghantar Shopee Xpress", pay: 200 },
   { id: 7, name: "Despatch Mahkamah", pay: 230 },
-  { id: 8, name: "Runner Borong Pasar Selayang", pay: 210 },
+  { id: 8, name: "Runner Pasar Selayang", pay: 210 },
   { id: 9, name: "Driver Towing Kereta", pay: 280 },
   { id: 10, name: "Pemandu Bas RapidKL", pay: 260 },
   { id: 11, name: "Penebar Roti Canai Mamak", pay: 190 },
@@ -220,41 +218,41 @@ const VEHICLES = [
 ];
 
 const FOODS = [
-  { id: "kopi", name: "Kopi Jantan Kaw", price: 100, targetCD: "work", desc: "Hilangkan ngantuk. Reset cooldown kerja." },
-  { id: "redbull", name: "Red Bull Tin Emas", price: 350, targetCD: "crime", desc: "Energy boost! Reset cooldown semua jenayah." },
-  { id: "vitamin", name: "Pil Vitamin Minda", price: 500, targetCD: "hack", desc: "Fokus jari dewa. Reset cooldown godam." }
+  { id: "kopi", name: "Kopi Jantan Kaw", price: 100, targetCD: "work", desc: "Hilangkan ngantuk (Reset CD Kerja)" },
+  { id: "redbull", name: "Red Bull Tin Emas", price: 350, targetCD: "crime", desc: "Energy boost (Reset CD Jenayah)" },
+  { id: "vitamin", name: "Pil Vitamin Minda", price: 500, targetCD: "hack", desc: "Fokus jari dewa (Reset CD Godam)" }
 ];
 
 const DEVICES = [
-  { id: "nokia", name: "Nokia 3310 (Burner)", price: 250, stealthBonus: 10, desc: "Kebal trace polis asas (+10% Escape)" },
-  { id: "vpn", name: "Mini Router VPN", price: 450, hackBonus: 10, desc: "Bypass firewall asas (+10% Godam)" },
-  { id: "eclipse", name: "Shadow Eclipse Smartwatch", price: 850, stealthBonus: 15, desc: "Jam rasmi Shadow Legacy (+15% Escape)" },
-  { id: "drone", name: "Drone Peninjau DJI", price: 1500, stealthBonus: 20, desc: "Pantau polis dari udara (+20% Escape)" },
-  { id: "tablet", name: "Samsung Galaxy Tab", price: 2200, workBonus: 15, desc: "Mudahkan tugas pejabat (+15% Gaji Kerja)" },
-  { id: "iqoo", name: "iQOO 12 Flagship", price: 3400, workBonus: 25, desc: "Lancar buat kerja berat (+25% Gaji Kerja)" },
-  { id: "iphone", name: "iPhone 16 Pro Max", price: 6500, workBonus: 35, desc: "Prestasi maksimum (+35% Gaji Kerja)" },
+  { id: "nokia", name: "Nokia 3310 (Burner)", price: 250, stealthBonus: 10, desc: "Kebal trace polis (+10% Escape)" },
+  { id: "vpn", name: "Mini Router VPN", price: 450, hackBonus: 10, desc: "Bypass firewall (+10% Godam)" },
+  { id: "eclipse", name: "Shadow Eclipse Watch", price: 850, stealthBonus: 15, desc: "Jam rasmi syarikat (+15% Escape)" },
+  { id: "drone", name: "Drone Peninjau DJI", price: 1500, stealthBonus: 20, desc: "Pantau radar polis (+20% Escape)" },
+  { id: "tablet", name: "Samsung Galaxy Tab", price: 2200, workBonus: 15, desc: "Mudahkan kerja (+15% Gaji Kerja)" },
+  { id: "iqoo", name: "iQOO 12 Flagship", price: 3400, workBonus: 25, desc: "Prestasi tinggi (+25% Gaji Kerja)" },
+  { id: "iphone", name: "iPhone 16 Pro Max", price: 6500, workBonus: 35, desc: "Prestasi maks (+35% Gaji Kerja)" },
   { id: "pi5", name: "Raspberry Pi 5 Kit", price: 1200, hackBonus: 15, desc: "Set godam mudah alih (+15% Godam)" },
   { id: "rog", name: "Laptop ROG Zephyrus", price: 9500, hackBonus: 30, desc: "Mesin hacking padu (+30% Godam)" },
-  { id: "rtx", name: "Server PC RTX 5090", price: 18000, hackBonus: 50, desc: "Penembus brute-force bank (+50% Godam)" }
+  { id: "rtx", name: "Server PC RTX 5090", price: 18000, hackBonus: 50, desc: "Penembus brute-force (+50% Godam)" }
 ];
 
 const BLACKMARKET_ITEMS = [
-  { id: "flipper", name: "Flipper Zero Zero-Day", price: 25000, immuneHack: false, hackBonus: 60, desc: "Alat penggodam tersirat (+60% Godam)" },
-  { id: "jammer", name: "EMP Radio Jammer", price: 45000, immuneHack: true, desc: "Kebal 100% daripada diserang godam" },
-  { id: "masterkey", name: "Kunci Master Penjara", price: 12000, type: "consumable", desc: "Pelepasan lokap automatik" }
+  { id: "flipper", name: "Flipper Zero Zero-Day", price: 25000, immuneHack: false, hackBonus: 60, desc: "Alat penggodam siber (+60% Godam)" },
+  { id: "jammer", name: "EMP Radio Jammer", price: 45000, immuneHack: true, desc: "Kebal 100% dari godaman musuh" },
+  { id: "masterkey", name: "Kunci Master Penjara", price: 12000, type: "consumable", desc: "Pelepasan lokap secara automatik" }
 ];
 
 const CRIMES = [
-  { id: "ragut", name: "Ragut Beg Tepi Jalan", baseChance: 75, rewardMin: 800, rewardMax: 2500, reqType: "motor", reqDesc: "Motor (EX5/Y15)", stars: 1 },
-  { id: "rompak", name: "Rompak Kedai Emas & Bank", baseChance: 55, rewardMin: 3500, rewardMax: 9000, reqType: "car", reqDesc: "Kereta Laju (Myvi/FK8)", stars: 2 },
-  { id: "seludup_rokok", name: "Seludup Rokok Kontraban", baseChance: 70, rewardMin: 6500, rewardMax: 6500, reqItem: "nokia", reqDesc: "Nokia 3310 (Burner)", stars: 2 },
+  { id: "ragut", name: "Ragut Beg Jalanan", baseChance: 75, rewardMin: 800, rewardMax: 2500, reqType: "motor", reqDesc: "Motor (EX5/Y15)", stars: 1 },
+  { id: "rompak", name: "Rompak Kedai Emas & Bank", baseChance: 55, rewardMin: 3500, rewardMax: 9000, reqType: "car", reqDesc: "Kereta (Myvi/FK8)", stars: 2 },
+  { id: "seludup_rokok", name: "Seludup Rokok Kontraban", baseChance: 70, rewardMin: 6500, rewardMax: 6500, reqItem: "nokia", reqDesc: "Nokia 3310", stars: 2 },
   { id: "seludup_gajet", name: "Seludup Komponen Gelap", baseChance: 50, rewardMin: 24000, rewardMax: 24000, reqItem: "eclipse", reqDesc: "Shadow Eclipse", stars: 3 },
-  { id: "seludup_eksotik", name: "Seludup Haiwan Eksotik", baseChance: 35, rewardMin: 80000, rewardMax: 80000, reqItem: "drone", reqDesc: "Drone Peninjau DJI", stars: 4 },
+  { id: "seludup_eksotik", name: "Seludup Haiwan Eksotik", baseChance: 35, rewardMin: 80000, rewardMax: 80000, reqItem: "drone", reqDesc: "Drone DJI", stars: 4 },
   { id: "seludup_cip", name: "Seludup Cip AI Cyberjaya", baseChance: 25, rewardMin: 300000, rewardMax: 300000, reqItem: "iqoo", reqDesc: "iQOO 12 / iPhone", stars: 5 },
   { id: "skimming", name: "Skimming Mesin ATM", baseChance: 45, rewardMin: 18000, rewardMax: 35000, reqItem: "pi5", reqDesc: "Raspberry Pi 5", stars: 3 },
-  { id: "godam_server", name: "Godam Pangkalan Data Korporat", baseChance: 30, rewardMin: 60000, rewardMax: 120000, reqItem: "rog", reqDesc: "Laptop ROG / RTX 5090", stars: 4 },
-  { id: "heist_kasino", name: "Heist Bilik Kebal Kasino", baseChance: 20, rewardMin: 200000, rewardMax: 500000, reqType: "supercar", reqDesc: "Supercar (GTR/GT3 RS)", stars: 5 },
-  { id: "darkweb_zero", name: "Eksploitasi Darkweb Zero-Day", baseChance: 15, rewardMin: 600000, rewardMax: 1500000, reqItem: "flipper", reqDesc: "Flipper Zero (Black Market)", stars: 5 }
+  { id: "godam_server", name: "Godam Pangkalan Korporat", baseChance: 30, rewardMin: 60000, rewardMax: 120000, reqItem: "rog", reqDesc: "ROG / RTX 5090", stars: 4 },
+  { id: "heist_kasino", name: "Heist Bilik Kebal Kasino", baseChance: 20, rewardMin: 200000, rewardMax: 500000, reqType: "supercar", reqDesc: "Supercar (GTR/GT3)", stars: 5 },
+  { id: "darkweb_zero", name: "Eksploitasi Darkweb Zero", baseChance: 15, rewardMin: 600000, rewardMax: 1500000, reqItem: "flipper", reqDesc: "Flipper Zero (BM)", stars: 5 }
 ];
 
 function isBlackMarketOpen() {
@@ -307,7 +305,7 @@ async function startBotEngine() {
     } else if (connection === "open") {
       isConnected = true;
       currentQR = null;
-      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE 24/7 DENGAN GROQ AI!]\n`);
+      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE 24/7 DENGAN UI BAHARU!]\n`);
     }
   });
 
@@ -318,13 +316,13 @@ async function startBotEngine() {
         if (metadata.subject.toLowerCase().includes("airi corner")) {
           for (let participant of update.participants) {
             const welcomeText = 
-              `╔════════════════════════════╗\n` +
-              `║  ⚡ AIRI CORNER : SYSTEM ⚡  ║\n` +
-              `╚════════════════════════════╝\n\n` +
-              `👤 *SUBJEK BARU:* @${participant.split("@")[0]}\n` +
-              `🛡️ *BIOMETRIK:* DISAHKAN\n` +
-              `🏢 *A.I. HOST:* Shadow Legacy Co., Ltd.\n\n` +
-              `Selamat datang ke pangkalan data rasmi. Taip \`.menu\` untuk mulakan log ekonomi jalanan anda.`;
+              `*⚡ AIRI CORNER : NODE ACCESS*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Subjek:* @${participant.split("@")[0]}\n` +
+              `• *Status:* Biometrik Disahkan\n` +
+              `• *A.I. Host:* Shadow Legacy Co., Ltd.\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `Selamat datang! Taip *.menu* untuk memulakan konsol operasi anda.`;
             await sock.sendMessage(update.id, { text: welcomeText, mentions: [participant] });
           }
         }
@@ -343,7 +341,7 @@ async function startBotEngine() {
 
       if (Math.random() < 0.5) {
         const picked = members.sort(() => 0.5 - Math.random()).slice(0, 3);
-        let report = `🚨 *[OPS CANTAS TRAFIK]* 🚨\nPolis buat sekatan mengejut!\n\n`;
+        let report = `*🚨 OPS CANTAS TRAFIK*\n━━━━━━━━━━━━━━━━━━━━━━\nPolis mengadakan sekatan mengejut!\n\n`;
         picked.forEach(p => {
           const u = getUser(p);
           if (u.stars > 0) {
@@ -353,14 +351,20 @@ async function startBotEngine() {
             updateUser(p, u);
             report += `⚠️ @${p.split('@')[0]} disita *RM ${denda.toLocaleString()}* (Rekod dibersihkan)\n`;
           } else {
-            report += `✅ @${p.split('@')[0]} lulus rekod bersih.\n`;
+            report += `✅ @${p.split('@')[0]} rekod bersih.\n`;
           }
         });
+        report += `━━━━━━━━━━━━━━━━━━━━━━`;
         await sock.sendMessage(targetGroup, { text: report, mentions: picked });
       } else {
         const dropValue = Math.floor(Math.random() * 4000) + 2000;
         activeAirdrop = { reward: dropValue, groupId: targetGroup, claimed: false };
-        let tagMsg = `📦 *[AIRDROP KARGO GELAP]* 📦\nKargo bernilai *RM ${dropValue.toLocaleString()}* jatuh! Taip \`.claim_drop\` pantas!\n\n`;
+        let tagMsg = 
+          `*📦 AIRDROP KARGO GELAP*\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `Kargo bernilai *RM ${dropValue.toLocaleString()}* terhempas!\n` +
+          `Taip *.claim_drop* terpantas untuk kebas!\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
         members.forEach(m => { tagMsg += `@${m.split('@')[0]} `; });
         await sock.sendMessage(targetGroup, { text: tagMsg, mentions: members });
       }
@@ -402,13 +406,13 @@ async function startBotEngine() {
     // ==========================================
     if (cmd.startsWith("ceo_") && !isCEO) {
       const warningUI = 
-        `╔══════════════════════════════════╗\n` +
-        `║ 🚨 PENCEROBOHAN SISTEM DIKESAN 🚨 ║\n` +
-        `╚══════════════════════════════════╝\n\n` +
-        `⚠️ *AKSES DITOLAK: PROTOKOL KESELAMATAN TAHAP 5*\n\n` +
+        `*🚨 PENCEROBOHAN SISTEM DIKESAN*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `*AKSES DITOLAK: TAHAP KESELAMATAN 5*\n\n` +
         `Identiti anda TIDAK sepadan dengan pangkalan data *Shadow Legacy Co., Ltd.*\n` +
-        `Perintah \`${cmd}\` adalah HAK MUTLAK milik **CEO Amar** sahaja.\n\n` +
-        `_Amaran: Skuad elit siber telah merekodkan koordinat IP dan nombor telefon anda._💀`;
+        `Perintah \`.${cmd}\` adalah hak mutlak milik *CEO Amar*.\n\n` +
+        `_Koordinat IP dan peranti anda telah direkodkan._ 💀\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: warningUI }, { quoted: m });
     }
 
@@ -419,7 +423,7 @@ async function startBotEngine() {
       const targetUser = getUser(target);
       targetUser.cash += amount;
       updateUser(target, targetUser);
-      return sock.sendMessage(from, { text: `👑 *[KUASA VETO CEO]* RM ${amount.toLocaleString()} disuntik ke akaun @${target.split('@')[0]}!`, mentions: [target] });
+      return sock.sendMessage(from, { text: `👑 *KUASA VETO CEO:* Suntikan tunai *+RM ${amount.toLocaleString()}* ke akaun @${target.split('@')[0]} selesai.`, mentions: [target] });
     }
 
     if (cmd === "ceo_jail") {
@@ -429,7 +433,7 @@ async function startBotEngine() {
       const targetUser = getUser(target);
       targetUser.cooldowns.jailUntil = now + (minutes * 60 * 1000);
       updateUser(target, targetUser);
-      return sock.sendMessage(from, { text: `👑 *[KUASA VETO CEO]* @${target.split('@')[0]} disumbat ke penjara ${minutes} minit!`, mentions: [target] });
+      return sock.sendMessage(from, { text: `👑 *KUASA VETO CEO:* @${target.split('@')[0]} disumbat ke penjara selama ${minutes} minit!`, mentions: [target] });
     }
 
     if (cmd === "ceo_freeze") {
@@ -438,7 +442,7 @@ async function startBotEngine() {
       const targetUser = getUser(target);
       targetUser.frozen = !targetUser.frozen;
       updateUser(target, targetUser);
-      return sock.sendMessage(from, { text: `👑 *[KUASA VETO CEO]* Akaun @${target.split('@')[0]} kini berstatus: *${targetUser.frozen ? "FROZEN (DIBEKUKAN)" : "UNFROZEN (AKTIF)"}*!`, mentions: [target] });
+      return sock.sendMessage(from, { text: `👑 *KUASA VETO CEO:* Status akaun @${target.split('@')[0]} kini: *${targetUser.frozen ? "FROZEN (DIBEKUKAN)" : "AKTIF NORMAL"}*!`, mentions: [target] });
     }
 
     if (cmd === "ceo_unwanted") {
@@ -448,38 +452,50 @@ async function startBotEngine() {
       targetUser.stars = 0;
       targetUser.cooldowns.jailUntil = 0;
       updateUser(target, targetUser);
-      return sock.sendMessage(from, { text: `👑 *[KUASA VETO CEO]* Rekod jenayah @${target.split('@')[0]} dipadam sepenuhnya.`, mentions: [target] });
+      return sock.sendMessage(from, { text: `👑 *KUASA VETO CEO:* Rekod jenayah @${target.split('@')[0]} telah dipadamkan sepenuhnya.`, mentions: [target] });
     }
 
     if (user.frozen && !cmd.startsWith("ceo_")) {
-      return sock.sendMessage(from, { text: `🥶 *[AKAUN DIBEKUKAN]* Akaun anda telah dibekukan oleh CEO Amar. Hubungi beliau untuk rayuan.` }, { quoted: m });
+      return sock.sendMessage(from, { text: `🥶 *AKAUN ANDA DIBEKUKAN*\nAkaun anda telah dibekukan oleh CEO Amar. Hubungi beliau untuk rayuan.` }, { quoted: m });
     }
 
     if (user.cooldowns.jailUntil > now && !["bicara", "ikatjamin", "lokap"].includes(cmd)) {
       const rem = Math.ceil((user.cooldowns.jailUntil - now) / 1000);
-      return sock.sendMessage(from, { 
-        text: `🔒 *[LOKAP DANG WANGI]*\nLu ditahan! Baki: *${rem}s*.\nPilihan:\n1. \`.bicara free\` (40% Peluang)\n2. \`.bicara pro\` (RM100, 85% Peluang)\n3. \`.ikatjamin\`` 
-      }, { quoted: m });
+      const jailUI = 
+        `*🔒 LOKAP DANG WANGI*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `Status: *Sedang Ditahan*\n` +
+        `Baki Masa: *${rem} saat*\n\n` +
+        `*Pilihan Pembebasan:*\n` +
+        `1. \`.bicara free\` (40% Peluang)\n` +
+        `2. \`.bicara pro\` (RM100, 85% Peluang)\n` +
+        `3. \`.ikatjamin\`\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━`;
+      return sock.sendMessage(from, { text: jailUI }, { quoted: m });
     }
 
     // 1. 10 JENAYAH
     if (cmd === "jenayah_menu" || cmd === "crime_menu") {
-      let ui = `╔════════════════════════════╗\n║ 🔫 SENARAI 10 OPERASI GELAP║\n╚════════════════════════════╝\n\n`;
+      let ui = `*🔫 OPERASI GELAP & JENAYAH*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
       CRIMES.forEach((c, i) => {
-        ui += `*${i+1}. ${c.name}*\n   💵 Hadiah: RM ${c.rewardMin.toLocaleString()} - RM ${c.rewardMax.toLocaleString()}\n   🎯 Keperluan Buff: ${c.reqDesc}\n   ⚡ \`.buat_jenayah ${c.id}\`\n\n`;
+        ui += `*${i+1}. ${c.name}*\n`;
+        ui += `   💵 Ganjaran: RM ${c.rewardMin.toLocaleString()} - RM ${c.rewardMax.toLocaleString()}\n`;
+        ui += `   🎯 Syarat/Buff: ${c.reqDesc}\n`;
+        ui += `   ⚡ Arahan: \`.buat_jenayah ${c.id}\`\n\n`;
       });
+      ui += `━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: ui }, { quoted: m });
     }
 
     if (cmd === "buat_jenayah" || cmd === "crime") {
       const cId = args[0]?.toLowerCase();
       const targetCrime = CRIMES.find(c => c.id === cId);
-      if (!targetCrime) return sock.sendMessage(from, { text: `❌ ID Jenayah salah. Semak \`.jenayah_menu\`` });
+      if (!targetCrime) return sock.sendMessage(from, { text: `❌ ID Jenayah salah. Taip \`.jenayah_menu\` untuk semak.` });
 
       const cd = 12 * 60 * 1000;
       if (now - user.cooldowns.crime < cd) {
         const rem = Math.ceil((cd - (now - user.cooldowns.crime)) / 1000);
-        return sock.sendMessage(from, { text: `🚨 Skuad polis sedang aktif meronda kawasan ini! Tunggu *${rem}s* lagi.` });
+        return sock.sendMessage(from, { text: `🚨 Polis aktif meronda kawasan ini! Tunggu *${rem}s* lagi.` });
       }
 
       const isSuccess = calculateCrimeRate(user, targetCrime);
@@ -491,23 +507,35 @@ async function startBotEngine() {
         user.cooldowns.crime = now;
         user.stats.robCount = (user.stats.robCount || 0) + 1;
         updateUser(sender, user);
-        return sock.sendMessage(from, {
-          text: `💥 *[MISI SELESAI: ${targetCrime.name.toUpperCase()}]*\n💰 Habuan: *+RM ${reward.toLocaleString()}*\n⭐ Wanted Level: ${"⭐".repeat(user.stars)}`
-        }, { quoted: m });
+        
+        const successUI = 
+          `*💥 MISI BERJAYA DILAKSANAKAN*\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `• *Operasi:* ${targetCrime.name}\n` +
+          `• *Habuan:* +RM ${reward.toLocaleString()}\n` +
+          `• *Wanted:* ${"⭐".repeat(user.stars)}\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━`;
+        return sock.sendMessage(from, { text: successUI }, { quoted: m });
       } else {
         user.stars = Math.min(5, (user.stars || 0) + 2);
         user.cooldowns.crime = now;
         user.cooldowns.jailUntil = now + (6 * 60 * 1000);
         user.stats.jailCount = (user.stats.jailCount || 0) + 1;
         updateUser(sender, user);
-        return sock.sendMessage(from, {
-          text: `🚨 *[KOD MERAH: DIKEPUNG POLIS]*\nOperasi *${targetCrime.name}* gagal! Anda disumbat ke Lokap Dang Wangi (6 Minit).\nTaip \`.bicara free\` atau \`.bicara pro\` untuk berdebat di mahkamah.`
-        }, { quoted: m });
+        
+        const failUI = 
+          `*🚨 KOD MERAH: DIKEPUNG POLIS*\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `Operasi *${targetCrime.name}* gagal!\n` +
+          `Anda disumbat ke lokap (6 Minit).\n\n` +
+          `Taip \`.bicara free\` atau \`.bicara pro\` untuk rayuan mahkamah.\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━`;
+        return sock.sendMessage(from, { text: failUI }, { quoted: m });
       }
     }
 
     if (cmd === "rompak") {
-      return sock.sendMessage(from, { text: `Sila gunakan menu operasi gelap baharu:\nTaip \`.buat_jenayah rompak\` atau lihat \`.jenayah_menu\`` });
+      return sock.sendMessage(from, { text: `Taip \`.buat_jenayah rompak\` atau semak \`.jenayah_menu\`` });
     }
 
     if (cmd === "bicara") {
@@ -519,64 +547,76 @@ async function startBotEngine() {
           user.cooldowns.jailUntil = 0;
           user.stars = Math.max(0, user.stars - 1);
           updateUser(sender, user);
-          return sock.sendMessage(from, { text: `⚖️ *Bantuan Guaman berjaya!* Lu dibebaskan atas kecacatan teknikal waran.` }, { quoted: m });
+          return sock.sendMessage(from, { text: `*⚖️ MAHKAMAH MAJISTRET*\nPeguam Bantuan Guaman berjaya! Anda DIBEBASKAN atas isu teknikal.` }, { quoted: m });
         } else {
           user.cooldowns.jailUntil += 2 * 60 * 1000;
           updateUser(sender, user);
-          return sock.sendMessage(from, { text: `⚖️ *Peguam free gagal!* Penalti +2 Minit penjara.` }, { quoted: m });
+          return sock.sendMessage(from, { text: `*⚖️ MAHKAMAH MAJISTRET*\nHujah ditolak hakim. Penalti +2 Minit penjara ditambah!` }, { quoted: m });
         }
       } else if (tier === "pro") {
-        if (user.cash < 100) return sock.sendMessage(from, { text: `❌ Cash tak cukup RM 100!` });
+        if (user.cash < 100) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi (RM 100 diperlukan)!` });
         user.cash -= 100;
-        const debateText = await askAI("Beri satu baris hujah undang-undang korporat Malaysia yang sangat teknikal untuk membebaskan klien.");
+        const debateText = await askAI("Beri satu baris hujah undang-undang korporat Malaysia yang sangat mantap untuk bebaskan klien.");
         if (Math.random() <= 0.85) {
           user.cooldowns.jailUntil = 0;
           user.stars = 0;
           updateUser(sender, user);
-          return sock.sendMessage(from, { text: `⚖️ *PEGUAM PRO BERHUJAH:*\n_"${debateText}"_\n\n🔥 Hakim memutuskan lu *TIDAK BERSALAH*! Rekod dipadam.` }, { quoted: m });
+          const winUI = 
+            `*⚖️ HUJAH PEGUAM SENIOR KORPORAT*\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `"${debateText}"\n\n` +
+            `🔥 *Keputusan:* TIDAK BERSALAH. Rekod jenayah dipadamkan.\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━`;
+          return sock.sendMessage(from, { text: winUI }, { quoted: m });
         } else {
           updateUser(sender, user);
-          return sock.sendMessage(from, { text: `⚖️ Bukti CCTV terlalu jelas. Peguam Pro gagal, tapi tiada penalti masa.` }, { quoted: m });
+          return sock.sendMessage(from, { text: `*⚖️ MAHKAMAH TINGGI*\nBukti pendakwaan terlalu kukuh. Peguam Pro gagal, namun tiada penalti masa.` }, { quoted: m });
         }
       }
     }
 
     if (cmd === "ikatjamin") {
       const bail = (user.stars || 1) * 2500;
-      if (user.cash < bail) return sock.sendMessage(from, { text: `❌ Cash tak cukup (RM ${bail.toLocaleString()})!` });
+      if (user.cash < bail) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi (RM ${bail.toLocaleString()})!` });
       user.cash -= bail;
       user.stars = 0;
       user.cooldowns.jailUntil = 0;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🔓 Bebas ikat jamin RM ${bail.toLocaleString()}!` });
+      return sock.sendMessage(from, { text: `🔓 *BEBAS IKAT JAMIN:* Bayaran jamin RM ${bail.toLocaleString()} selesai.` });
     }
 
     // 2. KEDAI & PAJAK GADAI
     if (cmd === "kedai") {
-      let ui = `╔════════════════════════════╗\n║ 🏪 KEDAI MAKANAN (BOOSTER) ║\n╚════════════════════════════╝\n\n`;
+      let ui = `*🏪 KEDAI MAKANAN (BOOSTER)*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
       FOODS.forEach((f, i) => {
-        ui += `*${i+1}. ${f.name}*\n   💰 RM ${f.price} | ℹ️ ${f.desc}\n   🛒 \`.beli_makanan ${f.id}\`\n\n`;
+        ui += `*${i+1}. ${f.name}*\n`;
+        ui += `   💰 RM ${f.price} • ${f.desc}\n`;
+        ui += `   🛒 \`.beli_makanan ${f.id}\`\n\n`;
       });
+      ui += `━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: ui }, { quoted: m });
     }
 
     if (cmd === "beli_makanan") {
       const fId = args[0]?.toLowerCase();
       const targetF = FOODS.find(f => f.id === fId);
-      if (!targetF) return sock.sendMessage(from, { text: `❌ Makanan tak wujud.` });
-      if (user.cash < targetF.price) return sock.sendMessage(from, { text: `❌ Duit tak cukup!` });
+      if (!targetF) return sock.sendMessage(from, { text: `❌ Makanan tidak sah.` });
+      if (user.cash < targetF.price) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi!` });
 
       user.cash -= targetF.price;
       user.cooldowns[targetF.targetCD] = 0;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🍽️ Siap telan *${targetF.name}*! Cooldown *${targetF.targetCD}* lu dah reset.` }, { quoted: m });
+      return sock.sendMessage(from, { text: `🍽️ Mengambil *${targetF.name}*. Cooldown *${targetF.targetCD}* telah disifarkan!` }, { quoted: m });
     }
 
     if (cmd === "device") {
-      let ui = `╔════════════════════════════╗\n║ 💻 SYARIKAT DEVICE & TECH  ║\n╚════════════════════════════╝\n\n`;
+      let ui = `*💻 GADGET & TECH STORE*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
       DEVICES.forEach((d, i) => {
-        ui += `*${i+1}. ${d.name}*\n   💰 RM ${d.price.toLocaleString()}\n   ℹ️ ${d.desc}\n   🛒 \`.beli_device ${d.id}\`\n\n`;
+        ui += `*${i+1}. ${d.name}*\n`;
+        ui += `   💰 RM ${d.price.toLocaleString()} • ${d.desc}\n`;
+        ui += `   🛒 \`.beli_device ${d.id}\`\n\n`;
       });
+      ui += `━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: ui }, { quoted: m });
     }
 
@@ -584,12 +624,12 @@ async function startBotEngine() {
       const dId = args[0]?.toLowerCase();
       const targetD = DEVICES.find(d => d.id === dId);
       if (!targetD) return sock.sendMessage(from, { text: `❌ Model gajet tidak sah.` });
-      if (user.cash < targetD.price) return sock.sendMessage(from, { text: `❌ Duit cash tak cukup!` });
+      if (user.cash < targetD.price) return sock.sendMessage(from, { text: `❌ Duit cash tidak mencukupi!` });
 
       user.cash -= targetD.price;
       user.phone = targetD;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🖥️ Resit Sah: Berjaya memiliki *${targetD.name}*!` }, { quoted: m });
+      return sock.sendMessage(from, { text: `🖥️ Pembelian disahkan! Anda kini memiliki *${targetD.name}*.` }, { quoted: m });
     }
 
     if (cmd === "jual_device" || cmd === "pajak_device") {
@@ -599,7 +639,7 @@ async function startBotEngine() {
       user.cash += refund;
       user.phone = null;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🏷️ *[PAJAK GADAI TECH]* Berjaya menjual *${devName}* terpakai dengan nilai pulangan *+RM ${refund.toLocaleString()}* (70%).` }, { quoted: m });
+      return sock.sendMessage(from, { text: `🏷️ *PAJAK GADAI TECH:* Berjaya menjual *${devName}* dengan pulangan *+RM ${refund.toLocaleString()}* (70%).` }, { quoted: m });
     }
 
     if (cmd === "jual_kenderaan" || cmd === "pajak_kenderaan") {
@@ -609,66 +649,72 @@ async function startBotEngine() {
       user.cash += refund;
       user.vehicle = null;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🏎️ *[PAJAK GADAI MOTOR/KERETA]* Berjaya menjual *${vehName}* terpakai dengan nilai pulangan *+RM ${refund.toLocaleString()}* (70%).` }, { quoted: m });
+      return sock.sendMessage(from, { text: `🏎️ *PAJAK GADAI KENDERAAN:* Berjaya menjual *${vehName}* dengan pulangan *+RM ${refund.toLocaleString()}* (70%).` }, { quoted: m });
     }
 
     if (cmd === "showroom") {
-      let ui = `╔════════════════════════════╗\n║ 🏎️ SHOWROOM KENDERAAN ASING║\n╚════════════════════════════╝\n\n`;
+      let ui = `*🏎️ SHOWROOM KENDERAAN*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
       VEHICLES.forEach((v, i) => {
-        ui += `*${i+1}. ${v.name}*\n   💰 RM ${v.price.toLocaleString()} | ⚡ +${v.escapeBonus}% Escape\n   🛒 \`.beli_kenderaan ${v.id}\`\n\n`;
+        ui += `*${i+1}. ${v.name}*\n`;
+        ui += `   💰 RM ${v.price.toLocaleString()} • +${v.escapeBonus}% Escape\n`;
+        ui += `   🛒 \`.beli_kenderaan ${v.id}\`\n\n`;
       });
+      ui += `━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: ui }, { quoted: m });
     }
 
     if (cmd === "beli_kenderaan") {
       const vId = args[0]?.toLowerCase();
       const targetV = VEHICLES.find(v => v.id === vId);
-      if (!targetV) return sock.sendMessage(from, { text: `❌ Model tak sah.` });
-      if (user.cash < targetV.price) return sock.sendMessage(from, { text: `❌ Duit tak cukup!` });
+      if (!targetV) return sock.sendMessage(from, { text: `❌ Model kenderaan tidak sah.` });
+      if (user.cash < targetV.price) return sock.sendMessage(from, { text: `❌ Duit tunai tidak mencukupi!` });
       user.cash -= targetV.price;
       user.vehicle = targetV;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🎉 Bawa pulang *${targetV.name}* baharu!` }, { quoted: m });
+      return sock.sendMessage(from, { text: `🎉 Tahniah! Anda telah membeli *${targetV.name}*.` }, { quoted: m });
     }
 
     if (cmd === "blackmarket") {
-      if (!isBlackMarketOpen()) return sock.sendMessage(from, { text: `🔒 *[BLACK MARKET BERKUNCI]*\nBuka jam *12:00 AM - 5:00 AM* sahaja.` });
-      let ui = `╔════════════════════════════╗\n║ 🏴‍☠️ PASARAN GELAP (MIDNIGHT)║\n╚════════════════════════════╝\n\n`;
+      if (!isBlackMarketOpen()) return sock.sendMessage(from, { text: `🔒 *BLACK MARKET DITUTUP*\nPasaran gelap hanya dibuka dari jam *12:00 AM - 5:00 AM* sahaja.` });
+      let ui = `*🏴‍☠️ PASARAN GELAP (MIDNIGHT)*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
       BLACKMARKET_ITEMS.forEach((b, i) => {
-        ui += `*${i+1}. ${b.name}*\n   💰 RM ${b.price.toLocaleString()}\n   ℹ️ ${b.desc}\n   🛒 \`.beli_bm ${b.id}\`\n\n`;
+        ui += `*${i+1}. ${b.name}*\n`;
+        ui += `   💰 RM ${b.price.toLocaleString()} • ${b.desc}\n`;
+        ui += `   🛒 \`.beli_bm ${b.id}\`\n\n`;
       });
+      ui += `━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: ui }, { quoted: m });
     }
 
     if (cmd === "beli_bm") {
-      if (!isBlackMarketOpen()) return sock.sendMessage(from, { text: `🔒 Buka tengah malam bro.` });
+      if (!isBlackMarketOpen()) return sock.sendMessage(from, { text: `🔒 Pintu masuk pasaran gelap berkunci!` });
       const bId = args[0]?.toLowerCase();
       const targetB = BLACKMARKET_ITEMS.find(b => b.id === bId);
       if (!targetB) return;
-      if (user.cash < targetB.price) return sock.sendMessage(from, { text: `❌ Tunai kurang!` });
+      if (user.cash < targetB.price) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi!` });
       user.cash -= targetB.price;
       if (!user.inventory) user.inventory = [];
       user.inventory.push(targetB);
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🏴‍☠️ Seludup masuk *${targetB.name}* secara rahsia.` }, { quoted: m });
+      return sock.sendMessage(from, { text: `🏴‍☠️ *TRANSAKSI BAWAH TANAH:* Berjaya memperoleh *${targetB.name}*.` }, { quoted: m });
     }
 
     // 3. KEWANGAN & KERJAYA
     if (cmd === "dompet" || cmd === "wallet") {
       const title = getUserTitle(user);
       const ui = 
-        `╔════════════════════════════╗\n` +
-        `║ 💼 STATUS PROFIL & KEWANGAN ║\n` +
-        `╚════════════════════════════╝\n\n` +
-        `👤 Pemilik: @${sender.split('@')[0]}\n` +
-        `🎖️ Gelaran Pangkat: *${title}*\n` +
-        `💵 Cash: *RM ${user.cash.toLocaleString()}*\n` +
-        `🏦 Bank: *RM ${user.bank.toLocaleString()}*\n` +
-        `🛠️ Pekerjaan: *${user.job}*\n` +
-        `🏎️ Kenderaan: *${user.vehicle ? user.vehicle.name : "Kaki Ayam"}*\n` +
-        `💻 Gajet: *${user.phone ? user.phone.name : "Tiada"}*\n` +
-        `⭐ Wanted: *${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}*\n` +
-        `❄️ Status: *${user.frozen ? "Akaun Dibekukan" : "Aktif Normal"}*`;
+        `*💼 PROFIL & STATUS KEWANGAN*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `• *Pemilik:* @${sender.split('@')[0]}\n` +
+        `• *Pangkat:* ${title}\n` +
+        `• *Tunai:* RM ${user.cash.toLocaleString()}\n` +
+        `• *Bank:* RM ${user.bank.toLocaleString()}\n` +
+        `• *Jawatan:* ${user.job}\n` +
+        `• *Kenderaan:* ${user.vehicle ? user.vehicle.name : "Jalan Kaki"}\n` +
+        `• *Peranti:* ${user.phone ? user.phone.name : "Tiada"}\n` +
+        `• *Wanted:* ${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}\n` +
+        `• *Status Akaun:* ${user.frozen ? "❌ DIBEKUKAN" : "✅ AKTIF"}\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: ui, mentions: [sender] }, { quoted: m });
     }
 
@@ -676,39 +722,40 @@ async function startBotEngine() {
       const action = args[0]?.toLowerCase();
       const amount = parseInt(args[1]);
       if (action === "dep") {
-        if (isNaN(amount) || amount <= 0 || amount > user.cash) return;
+        if (isNaN(amount) || amount <= 0 || amount > user.cash) return sock.sendMessage(from, { text: `❌ Jumlah cash tidak sah!` });
         user.cash -= amount; user.bank += amount;
         updateUser(sender, user);
-        return sock.sendMessage(from, { text: `🏦 Deposit *RM ${amount.toLocaleString()}* sah.` });
+        return sock.sendMessage(from, { text: `🏦 *MAYBANK:* Deposit *RM ${amount.toLocaleString()}* berjaya disahkan.` });
       } else if (action === "wit") {
-        if (isNaN(amount) || amount <= 0 || amount > user.bank) return;
+        if (isNaN(amount) || amount <= 0 || amount > user.bank) return sock.sendMessage(from, { text: `❌ Baki bank tidak mencukupi!` });
         user.bank -= amount; user.cash += amount;
         updateUser(sender, user);
-        return sock.sendMessage(from, { text: `🏧 Withdraw *RM ${amount.toLocaleString()}* tunai.` });
+        return sock.sendMessage(from, { text: `🏧 *ATM:* Pengeluaran tunai *RM ${amount.toLocaleString()}* selesai.` });
       }
+      return sock.sendMessage(from, { text: `Format: \`.bank dep [jumlah]\` atau \`.bank wit [jumlah]\`` });
     }
 
     if (cmd === "senarai_kerja") {
-      let list = `📋 *[SENARAI 50 KERJAYA]*\n\n`;
+      let list = `*📋 SENARAI 50 KERJAYA*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
       JOBS.forEach(j => { list += `*ID ${j.id}:* ${j.name} (RM ${j.pay})\n`; });
-      list += `\nTaip \`.pilih_kerja [ID]\``;
+      list += `━━━━━━━━━━━━━━━━━━━━━━\nTaip \`.pilih_kerja [ID]\` untuk menukar jawatan.`;
       return sock.sendMessage(from, { text: list }, { quoted: m });
     }
 
     if (cmd === "pilih_kerja") {
       const id = parseInt(args[0]);
       const found = JOBS.find(j => j.id === id);
-      if (!found) return;
+      if (!found) return sock.sendMessage(from, { text: `❌ ID Jawatan tidak dijumpai.` });
       user.job = found.name;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `✅ Bekerja sebagai *${found.name}*.` }, { quoted: m });
+      return sock.sendMessage(from, { text: `✅ Anda kini bekerja sebagai *${found.name}* (Gaji asas: RM ${found.pay}).` }, { quoted: m });
     }
 
     if (cmd === "kerja") {
       const cd = 5 * 60 * 1000;
       if (now - user.cooldowns.work < cd) {
         const rem = Math.ceil((cd - (now - user.cooldowns.work)) / 1000);
-        return sock.sendMessage(from, { text: `⏳ Rehat dulu bro! (Baki: *${rem}s*).\nBeli minuman di \`.kedai\` untuk reset masa.` }, { quoted: m });
+        return sock.sendMessage(from, { text: `⏳ Rehat syif aktif! Sila tunggu *${rem}s* atau beli booster di \`.kedai\`.` }, { quoted: m });
       }
       const curJob = JOBS.find(j => j.name === user.job) || { pay: 150, name: "Kerja Part-Time" };
       let gaji = curJob.pay;
@@ -718,31 +765,39 @@ async function startBotEngine() {
       user.cash += gaji;
       user.cooldowns.work = now;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `💼 *[SYIF SELESAI]* Gaji: *+RM ${gaji.toLocaleString()}*` }, { quoted: m });
+      
+      const workUI = 
+        `*💼 SYIF SELESAI*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `• *Jawatan:* ${curJob.name}\n` +
+        `• *Gaji Masuk:* +RM ${gaji.toLocaleString()}\n` +
+        `• *Baki Tunai:* RM ${user.cash.toLocaleString()}\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━`;
+      return sock.sendMessage(from, { text: workUI }, { quoted: m });
     }
 
     if (cmd === "hack") {
       const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-      if (!target) return sock.sendMessage(from, { text: `❌ Tag sasaran: \`.hack @user\`` });
+      if (!target) return sock.sendMessage(from, { text: `❌ Format: \`.hack @user\`` });
       const cd = 20 * 60 * 1000;
-      if (now - user.cooldowns.hack < cd) return sock.sendMessage(from, { text: `🛡️ Cooldown hack aktif! Tunggu sistem sejuk.` });
+      if (now - user.cooldowns.hack < cd) return sock.sendMessage(from, { text: `🛡️ Cooldown sistem godam sedang aktif!` });
 
       const targetUser = getUser(target);
       if (targetUser.inventory?.some(i => i.immuneHack)) {
         user.cooldowns.hack = now; updateUser(sender, user);
-        return sock.sendMessage(from, { text: `🛡️ Gagal! Firewall musuh dilindungi Jammer EMP.` });
+        return sock.sendMessage(from, { text: `🛡️ Serangan gagal! Sasaran dilindungi oleh *EMP Radio Jammer*.` });
       }
-      if (targetUser.bank < 1000) return sock.sendMessage(from, { text: `❌ Akaun bank sasaran kering.` });
+      if (targetUser.bank < 1000) return sock.sendMessage(from, { text: `❌ Baki akaun bank sasaran kosong.` });
 
       let hackRate = 50 + (user.phone?.hackBonus || 0) + (user.inventory?.some(i => i.id === "flipper") ? 60 : 0);
       if (Math.random() * 100 <= hackRate) {
         const stolen = Math.floor(targetUser.bank * 0.20);
         targetUser.bank -= stolen; user.cash += stolen; user.cooldowns.hack = now;
         updateUser(target, targetUser); updateUser(sender, user);
-        return sock.sendMessage(from, { text: `💻 *[HACK BERJAYA]* Rampas *RM ${stolen.toLocaleString()}* dari @${target.split('@')[0]}!`, mentions: [target] });
+        return sock.sendMessage(from, { text: `💻 *EKSPLOIT BERJAYA:* Rampasan *RM ${stolen.toLocaleString()}* dari akaun bank @${target.split('@')[0]}!`, mentions: [target] });
       } else {
         user.cooldowns.hack = now; updateUser(sender, user);
-        return sock.sendMessage(from, { text: `🛑 Sekuriti bank kebal. Godam gagal!` });
+        return sock.sendMessage(from, { text: `🛑 Serangan godam disekat oleh sekuriti firewall mangsa!` });
       }
     }
 
@@ -752,14 +807,14 @@ async function startBotEngine() {
       const reward = 500 + (user.stats.msgCount || 0);
       user.cash += reward; user.cooldowns.claimOnline = now;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🎁 Elaun online dikutip: *+RM ${reward.toLocaleString()}*` });
+      return sock.sendMessage(from, { text: `🎁 *ELAUN AKTIF:* Tuntutan kehadiran diterima: *+RM ${reward.toLocaleString()}*` });
     }
 
     if (cmd === "claim_drop") {
       if (!activeAirdrop || activeAirdrop.groupId !== from || activeAirdrop.claimed) return;
       user.cash += activeAirdrop.reward; activeAirdrop.claimed = true;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `⚡ @${sender.split('@')[0]} menyapu licin kargo *RM ${activeAirdrop.reward.toLocaleString()}*!`, mentions: [sender] });
+      return sock.sendMessage(from, { text: `⚡ @${sender.split('@')[0]} berjaya menyambar kargo tunai *+RM ${activeAirdrop.reward.toLocaleString()}*!`, mentions: [sender] });
     }
 
     if (cmd === "ai" || cmd === "tanya") {
@@ -771,28 +826,32 @@ async function startBotEngine() {
 
     if (cmd === "menu" || cmd === "help") {
       const uiMenu = 
-        `╔════════════════════════════╗\n` +
-        `║ ⚡ AIRI BOT OS TERMINAL ⚡ ║\n` +
-        `╚════════════════════════════╝\n\n` +
-        `*1. PROFIL & DOMPET*\n` +
-        `▸ \`.dompet\` | \`.bank dep/wit [RM]\`\n` +
-        `▸ \`.claim_online\`\n\n` +
-        `*2. KERJAYA (HALAL)*\n` +
-        `▸ \`.senarai_kerja\` | \`.pilih_kerja [ID]\`\n` +
-        `▸ \`.kerja\`\n\n` +
-        `*3. PASARAN & KEDAI*\n` +
-        `▸ \`.kedai\` (Booster Kerja & CD)\n` +
-        `▸ \`.device\` (10 Gajet Hack/Kerja)\n` +
-        `▸ \`.jual_device\` / \`.jual_kenderaan\` (Pajak 70%)\n` +
-        `▸ \`.showroom\` (Kenderaan Lari Polis)\n` +
-        `▸ \`.blackmarket\` (12AM-5AM)\n\n` +
-        `*4. JALANAN & 10 JENAYAH*\n` +
-        `▸ \`.jenayah_menu\` (Senarai 10 Misi Gelap)\n` +
-        `▸ \`.buat_jenayah [id]\`\n` +
-        `▸ \`.bicara free/pro\` (Lawan kes lokap)\n` +
-        `▸ \`.ikatjamin\` | \`.hack @user\`\n\n` +
-        `*5. GROQ AI*\n` +
-        `▸ \`.ai [soalan]\`\n\n` +
+        `*⚡ AIRI STREET SYSTEM OS*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `*1. PROFIL & KEWANGAN*\n` +
+        `• \`.dompet\` - Semak baki & pangkat\n` +
+        `• \`.bank dep [RM]\` - Simpan tunai\n` +
+        `• \`.bank wit [RM]\` - Keluarkan duit\n` +
+        `• \`.claim_online\` - Tuntut elaun aktif\n\n` +
+        `*2. KERJAYA HALAL*\n` +
+        `• \`.senarai_kerja\` - Papar 50 jawatan\n` +
+        `• \`.pilih_kerja [ID]\` - Pilih jawatan\n` +
+        `• \`.kerja\` - Buat syif kutip gaji\n\n` +
+        `*3. PERNIAGAAN & GAJET*\n` +
+        `• \`.kedai\` - Makanan reset cooldown\n` +
+        `• \`.device\` - 10 Gajet tech & server\n` +
+        `• \`.showroom\` - Kenderaan lari polis\n` +
+        `• \`.jual_device\` / \`.jual_kenderaan\` (Pajak 70%)\n` +
+        `• \`.blackmarket\` - Barangan gelap _(12AM-5AM)_\n\n` +
+        `*4. JALANAN & JENAYAH*\n` +
+        `• \`.jenayah_menu\` - Senarai 10 operasi gelap\n` +
+        `• \`.buat_jenayah [id]\` - Laksana misi gelap\n` +
+        `• \`.bicara free/pro\` - Rayuan peguam lokap\n` +
+        `• \`.ikatjamin\` - Bayar jaminan lokap\n` +
+        `• \`.hack @user\` - Godam bank musuh\n\n` +
+        `*5. KECERDASAN BUATAN*\n` +
+        `• \`.ai [soalan]\` - Groq LLaMA 3.3 Engine\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
         `_Dimiliki oleh CEO Amar • Shadow Legacy Co., Ltd._`;
 
       return sock.sendMessage(from, { text: uiMenu }, { quoted: m });
