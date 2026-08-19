@@ -1,7 +1,7 @@
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from "@whiskeysockets/baileys";
 import pino from "pino";
 import qrcode from "qrcode-terminal";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import http from "http";
 import dotenv from "dotenv";
@@ -64,7 +64,7 @@ http.createServer((req, res) => {
 // ==========================================
 // 2. CONFIGURATION & DATABASE
 // ==========================================
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
 
@@ -134,15 +134,14 @@ async function askAI(prompt, systemPrompt = null) {
     const persona = systemPrompt || 
       `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia bergaya streetwise, berpengetahuan luas, santai tapi padu. Pemilik rasmi kau adalah CEO Amar dari syarikat Shadow Legacy Co., Ltd. Jawab soalan secara santai, padat, berkarisma dan gunakan slanga Malaysia harian.`;
     
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: persona,
-        temperature: 0.7,
-      }
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: persona
     });
-    return response.text || "Tiada respon dari AI.";
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || "Tiada respon dari AI.";
   } catch (e) {
     console.error("Gemini AI Error:", e);
     return "⚡ Ralat komunikasi dengan pelayan Google Gemini AI. Sila semak API Key.";
