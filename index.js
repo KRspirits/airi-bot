@@ -1,7 +1,7 @@
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from "@whiskeysockets/baileys";
 import pino from "pino";
 import qrcode from "qrcode-terminal";
-import Groq from "groq-sdk";
+import { GoogleGenAI } from "@google/genai";
 import fs from "fs";
 import http from "http";
 import dotenv from "dotenv";
@@ -64,10 +64,12 @@ http.createServer((req, res) => {
 // ==========================================
 // 2. CONFIGURATION & DATABASE
 // ==========================================
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
-const OWNER_CEO = "601166533534@s.whatsapp.net"; // Kuasa Veto CEO Amar
+
+// Pengecaman Nombor CEO Amar (Kalis Formatting WhatsApp Multi-Device)
+const CEO_NUMBERS = ["601166533534", "01166533534", "1166533534"];
 
 let activeAirdrop = null; 
 
@@ -84,8 +86,9 @@ function saveDB(data) {
 
 function getUser(userId) {
   const db = loadDB();
-  if (!db.users[userId]) {
-    db.users[userId] = {
+  const cleanId = userId.replace(/:\d+/, "");
+  if (!db.users[cleanId]) {
+    db.users[cleanId] = {
       cash: 1000,
       bank: 5000,
       stars: 0,
@@ -93,43 +96,62 @@ function getUser(userId) {
       vehicle: null,
       phone: null,
       inventory: [],
+      frozen: false,
       stats: { successJobs: 0, jailCount: 0, robCount: 0, msgCount: 0 },
-      cooldowns: { work: 0, rob: 0, smuggle: 0, hack: 0, jailUntil: 0, claimOnline: 0 },
+      cooldowns: { work: 0, crime: 0, hack: 0, jailUntil: 0, claimOnline: 0 },
       lastActive: Date.now()
     };
     saveDB(db);
   }
-  return db.users[userId];
+  return db.users[cleanId];
 }
 
 function updateUser(userId, data) {
   const db = loadDB();
-  db.users[userId] = { ...getUser(userId), ...data };
+  const cleanId = userId.replace(/:\d+/, "");
+  db.users[cleanId] = { ...getUser(cleanId), ...data };
   saveDB(db);
 }
 
-async function askGroq(prompt, systemPrompt = null) {
+function checkIsCEO(senderJid) {
+  const cleanNum = senderJid.replace(/:\d+/, "").replace(/@.+/, "").replace(/\D/g, "");
+  return CEO_NUMBERS.some(num => cleanNum.endsWith(num) || cleanNum === num);
+}
+
+// Sistem Pangkat Automatik
+function getUserTitle(user) {
+  const netWorth = (user.cash || 0) + (user.bank || 0);
+  if (netWorth >= 2000000) return "👑 Bilionair Korporat";
+  if (netWorth >= 800000) return "💎 Tycoon Elit";
+  if (netWorth >= 300000) return "🕶️ Kingpin Siber";
+  if (netWorth >= 100000) return "💼 Tauke Pasar";
+  if (netWorth >= 30000) return "⚡ Runner Berpengaruh";
+  if (netWorth >= 10000) return "🛵 Rider Jalanan";
+  return "🧢 Gelandangan Moden";
+}
+
+async function askAI(prompt, systemPrompt = null) {
   try {
     const persona = systemPrompt || 
-      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia bergaya streetwise, berpengetahuan luas, santai tapi padu. Pemilik kau adalah CEO Amar dari Shadow Legacy Co., Ltd.`;
-    const res = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: persona },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
+      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia bergaya streetwise, berpengetahuan luas, santai tapi padu. Pemilik rasmi kau adalah CEO Amar dari syarikat Shadow Legacy Co., Ltd. Jawab soalan secara santai, padat, berkarisma dan gunakan slanga Malaysia harian.`;
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        systemInstruction: persona,
+        temperature: 0.7,
+      }
     });
-    return res.choices[0]?.message?.content || "Tiada respon dari pelayan AI.";
+    return response.text || "Tiada respon dari AI.";
   } catch (e) {
-    console.error("Groq Error:", e);
-    return "⚡ Ralat komunikasi pelayan AI Groq.";
+    console.error("Gemini AI Error:", e);
+    return "⚡ Ralat komunikasi dengan pelayan Google Gemini AI. Sila semak API Key.";
   }
 }
 
 // ==========================================
-// 3. MASTER DATA LENGKAP
+// 3. MASTER DATA
 // ==========================================
 const JOBS = [
   { id: 1, name: "Rider GrabFood", pay: 180 },
@@ -194,15 +216,12 @@ const VEHICLES = [
   { id: "gt3rs", name: "Porsche 911 GT3 RS", price: 980000, escapeBonus: 75, type: "Supercar" }
 ];
 
-// MAKANAN UNTUK RESET COOLDOWN (KEDAI BIASA)
 const FOODS = [
   { id: "kopi", name: "Kopi Jantan Kaw", price: 100, targetCD: "work", desc: "Hilangkan ngantuk. Reset cooldown kerja." },
-  { id: "redbull", name: "Red Bull Tin Emas", price: 350, targetCD: "rob", desc: "Energy boost! Reset cooldown merompak." },
-  { id: "nasikandar", name: "Nasi Kandar Ganja", price: 600, targetCD: "smuggle", desc: "Fokus 100%. Reset cooldown seludup." },
+  { id: "redbull", name: "Red Bull Tin Emas", price: 350, targetCD: "crime", desc: "Energy boost! Reset cooldown semua jenayah." },
   { id: "vitamin", name: "Pil Vitamin Minda", price: 500, targetCD: "hack", desc: "Fokus jari dewa. Reset cooldown godam." }
 ];
 
-// 10 JENIS GAJET DI KEDAI DEVICE
 const DEVICES = [
   { id: "nokia", name: "Nokia 3310 (Burner)", price: 250, stealthBonus: 10, desc: "Kebal trace polis asas (+10% Escape)" },
   { id: "vpn", name: "Mini Router VPN", price: 450, hackBonus: 10, desc: "Bypass firewall asas (+10% Godam)" },
@@ -216,26 +235,23 @@ const DEVICES = [
   { id: "rtx", name: "Server PC RTX 5090", price: 18000, hackBonus: 50, desc: "Penembus brute-force bank (+50% Godam)" }
 ];
 
-// BARANGAN BLACK MARKET (12 AM - 5 AM)
 const BLACKMARKET_ITEMS = [
   { id: "flipper", name: "Flipper Zero Zero-Day", price: 25000, immuneHack: false, hackBonus: 60, desc: "Alat penggodam tersirat (+60% Godam)" },
   { id: "jammer", name: "EMP Radio Jammer", price: 45000, immuneHack: true, desc: "Kebal 100% daripada diserang godam" },
-  { id: "masterkey", name: "Kunci Master Penjara", price: 12000, type: "consumable", desc: "Pelepasan lokap automatik (Boleh guna di lokap)" }
+  { id: "masterkey", name: "Kunci Master Penjara", price: 12000, type: "consumable", desc: "Pelepasan lokap automatik" }
 ];
 
-const SMUGGLE_ROUTES = [
-  { id: "rokok", name: "Rokok Kontraban", baseChance: 70, reward: 6500 },
-  { id: "gajet", name: "Komponen Gelap", baseChance: 50, reward: 24000 },
-  { id: "eksotik", name: "Haiwan Eksotik", baseChance: 35, reward: 80000 },
-  { id: "cip", name: "Cip AI Rahsia", baseChance: 20, reward: 300000 }
-];
-
-const CRIME_TARGETS = [
-  "Maybank Menara Raja Chulan",
-  "Habib Jewels KLCC",
-  "Petronas Bukit Bintang",
-  "7-Eleven Chow Kit",
-  "CIMB Dataran Merdeka"
+const CRIMES = [
+  { id: "ragut", name: "Ragut Beg Tepi Jalan", baseChance: 75, rewardMin: 800, rewardMax: 2500, reqType: "motor", reqDesc: "Motor (EX5/Y15)", stars: 1 },
+  { id: "rompak", name: "Rompak Kedai Emas & Bank", baseChance: 55, rewardMin: 3500, rewardMax: 9000, reqType: "car", reqDesc: "Kereta Laju (Myvi/FK8)", stars: 2 },
+  { id: "seludup_rokok", name: "Seludup Rokok Kontraban", baseChance: 70, rewardMin: 6500, rewardMax: 6500, reqItem: "nokia", reqDesc: "Nokia 3310 (Burner)", stars: 2 },
+  { id: "seludup_gajet", name: "Seludup Komponen Gelap", baseChance: 50, rewardMin: 24000, rewardMax: 24000, reqItem: "eclipse", reqDesc: "Shadow Eclipse", stars: 3 },
+  { id: "seludup_eksotik", name: "Seludup Haiwan Eksotik", baseChance: 35, rewardMin: 80000, rewardMax: 80000, reqItem: "drone", reqDesc: "Drone Peninjau DJI", stars: 4 },
+  { id: "seludup_cip", name: "Seludup Cip AI Cyberjaya", baseChance: 25, rewardMin: 300000, rewardMax: 300000, reqItem: "iqoo", reqDesc: "iQOO 12 / iPhone", stars: 5 },
+  { id: "skimming", name: "Skimming Mesin ATM", baseChance: 45, rewardMin: 18000, rewardMax: 35000, reqItem: "pi5", reqDesc: "Raspberry Pi 5", stars: 3 },
+  { id: "godam_server", name: "Godam Pangkalan Data Korporat", baseChance: 30, rewardMin: 60000, rewardMax: 120000, reqItem: "rog", reqDesc: "Laptop ROG / RTX 5090", stars: 4 },
+  { id: "heist_kasino", name: "Heist Bilik Kebal Kasino", baseChance: 20, rewardMin: 200000, rewardMax: 500000, reqType: "supercar", reqDesc: "Supercar (GTR/GT3 RS)", stars: 5 },
+  { id: "darkweb_zero", name: "Eksploitasi Darkweb Zero-Day", baseChance: 15, rewardMin: 600000, rewardMax: 1500000, reqItem: "flipper", reqDesc: "Flipper Zero (Black Market)", stars: 5 }
 ];
 
 function isBlackMarketOpen() {
@@ -244,11 +260,19 @@ function isBlackMarketOpen() {
   return h >= 0 && h < 5;
 }
 
-function calculateChance(user, baseChance = 50) {
+function calculateCrimeRate(user, crime) {
+  let rate = crime.baseChance;
+  if (crime.reqType === "motor" && user.vehicle?.type === "Motor") rate += 20;
+  if (crime.reqType === "car" && ["Kereta", "Supercar"].includes(user.vehicle?.type)) rate += 25;
+  if (crime.reqType === "supercar" && user.vehicle?.type === "Supercar") rate += 35;
+  if (crime.reqItem && user.phone?.id === crime.reqItem) rate += 30;
+  if (crime.reqItem === "flipper" && user.inventory?.some(i => i.id === "flipper")) rate += 40;
+
   let vBonus = user.vehicle?.escapeBonus || 0;
   let pBonus = user.phone?.stealthBonus || 0;
-  let penalty = (user.stars || 0) * 10;
-  let finalRate = baseChance + vBonus + pBonus - penalty;
+  let penalty = (user.stars || 0) * 8;
+
+  let finalRate = rate + (vBonus * 0.5) + (pBonus * 0.5) - penalty;
   return Math.random() * 100 <= Math.max(10, Math.min(95, finalRate));
 }
 
@@ -280,11 +304,10 @@ async function startBotEngine() {
     } else if (connection === "open") {
       isConnected = true;
       currentQR = null;
-      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE 24/7!]\n`);
+      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE 24/7 DENGAN GOOGLE GEMINI!]\n`);
     }
   });
 
-  // Welcome Message Airi Corner
   sock.ev.on("group-participants.update", async (update) => {
     try {
       if (update.action === "add") {
@@ -306,7 +329,6 @@ async function startBotEngine() {
     } catch (e) {}
   });
 
-  // Random Event (40 Minit)
   setInterval(async () => {
     try {
       const db = loadDB();
@@ -318,7 +340,7 @@ async function startBotEngine() {
 
       if (Math.random() < 0.5) {
         const picked = members.sort(() => 0.5 - Math.random()).slice(0, 3);
-        let report = `🚨 *[OPS CANTAS TRAFIK]* 🚨\nPolis buat sekatan rawak!\n\n`;
+        let report = `🚨 *[OPS CANTAS TRAFIK]* 🚨\nPolis buat sekatan mengejut!\n\n`;
         picked.forEach(p => {
           const u = getUser(p);
           if (u.stars > 0) {
@@ -335,7 +357,7 @@ async function startBotEngine() {
       } else {
         const dropValue = Math.floor(Math.random() * 4000) + 2000;
         activeAirdrop = { reward: dropValue, groupId: targetGroup, claimed: false };
-        let tagMsg = `📦 *[AIRDROP KARGO GELAP]* 📦\nKargo RM ${dropValue.toLocaleString()} jatuh! Taip \`.claim_drop\` pantas!\n\n`;
+        let tagMsg = `📦 *[AIRDROP KARGO GELAP]* 📦\nKargo bernilai *RM ${dropValue.toLocaleString()}* jatuh! Taip \`.claim_drop\` pantas!\n\n`;
         members.forEach(m => { tagMsg += `@${m.split('@')[0]} `; });
         await sock.sendMessage(targetGroup, { text: tagMsg, mentions: members });
       }
@@ -361,7 +383,7 @@ async function startBotEngine() {
     }
 
     const user = getUser(sender);
-    user.cash += 2; // Passive chat reward
+    user.cash += 2;
     user.stats.msgCount = (user.stats.msgCount || 0) + 1;
     updateUser(sender, user);
 
@@ -370,10 +392,10 @@ async function startBotEngine() {
     const args = body.slice(1).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
     const now = Date.now();
-    const isCEO = sender === OWNER_CEO;
+    const isCEO = checkIsCEO(sender);
 
     // ==========================================
-    // 🛡️ AMARAN KESELAMATAN CEO VETO
+    // 🛡️ AMARAN KESELAMATAN & KUASA VETO CEO
     // ==========================================
     if (cmd.startsWith("ceo_") && !isCEO) {
       const warningUI = 
@@ -383,7 +405,7 @@ async function startBotEngine() {
         `⚠️ *AKSES DITOLAK: PROTOKOL KESELAMATAN TAHAP 5*\n\n` +
         `Identiti anda TIDAK sepadan dengan pangkalan data *Shadow Legacy Co., Ltd.*\n` +
         `Perintah \`${cmd}\` adalah HAK MUTLAK milik **CEO Amar** sahaja.\n\n` +
-        `_Amaran: Skuad elit siber telah merekodkan koordinat IP dan nombor telefon anda. Jangan cuba lagi._💀`;
+        `_Amaran: Skuad elit siber telah merekodkan koordinat IP dan nombor telefon anda._💀`;
       return sock.sendMessage(from, { text: warningUI }, { quoted: m });
     }
 
@@ -407,6 +429,15 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `👑 *[KUASA VETO CEO]* @${target.split('@')[0]} disumbat ke penjara ${minutes} minit!`, mentions: [target] });
     }
 
+    if (cmd === "ceo_freeze") {
+      const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+      if (!target) return sock.sendMessage(from, { text: `Format: \`.ceo_freeze @user\`` });
+      const targetUser = getUser(target);
+      targetUser.frozen = !targetUser.frozen;
+      updateUser(target, targetUser);
+      return sock.sendMessage(from, { text: `👑 *[KUASA VETO CEO]* Akaun @${target.split('@')[0]} kini berstatus: *${targetUser.frozen ? "FROZEN (DIBEKUKAN)" : "UNFROZEN (AKTIF)"}*!`, mentions: [target] });
+    }
+
     if (cmd === "ceo_unwanted") {
       const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
       if (!target) return sock.sendMessage(from, { text: `Format: \`.ceo_unwanted @user\`` });
@@ -417,12 +448,65 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `👑 *[KUASA VETO CEO]* Rekod jenayah @${target.split('@')[0]} dipadam sepenuhnya.`, mentions: [target] });
     }
 
-    // Kawalan Lokap
+    if (user.frozen && !cmd.startsWith("ceo_")) {
+      return sock.sendMessage(from, { text: `🥶 *[AKAUN DIBEKUKAN]* Akaun anda telah dibekukan oleh CEO Amar. Hubungi beliau untuk rayuan.` }, { quoted: m });
+    }
+
     if (user.cooldowns.jailUntil > now && !["bicara", "ikatjamin", "lokap"].includes(cmd)) {
       const rem = Math.ceil((user.cooldowns.jailUntil - now) / 1000);
       return sock.sendMessage(from, { 
         text: `🔒 *[LOKAP DANG WANGI]*\nLu ditahan! Baki: *${rem}s*.\nPilihan:\n1. \`.bicara free\` (40% Peluang)\n2. \`.bicara pro\` (RM100, 85% Peluang)\n3. \`.ikatjamin\`` 
       }, { quoted: m });
+    }
+
+    // ==========================================
+    // 1. SISTEM 10 JENAYAH & OPERASI GELAP
+    // ==========================================
+    if (cmd === "jenayah_menu" || cmd === "crime_menu") {
+      let ui = `╔════════════════════════════╗\n║ 🔫 SENARAI 10 OPERASI GELAP║\n╚════════════════════════════╝\n\n`;
+      CRIMES.forEach((c, i) => {
+        ui += `*${i+1}. ${c.name}*\n   💵 Hadiah: RM ${c.rewardMin.toLocaleString()} - RM ${c.rewardMax.toLocaleString()}\n   🎯 Keperluan Buff: ${c.reqDesc}\n   ⚡ \`.buat_jenayah ${c.id}\`\n\n`;
+      });
+      return sock.sendMessage(from, { text: ui }, { quoted: m });
+    }
+
+    if (cmd === "buat_jenayah" || cmd === "crime") {
+      const cId = args[0]?.toLowerCase();
+      const targetCrime = CRIMES.find(c => c.id === cId);
+      if (!targetCrime) return sock.sendMessage(from, { text: `❌ ID Jenayah salah. Semak \`.jenayah_menu\`` });
+
+      const cd = 12 * 60 * 1000;
+      if (now - user.cooldowns.crime < cd) {
+        const rem = Math.ceil((cd - (now - user.cooldowns.crime)) / 1000);
+        return sock.sendMessage(from, { text: `🚨 Skuad polis sedang aktif meronda kawasan ini! Tunggu *${rem}s* lagi.` });
+      }
+
+      const isSuccess = calculateCrimeRate(user, targetCrime);
+
+      if (isSuccess) {
+        const reward = Math.floor(Math.random() * (targetCrime.rewardMax - targetCrime.rewardMin + 1)) + targetCrime.rewardMin;
+        user.cash += reward;
+        user.stars = Math.min(5, (user.stars || 0) + targetCrime.stars);
+        user.cooldowns.crime = now;
+        user.stats.robCount = (user.stats.robCount || 0) + 1;
+        updateUser(sender, user);
+        return sock.sendMessage(from, {
+          text: `💥 *[MISI SELESAI: ${targetCrime.name.toUpperCase()}]*\n💰 Habuan: *+RM ${reward.toLocaleString()}*\n⭐ Wanted Level: ${"⭐".repeat(user.stars)}`
+        }, { quoted: m });
+      } else {
+        user.stars = Math.min(5, (user.stars || 0) + 2);
+        user.cooldowns.crime = now;
+        user.cooldowns.jailUntil = now + (6 * 60 * 1000);
+        user.stats.jailCount = (user.stats.jailCount || 0) + 1;
+        updateUser(sender, user);
+        return sock.sendMessage(from, {
+          text: `🚨 *[KOD MERAH: DIKEPUNG POLIS]*\nOperasi *${targetCrime.name}* gagal! Anda disumbat ke Lokap Dang Wangi (6 Minit).\nTaip \`.bicara free\` atau \`.bicara pro\` untuk berdebat di mahkamah.`
+        }, { quoted: m });
+      }
+    }
+
+    if (cmd === "rompak") {
+      return sock.sendMessage(from, { text: `Sila gunakan menu operasi gelap baharu:\nTaip \`.buat_jenayah rompak\` atau lihat \`.jenayah_menu\`` });
     }
 
     if (cmd === "bicara") {
@@ -443,12 +527,12 @@ async function startBotEngine() {
       } else if (tier === "pro") {
         if (user.cash < 100) return sock.sendMessage(from, { text: `❌ Cash tak cukup RM 100!` });
         user.cash -= 100;
-        const groqDebate = await askGroq("Beri satu baris hujah undang-undang korporat Malaysia yang sangat teknikal untuk membebaskan klien.");
+        const debateText = await askAI("Beri satu baris hujah undang-undang korporat Malaysia yang sangat teknikal untuk membebaskan klien.");
         if (Math.random() <= 0.85) {
           user.cooldowns.jailUntil = 0;
           user.stars = 0;
           updateUser(sender, user);
-          return sock.sendMessage(from, { text: `⚖️ *PEGUAM PRO BERHUJAH:*\n_"${groqDebate}"_\n\n🔥 Hakim memutuskan lu *TIDAK BERSALAH*! Rekod dipadam.` }, { quoted: m });
+          return sock.sendMessage(from, { text: `⚖️ *PEGUAM PRO BERHUJAH:*\n_"${debateText}"_\n\n🔥 Hakim memutuskan lu *TIDAK BERSALAH*! Rekod dipadam.` }, { quoted: m });
         } else {
           updateUser(sender, user);
           return sock.sendMessage(from, { text: `⚖️ Bukti CCTV terlalu jelas. Peguam Pro gagal, tapi tiada penalti masa.` }, { quoted: m });
@@ -456,8 +540,18 @@ async function startBotEngine() {
       }
     }
 
+    if (cmd === "ikatjamin") {
+      const bail = (user.stars || 1) * 2500;
+      if (user.cash < bail) return sock.sendMessage(from, { text: `❌ Cash tak cukup (RM ${bail.toLocaleString()})!` });
+      user.cash -= bail;
+      user.stars = 0;
+      user.cooldowns.jailUntil = 0;
+      updateUser(sender, user);
+      return sock.sendMessage(from, { text: `🔓 Bebas ikat jamin RM ${bail.toLocaleString()}!` });
+    }
+
     // ==========================================
-    // 🏪 KEDAI MAKANAN (RESET COOLDOWN)
+    // 2. KEDAI MAKANAN, DEVICE & PAJAK GADAI
     // ==========================================
     if (cmd === "kedai") {
       let ui = `╔════════════════════════════╗\n║ 🏪 KEDAI MAKANAN (BOOSTER) ║\n╚════════════════════════════╝\n\n`;
@@ -470,18 +564,15 @@ async function startBotEngine() {
     if (cmd === "beli_makanan") {
       const fId = args[0]?.toLowerCase();
       const targetF = FOODS.find(f => f.id === fId);
-      if (!targetF) return sock.sendMessage(from, { text: `❌ Makanan tak wujud dalam menu.` });
-      if (user.cash < targetF.price) return sock.sendMessage(from, { text: `❌ Duit tak cukup nak makan!` });
+      if (!targetF) return sock.sendMessage(from, { text: `❌ Makanan tak wujud.` });
+      if (user.cash < targetF.price) return sock.sendMessage(from, { text: `❌ Duit tak cukup!` });
 
       user.cash -= targetF.price;
-      user.cooldowns[targetF.targetCD] = 0; // Reset Cooldown terus
+      user.cooldowns[targetF.targetCD] = 0;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🍽️ Siap telan *${targetF.name}*! Kesan ubat bertindak: Cooldown *${targetF.targetCD}* lu dah reset.` }, { quoted: m });
+      return sock.sendMessage(from, { text: `🍽️ Siap telan *${targetF.name}*! Cooldown *${targetF.targetCD}* lu dah reset.` }, { quoted: m });
     }
 
-    // ==========================================
-    // 💻 KEDAI DEVICE (10 GAJET)
-    // ==========================================
     if (cmd === "device") {
       let ui = `╔════════════════════════════╗\n║ 💻 SYARIKAT DEVICE & TECH  ║\n╚════════════════════════════╝\n\n`;
       DEVICES.forEach((d, i) => {
@@ -494,15 +585,35 @@ async function startBotEngine() {
       const dId = args[0]?.toLowerCase();
       const targetD = DEVICES.find(d => d.id === dId);
       if (!targetD) return sock.sendMessage(from, { text: `❌ Model gajet tidak sah.` });
-      if (user.cash < targetD.price) return sock.sendMessage(from, { text: `❌ Duit cash tak cukup bro!` });
+      if (user.cash < targetD.price) return sock.sendMessage(from, { text: `❌ Duit cash tak cukup!` });
 
       user.cash -= targetD.price;
       user.phone = targetD;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `🖥️ Resit Pembelian Sah: Berjaya memiliki *${targetD.name}*!` }, { quoted: m });
+      return sock.sendMessage(from, { text: `🖥️ Resit Sah: Berjaya memiliki *${targetD.name}*!` }, { quoted: m });
     }
 
-    // SHOWROOM & KENDERAAN
+    // Sistem Pajak Gadai / Jual Semula (70% Pulangan)
+    if (cmd === "jual_device" || cmd === "pajak_device") {
+      if (!user.phone) return sock.sendMessage(from, { text: `❌ Anda tiada sebarang gajet untuk dipajak!` });
+      const refund = Math.floor(user.phone.price * 0.7);
+      const devName = user.phone.name;
+      user.cash += refund;
+      user.phone = null;
+      updateUser(sender, user);
+      return sock.sendMessage(from, { text: `🏷️ *[PAJAK GADAI TECH]* Berjaya menjual *${devName}* terpakai dengan nilai pulangan *+RM ${refund.toLocaleString()}* (70%).` }, { quoted: m });
+    }
+
+    if (cmd === "jual_kenderaan" || cmd === "pajak_kenderaan") {
+      if (!user.vehicle) return sock.sendMessage(from, { text: `❌ Anda tiada sebarang kenderaan untuk dipajak!` });
+      const refund = Math.floor(user.vehicle.price * 0.7);
+      const vehName = user.vehicle.name;
+      user.cash += refund;
+      user.vehicle = null;
+      updateUser(sender, user);
+      return sock.sendMessage(from, { text: `🏎️ *[PAJAK GADAI MOTOR/KERETA]* Berjaya menjual *${vehName}* terpakai dengan nilai pulangan *+RM ${refund.toLocaleString()}* (70%).` }, { quoted: m });
+    }
+
     if (cmd === "showroom") {
       let ui = `╔════════════════════════════╗\n║ 🏎️ SHOWROOM KENDERAAN ASING║\n╚════════════════════════════╝\n\n`;
       VEHICLES.forEach((v, i) => {
@@ -522,7 +633,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🎉 Bawa pulang *${targetV.name}* baharu!` }, { quoted: m });
     }
 
-    // BLACK MARKET
     if (cmd === "blackmarket") {
       if (!isBlackMarketOpen()) return sock.sendMessage(from, { text: `🔒 *[BLACK MARKET BERKUNCI]*\nBuka jam *12:00 AM - 5:00 AM* sahaja.` });
       let ui = `╔════════════════════════════╗\n║ 🏴‍☠️ PASARAN GELAP (MIDNIGHT)║\n╚════════════════════════════╝\n\n`;
@@ -545,19 +655,24 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🏴‍☠️ Seludup masuk *${targetB.name}* secara rahsia.` }, { quoted: m });
     }
 
-    // KEWANGAN & DOMPET
+    // ==========================================
+    // 3. KEWANGAN, KERJA & PROFIL
+    // ==========================================
     if (cmd === "dompet" || cmd === "wallet") {
+      const title = getUserTitle(user);
       const ui = 
         `╔════════════════════════════╗\n` +
         `║ 💼 STATUS PROFIL & KEWANGAN ║\n` +
         `╚════════════════════════════╝\n\n` +
         `👤 Pemilik: @${sender.split('@')[0]}\n` +
-        `💵 Cash Tunai: *RM ${user.cash.toLocaleString()}*\n` +
-        `🏦 Bank Akaun: *RM ${user.bank.toLocaleString()}*\n` +
+        `🎖️ Gelaran Pangkat: *${title}*\n` +
+        `💵 Cash: *RM ${user.cash.toLocaleString()}*\n` +
+        `🏦 Bank: *RM ${user.bank.toLocaleString()}*\n` +
         `🛠️ Pekerjaan: *${user.job}*\n` +
         `🏎️ Kenderaan: *${user.vehicle ? user.vehicle.name : "Kaki Ayam"}*\n` +
         `💻 Gajet: *${user.phone ? user.phone.name : "Tiada"}*\n` +
-        `⭐ Wanted: *${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}*`;
+        `⭐ Wanted: *${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}*\n` +
+        `❄️ Status: *${user.frozen ? "Akaun Dibekukan" : "Aktif Normal"}*`;
       return sock.sendMessage(from, { text: ui, mentions: [sender] }, { quoted: m });
     }
 
@@ -577,7 +692,6 @@ async function startBotEngine() {
       }
     }
 
-    // KERJA
     if (cmd === "senarai_kerja") {
       let list = `📋 *[SENARAI 50 KERJAYA]*\n\n`;
       JOBS.forEach(j => { list += `*ID ${j.id}:* ${j.name} (RM ${j.pay})\n`; });
@@ -591,7 +705,7 @@ async function startBotEngine() {
       if (!found) return;
       user.job = found.name;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `✅ Berkerja sebagai *${found.name}*.` }, { quoted: m });
+      return sock.sendMessage(from, { text: `✅ Bekerja sebagai *${found.name}*.` }, { quoted: m });
     }
 
     if (cmd === "kerja") {
@@ -609,26 +723,6 @@ async function startBotEngine() {
       user.cooldowns.work = now;
       updateUser(sender, user);
       return sock.sendMessage(from, { text: `💼 *[SYIF SELESAI]* Gaji: *+RM ${gaji.toLocaleString()}*` }, { quoted: m });
-    }
-
-    // JENAYAH & GODAM
-    if (cmd === "rompak") {
-      const cd = 15 * 60 * 1000;
-      if (now - user.cooldowns.rob < cd) return sock.sendMessage(from, { text: `🚨 Skuad ronda aktif! Baki masa selamat: *${Math.ceil((cd - (now - user.cooldowns.rob)) / 1000)}s*.` });
-      
-      const targetPlace = CRIME_TARGETS[Math.floor(Math.random() * CRIME_TARGETS.length)];
-      if (calculateChance(user, 50)) {
-        const loot = Math.floor(Math.random() * 4000) + 1200;
-        user.cash += loot; user.stars = Math.min(5, user.stars + 1);
-        user.cooldowns.rob = now;
-        updateUser(sender, user);
-        return sock.sendMessage(from, { text: `💥 Rompak *${targetPlace}*!\n💰 Dapat: *+RM ${loot.toLocaleString()}*\n⭐ Wanted: ${"⭐".repeat(user.stars)}` });
-      } else {
-        user.stars = Math.min(5, user.stars + 2);
-        user.cooldowns.rob = now; user.cooldowns.jailUntil = now + (5 * 60 * 1000);
-        updateUser(sender, user);
-        return sock.sendMessage(from, { text: `🚨 Kantoi merompak! Sila masuk lokap 5 minit.` });
-      }
     }
 
     if (cmd === "hack") {
@@ -656,21 +750,6 @@ async function startBotEngine() {
       }
     }
 
-    if (cmd === "slot") {
-      const bet = parseInt(args[0]);
-      if (isNaN(bet) || bet <= 0 || bet > user.cash) return;
-      const icons = ["🍒", "🍋", "🍉", "⭐", "💎", "7️⃣"];
-      const r1 = icons[Math.floor(Math.random() * 6)], r2 = icons[Math.floor(Math.random() * 6)], r3 = icons[Math.floor(Math.random() * 6)];
-      if (r1 === r2 && r2 === r3) {
-        user.cash += bet * 5; updateUser(sender, user);
-        return sock.sendMessage(from, { text: `🎰 [ ${r1} | ${r2} | ${r3} ]\n🔥 JACKPOT: *+RM ${(bet * 5).toLocaleString()}*!` });
-      } else {
-        user.cash -= bet; updateUser(sender, user);
-        return sock.sendMessage(from, { text: `🎰 [ ${r1} | ${r2} | ${r3} ]\n❌ Rugi: *-RM ${bet.toLocaleString()}*!` });
-      }
-    }
-
-    // AI & CLAIM
     if (cmd === "claim_online") {
       const cd = 60 * 60 * 1000;
       if (now - user.cooldowns.claimOnline < cd) return sock.sendMessage(from, { text: `⏳ Tuntutan seterusnya dalam ${Math.ceil((cd - (now - user.cooldowns.claimOnline))/60000)} minit.` });
@@ -689,8 +768,8 @@ async function startBotEngine() {
 
     if (cmd === "ai" || cmd === "tanya") {
       const prompt = args.join(" ");
-      if (!prompt) return;
-      const reply = await askGroq(prompt);
+      if (!prompt) return sock.sendMessage(from, { text: "Contoh: `.ai apa khabar?`" });
+      const reply = await askAI(prompt);
       return sock.sendMessage(from, { text: reply }, { quoted: m });
     }
 
@@ -708,13 +787,15 @@ async function startBotEngine() {
         `*3. PASARAN & KEDAI*\n` +
         `▸ \`.kedai\` (Booster Kerja & CD)\n` +
         `▸ \`.device\` (10 Gajet Hack/Kerja)\n` +
-        `▸ \`.showroom\` (Kenderaan lari polis)\n` +
+        `▸ \`.jual_device\` / \`.jual_kenderaan\` (Pajak 70%)\n` +
+        `▸ \`.showroom\` (Kenderaan Lari Polis)\n` +
         `▸ \`.blackmarket\` (12AM-5AM)\n\n` +
-        `*4. JALANAN & JENAYAH*\n` +
-        `▸ \`.rompak\` | \`.hack @user\`\n` +
+        `*4. JALANAN & 10 JENAYAH*\n` +
+        `▸ \`.jenayah_menu\` (Senarai 10 Misi Gelap)\n` +
+        `▸ \`.buat_jenayah [id]\`\n` +
         `▸ \`.bicara free/pro\` (Lawan kes lokap)\n` +
-        `▸ \`.ikatjamin\` | \`.slot [RM]\`\n\n` +
-        `*5. KECERDASAN BUATAN*\n` +
+        `▸ \`.ikatjamin\` | \`.hack @user\`\n\n` +
+        `*5. GOOGLE GEMINI AI*\n` +
         `▸ \`.ai [soalan]\`\n\n` +
         `_Dimiliki oleh CEO Amar • Shadow Legacy Co., Ltd._`;
 
