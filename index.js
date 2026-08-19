@@ -64,7 +64,7 @@ http.createServer((req, res) => {
 // ==========================================
 // 2. CONFIGURATION & DATABASE
 // ==========================================
-const GROQ_KEY = process.env.GROQ_API_KEY || "MASUKKAN_KEY_GROQ_KAT_SINI";
+const GROQ_KEY = process.env.GROQ_API_KEY || "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";
 const groq = new Groq({ apiKey: GROQ_KEY });
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
