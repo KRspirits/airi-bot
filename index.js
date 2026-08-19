@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // ==========================================
-// 1. PELAYAN WEB UNTUK RENDER FREE TIER
+// 1. PELAYAN WEB UNTUK RENDER (FREE WEB SERVICE)
 // ==========================================
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
