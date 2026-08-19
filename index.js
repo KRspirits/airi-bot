@@ -3,11 +3,23 @@ import pino from "pino";
 import qrcode from "qrcode-terminal";
 import Groq from "groq-sdk";
 import fs from "fs";
+import http from "http";
 import dotenv from "dotenv";
 dotenv.config();
 
 // ==========================================
-// 1. INISIALISASI GROQ AI & DATABASE
+// 1. PELAYAN WEB UNTUK RENDER FREE TIER
+// ==========================================
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("Airi WhatsApp Bot Berjalan 24/7 di Render!");
+}).listen(PORT, () => {
+  console.log(`🌐 Web Service aktif pada port: ${PORT}`);
+});
+
+// ==========================================
+// 2. INISIALISASI GROQ AI & DATABASE
 // ==========================================
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const DB_FILE = "./database.json";
@@ -52,7 +64,7 @@ function updateUser(userId, data) {
 async function askGroq(prompt, systemPrompt = null) {
   try {
     const persona = systemPrompt || 
-      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia yang santai, gaya streetwise, berpengetahuan luas pasal tech, kereta, dan info jalanan tempatan. Jangan cakap gaya skema atau kaku.`;
+      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia yang santai, gaya streetwise, berpengetahuan luas pasal tech, kereta, dan info jalanan tempatan. Jangan bercakap terlalu skema atau kaku.`;
     const res = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [
@@ -62,7 +74,7 @@ async function askGroq(prompt, systemPrompt = null) {
       temperature: 0.7,
       max_tokens: 500,
     });
-    return res.choices[0]?.message?.content || "Takde respon dari Groq.";
+    return res.choices[0]?.message?.content || "Tiada respon dari Groq.";
   } catch (e) {
     console.error("Groq Error:", e);
     return "⚡ Ralat komunikasi dengan pelayan AI Groq.";
@@ -70,7 +82,7 @@ async function askGroq(prompt, systemPrompt = null) {
 }
 
 // ==========================================
-// 2. DATA STATIC & MASTER DATA
+// 3. MASTER DATA EKONOMI & SISTEM
 // ==========================================
 const JOBS = [
   { id: 1, name: "Rider GrabFood", pay: 180 },
@@ -138,7 +150,7 @@ const VEHICLES = [
 const GADGETS = [
   { id: "burner", name: "Nokia 3310 (Burner Phone)", price: 250, stealthBonus: 15, desc: "Kebal trace polis" },
   { id: "iqoo", name: "iQOO 12 Flagship", price: 3400, workBonus: 25, desc: "Boost 25% gaji kerja & trading" },
-  { id: "rog", name: "Laptop ROG Zephyrus", price: 8500, hackBonus: 30, desc: "Alat khas tingkatkan peluang hack" }
+  { id: "rog", name: "Laptop ROG Zephyrus", price: 8500, hackBonus: 30, desc: "Alat khas tingkatkan peluang godam" }
 ];
 
 const SMUGGLE_ROUTES = [
@@ -165,7 +177,7 @@ function calculateChance(user, baseChance = 50) {
 }
 
 // ==========================================
-// 3. ENJIN UTAMA WHATSAPP
+// 4. ENJIN BAILEYS WHATSAPP
 // ==========================================
 async function startBotEngine() {
   const { state, saveCreds } = await useMultiFileAuthState("auth_session");
@@ -183,7 +195,7 @@ async function startBotEngine() {
     const { connection, lastDisconnect, qr } = update;
     if (qr) {
       console.log("\n=========================================");
-      console.log("SILA SCAN QR CODE DI BAWAH (LOG KOYEB):");
+      console.log("SILA SCAN QR CODE DI BAWAH (LOG RENDER):");
       console.log("=========================================");
       qrcode.generate(qr, { small: true });
     }
@@ -218,7 +230,7 @@ async function startBotEngine() {
     if (user.cooldowns.jailUntil > now && !["ikatjamin", "lokap"].includes(cmd)) {
       const rem = Math.ceil((user.cooldowns.jailUntil - now) / 1000);
       return sock.sendMessage(from, { 
-        text: `🔒 *[LOKAP POLIS DANG WANGI]*\nLu ditahan! Baki: *${rem}s*.\nTaip \`.ikatjamin\` untuk bebas.` 
+        text: `🔒 *[LOKAP POLIS DANG WANGI]*\nLu ditahan! Baki hukuman: *${rem}s*.\nTaip \`.ikatjamin\` untuk bebas segera.` 
       }, { quoted: m });
     }
 
@@ -232,7 +244,7 @@ async function startBotEngine() {
               `🛠️ Kerjaya: *${user.job}*\n` +
               `🏎️ Kenderaan: *${user.vehicle ? user.vehicle.name : "Jalan Kaki"}*\n` +
               `📱 Peranti: *${user.phone ? user.phone.name : "Tiada"}*\n` +
-              `⭐ Wanted: *${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}*`,
+              `⭐ Rekod: *${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}*`,
         mentions: [sender]
       }, { quoted: m });
     }
@@ -258,7 +270,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `Format: \`.bank dep [jumlah]\` atau \`.bank wit [jumlah]\`` }, { quoted: m });
     }
 
-    // 2. KERJA (50 KERJAYA)
+    // 2. KERJA (50 KERJA)
     if (cmd === "senarai_kerja") {
       let list = `📋 *[SENARAI 50 KERJAYA]*\n\n`;
       JOBS.forEach(j => { list += `*ID ${j.id}:* ${j.name} (RM ${j.pay})\n`; });
