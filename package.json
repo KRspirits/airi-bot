@@ -7,7 +7,6 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.0",
     "@whiskeysockets/baileys": "^6.7.9",
     "dotenv": "^16.4.5",
     "pino": "^9.0.0",
