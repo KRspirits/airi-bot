@@ -68,7 +68,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
 
-// Pengecaman Nombor CEO Amar (Kalis Formatting WhatsApp Multi-Device)
+// Pengecaman Nombor CEO Amar
 const CEO_NUMBERS = ["601166533534", "01166533534", "1166533534"];
 
 let activeAirdrop = null; 
@@ -118,7 +118,6 @@ function checkIsCEO(senderJid) {
   return CEO_NUMBERS.some(num => cleanNum.endsWith(num) || cleanNum === num);
 }
 
-// Sistem Pangkat Automatik
 function getUserTitle(user) {
   const netWorth = (user.cash || 0) + (user.bank || 0);
   if (netWorth >= 2000000) return "👑 Bilionair Korporat";
@@ -593,7 +592,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🖥️ Resit Sah: Berjaya memiliki *${targetD.name}*!` }, { quoted: m });
     }
 
-    // Sistem Pajak Gadai / Jual Semula (70% Pulangan)
     if (cmd === "jual_device" || cmd === "pajak_device") {
       if (!user.phone) return sock.sendMessage(from, { text: `❌ Anda tiada sebarang gajet untuk dipajak!` });
       const refund = Math.floor(user.phone.price * 0.7);
