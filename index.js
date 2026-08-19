@@ -111,10 +111,11 @@ function getUser(userId, pushName = null) {
       job: "Penganggur",
       vehicle: null,
       phone: null,
+      house: null,
       inventory: [],
       frozen: false,
       stats: { successJobs: 0, jailCount: 0, robCount: 0, msgCount: 0, racesWon: 0, bountiesClaimed: 0 },
-      cooldowns: { work: 0, crime: 0, hack: 0, steal: 0, hunt: 0, race: 0, jailUntil: 0, claimOnline: 0 },
+      cooldowns: { work: 0, crime: 0, hack: 0, steal: 0, hunt: 0, race: 0, rent: 0, jailUntil: 0, claimOnline: 0 },
       lastActive: Date.now()
     };
     saveDB(db);
@@ -132,7 +133,6 @@ function updateUser(userId, data) {
   saveDB(db);
 }
 
-// Format nama bersih (Guna pushName WhatsApp jika ada)
 function formatUserName(rawId, pushName = null) {
   const clean = cleanUserId(rawId);
   if (clean.includes("601166533534")) {
@@ -249,6 +249,14 @@ const VEHICLES = [
   { id: "gt3rs", name: "Porsche 911 GT3 RS", price: 980000, escapeBonus: 75, type: "Supercar" }
 ];
 
+const HOUSES = [
+  { id: 1, name: "Bilik Sewa Flat PPR", price: 15000, rentPay: 250, safeBonus: 5 },
+  { id: 2, name: "Apartment Vista Siber", price: 65000, rentPay: 850, safeBonus: 10 },
+  { id: 3, name: "Kondo Mewah KLCC", price: 250000, rentPay: 3200, safeBonus: 20 },
+  { id: 4, name: "Banglo Dua Tingkat Damansara", price: 750000, rentPay: 9500, safeBonus: 35 },
+  { id: 5, name: "Penthouse Elit Shadow Legacy", price: 2000000, rentPay: 28000, safeBonus: 50 }
+];
+
 const FOODS = [
   { id: "kopi", name: "Kopi Jantan Kaw", price: 100, targetCD: "work", desc: "Hilangkan ngantuk (Reset CD Kerja)" },
   { id: "redbull", name: "Red Bull Tin Emas", price: 350, targetCD: "crime", desc: "Energy boost (Reset CD Jenayah)" },
@@ -275,16 +283,16 @@ const BLACKMARKET_ITEMS = [
 ];
 
 const CRIMES = [
-  { id: "ragut", name: "Ragut Beg Jalanan", baseChance: 75, rewardMin: 800, rewardMax: 2500, reqType: "motor", reqDesc: "Motor (EX5/Y15)", stars: 1 },
-  { id: "rompak", name: "Rompak Kedai Emas & Bank", baseChance: 55, rewardMin: 3500, rewardMax: 9000, reqType: "car", reqDesc: "Kereta (Myvi/FK8)", stars: 2 },
-  { id: "seludup_rokok", name: "Seludup Rokok Kontraban", baseChance: 70, rewardMin: 6500, rewardMax: 6500, reqItem: "nokia", reqDesc: "Nokia 3310", stars: 2 },
-  { id: "seludup_gajet", name: "Seludup Komponen Gelap", baseChance: 50, rewardMin: 24000, rewardMax: 24000, reqItem: "eclipse", reqDesc: "Shadow Eclipse", stars: 3 },
-  { id: "seludup_eksotik", name: "Seludup Haiwan Eksotik", baseChance: 35, rewardMin: 80000, rewardMax: 80000, reqItem: "drone", reqDesc: "Drone DJI", stars: 4 },
-  { id: "seludup_cip", name: "Seludup Cip AI Cyberjaya", baseChance: 25, rewardMin: 300000, rewardMax: 300000, reqItem: "iqoo", reqDesc: "iQOO 12 / iPhone", stars: 5 },
-  { id: "skimming", name: "Skimming Mesin ATM", baseChance: 45, rewardMin: 18000, rewardMax: 35000, reqItem: "pi5", reqDesc: "Raspberry Pi 5", stars: 3 },
-  { id: "godam_server", name: "Godam Pangkalan Korporat", baseChance: 30, rewardMin: 60000, rewardMax: 120000, reqItem: "rog", reqDesc: "ROG / RTX 5090", stars: 4 },
-  { id: "heist_kasino", name: "Heist Bilik Kebal Kasino", baseChance: 20, rewardMin: 200000, rewardMax: 500000, reqType: "supercar", reqDesc: "Supercar (GTR/GT3)", stars: 5 },
-  { id: "darkweb_zero", name: "Eksploitasi Darkweb Zero", baseChance: 15, rewardMin: 600000, rewardMax: 1500000, reqItem: "flipper", reqDesc: "Flipper Zero (BM)", stars: 5 }
+  { id: 1, name: "Ragut Beg Jalanan", baseChance: 75, rewardMin: 800, rewardMax: 2500, reqType: "motor", reqDesc: "Motor (EX5/Y15)", stars: 1 },
+  { id: 2, name: "Rompak Kedai Emas & Bank", baseChance: 55, rewardMin: 3500, rewardMax: 9000, reqType: "car", reqDesc: "Kereta (Myvi/FK8)", stars: 2 },
+  { id: 3, name: "Seludup Rokok Kontraban", baseChance: 70, rewardMin: 6500, rewardMax: 6500, reqItem: "nokia", reqDesc: "Nokia 3310", stars: 2 },
+  { id: 4, name: "Seludup Komponen Gelap", baseChance: 50, rewardMin: 24000, rewardMax: 24000, reqItem: "eclipse", reqDesc: "Shadow Eclipse", stars: 3 },
+  { id: 5, name: "Seludup Haiwan Eksotik", baseChance: 35, rewardMin: 80000, rewardMax: 80000, reqItem: "drone", reqDesc: "Drone DJI", stars: 4 },
+  { id: 6, name: "Seludup Cip AI Cyberjaya", baseChance: 25, rewardMin: 300000, rewardMax: 300000, reqItem: "iqoo", reqDesc: "iQOO 12 / iPhone", stars: 5 },
+  { id: 7, name: "Skimming Mesin ATM", baseChance: 45, rewardMin: 18000, rewardMax: 35000, reqItem: "pi5", reqDesc: "Raspberry Pi 5", stars: 3 },
+  { id: 8, name: "Godam Pangkalan Korporat", baseChance: 30, rewardMin: 60000, rewardMax: 120000, reqItem: "rog", reqDesc: "ROG / RTX 5090", stars: 4 },
+  { id: 9, name: "Heist Bilik Kebal Kasino", baseChance: 20, rewardMin: 200000, rewardMax: 500000, reqType: "supercar", reqDesc: "Supercar (GTR/GT3)", stars: 5 },
+  { id: 10, name: "Eksploitasi Darkweb Zero", baseChance: 15, rewardMin: 600000, rewardMax: 1500000, reqItem: "flipper", reqDesc: "Flipper Zero (BM)", stars: 5 }
 ];
 
 function isBlackMarketOpen() {
@@ -303,9 +311,10 @@ function calculateCrimeRate(user, crime) {
 
   let vBonus = user.vehicle?.escapeBonus || 0;
   let pBonus = user.phone?.stealthBonus || 0;
+  let hBonus = user.house?.safeBonus || 0;
   let penalty = (user.stars || 0) * 8;
 
-  let finalRate = rate + (vBonus * 0.5) + (pBonus * 0.5) - penalty;
+  let finalRate = rate + (vBonus * 0.5) + (pBonus * 0.5) + (hBonus * 0.3) - penalty;
   return Math.random() * 100 <= Math.max(10, Math.min(95, finalRate));
 }
 
@@ -429,7 +438,6 @@ async function startBotEngine() {
     }
 
     const user = getUser(cleanSender, pushName);
-    user.cash += 2;
     user.stats.msgCount = (user.stats.msgCount || 0) + 1;
     updateUser(cleanSender, user);
 
@@ -481,7 +489,7 @@ async function startBotEngine() {
       const amount = parseInt(amountArg);
 
       if (!target || isNaN(amount)) {
-        return sock.sendMessage(from, { text: `Format: \`.ceo_duit @user [jumlah]\`` });
+        return sock.sendMessage(from, { text: `Format: \`.ceo_duit @user [jumlah]\` atau \`.ceo_duit 601166533534 [jumlah]\`` });
       }
 
       const targetUser = getUser(target);
@@ -536,6 +544,119 @@ async function startBotEngine() {
         `3. \`.ikatjamin\`\n` +
         `━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: jailUI }, { quoted: m });
+    }
+
+    // ==========================================
+    // 🎰 KASINO: SLOT & ROULETTE
+    // ==========================================
+    if (cmd === "slot" || cmd === "slots") {
+      const bet = parseInt(args[0]);
+      if (isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `❌ Format: \`.slot [jumlah_taruhan]\`` });
+      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi untuk taruhan RM ${bet.toLocaleString()}!` });
+
+      user.cash -= bet;
+      const icons = ["🍒", "🍇", "🍋", "7️⃣", "💎", "👑"];
+      const r1 = icons[Math.floor(Math.random() * icons.length)];
+      const r2 = icons[Math.floor(Math.random() * icons.length)];
+      const r3 = icons[Math.floor(Math.random() * icons.length)];
+
+      let winMultiplier = 0;
+      if (r1 === r2 && r2 === r3) {
+        if (r1 === "👑") winMultiplier = 8;
+        else if (r1 === "💎") winMultiplier = 6;
+        else if (r1 === "7️⃣") winMultiplier = 5;
+        else winMultiplier = 3;
+      } else if (r1 === r2 || r2 === r3 || r1 === r3) {
+        winMultiplier = 1.5;
+      }
+
+      let winAmount = Math.floor(bet * winMultiplier);
+      if (winMultiplier > 0) {
+        user.cash += winAmount;
+      }
+      updateUser(cleanSender, user);
+
+      const slotUI = 
+        `*🎰 MESIN SLOT VIP*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `[ ${r1} | ${r2} | ${r3} ]\n\n` +
+        `${winMultiplier > 0 ? `🎉 *JACKPOT!* Menang: +RM ${winAmount.toLocaleString()} (${winMultiplier}x)` : `💀 *KALAH!* Hangus -RM ${bet.toLocaleString()}`}\n` +
+        `• *Baki Tunai:* RM ${user.cash.toLocaleString()}\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━`;
+      return sock.sendMessage(from, { text: slotUI });
+    }
+
+    if (cmd === "roulette") {
+      const choice = args[0]?.toLowerCase();
+      const bet = parseInt(args[1]);
+
+      if (!["merah", "hitam", "red", "black"].includes(choice) || isNaN(bet) || bet <= 0) {
+        return sock.sendMessage(from, { text: `❌ Format: \`.roulette [merah/hitam] [taruhan]\`` });
+      }
+      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Tunai anda tidak cukup!` });
+
+      user.cash -= bet;
+      const wheelResult = Math.random() < 0.5 ? "merah" : "hitam";
+      const isWin = (choice === "merah" || choice === "red") ? wheelResult === "merah" : wheelResult === "hitam";
+
+      let winAmount = bet * 2;
+      if (isWin) {
+        user.cash += winAmount;
+      }
+      updateUser(cleanSender, user);
+
+      const rouletteUI = 
+        `*🎡 ROULETTE KASINO*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `• *Pilihan Anda:* ${choice.toUpperCase()}\n` +
+        `• *Keputusan Bola:* ${wheelResult === "merah" ? "🔴 MERAH" : "⚫ HITAM"}\n\n` +
+        `${isWin ? `🎉 *TAHNIAH!* Menang: +RM ${winAmount.toLocaleString()} (2x)` : `💀 *KALAH!* Hangus -RM ${bet.toLocaleString()}`}\n` +
+        `• *Baki Tunai:* RM ${user.cash.toLocaleString()}\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━`;
+      return sock.sendMessage(from, { text: rouletteUI });
+    }
+
+    // ==========================================
+    // 🏢 HARTANAH & SEWA PASIF
+    // ==========================================
+    if (cmd === "hartanah" || cmd === "rumah") {
+      let ui = `*🏢 PASARAN HARTANAH & SAFEHOUSE*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+      HOUSES.forEach(h => {
+        ui += `*ID ${h.id}. ${h.name}*\n`;
+        ui += `   💰 Harga: RM ${h.price.toLocaleString()}\n`;
+        ui += `   💵 Hasil Sewa: RM ${h.rentPay.toLocaleString()} / 3 Jam\n`;
+        ui += `   🛡️ Perlindungan Polis: +${h.safeBonus}%\n`;
+        ui += `   🛒 \`.beli_rumah ${h.id}\`\n\n`;
+      });
+      ui += `━━━━━━━━━━━━━━━━━━━━━━\nTaip \`.kutip_sewa\` untuk tuntut hasil sewa berkala.`;
+      return sock.sendMessage(from, { text: ui });
+    }
+
+    if (cmd === "beli_rumah") {
+      const hId = parseInt(args[0]);
+      const targetH = HOUSES.find(h => h.id === hId);
+      if (!targetH) return sock.sendMessage(from, { text: `❌ ID Hartanah tidak sah. Semak \`.hartanah\`` });
+      if (user.cash < targetH.price) return sock.sendMessage(from, { text: `❌ Tunai anda tidak mencukupi untuk membeli hartanah ini!` });
+
+      user.cash -= targetH.price;
+      user.house = targetH;
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `🏢 *PEMBELIAN DISAHKAN!* Anda kini rasmi memiliki *${targetH.name}*.` });
+    }
+
+    if (cmd === "kutip_sewa" || cmd === "claim_rent") {
+      if (!user.house) return sock.sendMessage(from, { text: `❌ Anda tiada sebarang hartanah! Beli di \`.hartanah\`` });
+      const cd = 3 * 60 * 60 * 1000; // 3 Jam
+      if (now - (user.cooldowns.rent || 0) < cd) {
+        const remMinutes = Math.ceil((cd - (now - (user.cooldowns.rent || 0))) / 60000);
+        return sock.sendMessage(from, { text: `⏳ Kutipan sewa seterusnya dalam *${remMinutes} minit*.` });
+      }
+
+      const payout = user.house.rentPay;
+      user.cash += payout;
+      user.cooldowns.rent = now;
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `💵 *HASIL SEWA DIKUTIP:* Pendapatan *+RM ${payout.toLocaleString()}* dari *${user.house.name}* telah dimasukkan ke dompet anda.` });
     }
 
     // ==========================================
@@ -748,7 +869,7 @@ async function startBotEngine() {
     }
 
     // ==========================================
-    // 1. JENAYAH, CURI POKET & OPERASI GELAP
+    // 1. JENAYAH, CURI POKET & OPERASI GELAP (GUNA NOMBOR ID)
     // ==========================================
     if (cmd === "curi" || cmd === "copet") {
       const target = extractTargetUser();
@@ -811,20 +932,20 @@ async function startBotEngine() {
 
     if (cmd === "jenayah_menu" || cmd === "crime_menu") {
       let ui = `*🔫 OPERASI GELAP & JENAYAH*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
-      CRIMES.forEach((c, i) => {
-        ui += `*${i+1}. ${c.name}*\n`;
+      CRIMES.forEach((c) => {
+        ui += `*ID ${c.id}. ${c.name}*\n`;
         ui += `   💵 Ganjaran: RM ${c.rewardMin.toLocaleString()} - RM ${c.rewardMax.toLocaleString()}\n`;
         ui += `   🎯 Syarat/Buff: ${c.reqDesc}\n`;
         ui += `   ⚡ Arahan: \`.buat_jenayah ${c.id}\`\n\n`;
       });
-      ui += `━━━━━━━━━━━━━━━━━━━━━━`;
-      return sock.sendMessage(from, { text: ui }, { quoted: m });
+      ui += `━━━━━━━━━━━━━━━━━━━━━━\nContoh pelaksanaan: Taip \`.buat_jenayah 1\` atau \`.crime 2\``;
+      return sock.sendMessage(from, { text: ui });
     }
 
     if (cmd === "buat_jenayah" || cmd === "crime") {
-      const cId = args[0]?.toLowerCase();
+      const cId = parseInt(args[0]);
       const targetCrime = CRIMES.find(c => c.id === cId);
-      if (!targetCrime) return sock.sendMessage(from, { text: `❌ ID Jenayah salah. Taip \`.jenayah_menu\` untuk semak.` });
+      if (!targetCrime) return sock.sendMessage(from, { text: `❌ Sila masukkan ID Jenayah yang betul (1 - 10). Semak \`.jenayah_menu\`` });
 
       const cd = 12 * 60 * 1000;
       if (now - user.cooldowns.crime < cd) {
@@ -845,7 +966,7 @@ async function startBotEngine() {
         const successUI = 
           `*💥 MISI BERJAYA DILAKSANAKAN*\n` +
           `━━━━━━━━━━━━━━━━━━━━━━\n` +
-          `• *Operasi:* ${targetCrime.name}\n` +
+          `• *Operasi (ID ${targetCrime.id}):* ${targetCrime.name}\n` +
           `• *Habuan:* +RM ${reward.toLocaleString()}\n` +
           `• *Wanted:* ${"⭐".repeat(user.stars)}\n` +
           `━━━━━━━━━━━━━━━━━━━━━━`;
@@ -869,7 +990,7 @@ async function startBotEngine() {
     }
 
     if (cmd === "rompak") {
-      return sock.sendMessage(from, { text: `Taip \`.buat_jenayah rompak\` atau semak \`.jenayah_menu\`` });
+      return sock.sendMessage(from, { text: `Taip \`.buat_jenayah 2\` untuk merompak bank/kedai emas.` });
     }
 
     if (cmd === "bicara") {
@@ -1051,11 +1172,12 @@ async function startBotEngine() {
         `• *Bank:* RM ${user.bank.toLocaleString()}\n` +
         `• *Jawatan:* ${user.job}\n` +
         `• *Kenderaan:* ${user.vehicle ? user.vehicle.name : "Jalan Kaki"}\n` +
+        `• *Hartanah:* ${user.house ? user.house.name : "Tiada"}\n` +
         `• *Peranti:* ${user.phone ? user.phone.name : "Tiada"}\n` +
         `• *Wanted:* ${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}\n` +
         `• *Status Akaun:* ${user.frozen ? "❌ DIBEKUKAN" : "✅ AKTIF"}\n` +
         `━━━━━━━━━━━━━━━━━━━━━━`;
-      return sock.sendMessage(from, { text: ui }, { quoted: m });
+      return sock.sendMessage(from, { text: ui });
     }
 
     if (cmd === "bank") {
@@ -1165,32 +1287,37 @@ async function startBotEngine() {
         `*⚡ AIRI STREET SYSTEM OS*\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
         `*1. PROFIL & KEWANGAN*\n` +
-        `• \`.dompet\` - Semak baki & pangkat\n` +
-        `• \`.bank dep [RM]\` - Simpan tunai\n` +
-        `• \`.bank wit [RM]\` - Keluarkan duit\n` +
+        `• \`.dompet\` - Semak profil, aset & baki\n` +
+        `• \`.bank dep/wit [RM]\` - Urus tunai bank\n` +
         `• \`.claim_online\` - Tuntut elaun aktif\n` +
-        `• \`.myid\` - Semak profil anda\n\n` +
+        `• \`.myid\` - Semak identiti profil\n\n` +
         `*2. KERJAYA HALAL*\n` +
         `• \`.senarai_kerja\` - Papar 50 jawatan\n` +
         `• \`.pilih_kerja [ID]\` - Pilih jawatan\n` +
         `• \`.kerja\` - Buat syif kutip gaji\n\n` +
-        `*3. SHOWROOM & GAJET*\n` +
+        `*3. KASINO & HARTANAH (BARU)*\n` +
+        `• \`.slot [taruhan]\` - Main mesin slot VIP\n` +
+        `• \`.roulette [merah/hitam] [taruhan]\` - Roda kasino\n` +
+        `• \`.hartanah\` - Katalog rumah & markas\n` +
+        `• \`.beli_rumah [ID]\` - Beli aset kediaman\n` +
+        `• \`.kutip_sewa\` - Jana pendapatan pasif sewa\n\n` +
+        `*4. SHOWROOM & GAJET*\n` +
         `• \`.showroom\` - Beli kenderaan lumba\n` +
         `• \`.device\` - 10 Gajet tech & server\n` +
         `• \`.kedai\` - Makanan reset cooldown\n` +
         `• \`.jual_device\` / \`.jual_kenderaan\` (Pajak 70%)\n` +
         `• \`.blackmarket\` - Barangan gelap _(12AM-5AM)_\n\n` +
-        `*4. LUMBA & PEMBURU UPAHAN*\n` +
+        `*5. LUMBA & PEMBURU UPAHAN*\n` +
         `• \`.race @user [RM]\` - Cabar drag race\n` +
         `• \`.accept_race\` - Sahkan cabaran race\n` +
         `• \`.bounty @user [RM]\` - Letak harga kepala\n` +
         `• \`.bounty_list\` - Senarai buruan aktif\n` +
         `• \`.hunt @user\` - Buru & kutip ganjaran\n\n` +
-        `*5. JALANAN & JENAYAH*\n` +
+        `*6. JALANAN & JENAYAH (MUDAH)*\n` +
         `• \`.curi @user\` - Copet tunai poket mangsa\n` +
         `• \`.hack @user\` - Godam baki bank akaun\n` +
         `• \`.jenayah_menu\` - Senarai 10 operasi gelap\n` +
-        `• \`.buat_jenayah [id]\` - Laksana misi gelap\n` +
+        `• \`.buat_jenayah [1-10]\` - Misi gelap guna ID\n` +
         `• \`.bicara free/pro\` - Rayuan peguam lokap\n` +
         `• \`.ikatjamin\` - Bayar jaminan lokap\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
