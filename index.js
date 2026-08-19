@@ -99,7 +99,7 @@ function getUser(userId) {
       inventory: [],
       frozen: false,
       stats: { successJobs: 0, jailCount: 0, robCount: 0, msgCount: 0 },
-      cooldowns: { work: 0, crime: 0, hack: 0, jailUntil: 0, claimOnline: 0 },
+      cooldowns: { work: 0, crime: 0, hack: 0, steal: 0, jailUntil: 0, claimOnline: 0 },
       lastActive: Date.now()
     };
     saveDB(db);
@@ -136,7 +136,7 @@ async function askAI(prompt, systemPrompt = null) {
       `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia streetwise, santai, padu. Pemilik rasmi kau CEO Amar dari Shadow Legacy Co., Ltd. Balas secara ringkas, padat dan natural.`;
     
     const res = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "llama3-70b-8192",
       messages: [
         { role: "system", content: persona },
         { role: "user", content: prompt }
@@ -305,7 +305,7 @@ async function startBotEngine() {
     } else if (connection === "open") {
       isConnected = true;
       currentQR = null;
-      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE 24/7 DENGAN UI BAHARU!]\n`);
+      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE 24/7 DENGAN SISTEM LENGKAP!]\n`);
     }
   });
 
@@ -474,7 +474,68 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: jailUI }, { quoted: m });
     }
 
-    // 1. 10 JENAYAH
+    // ==========================================
+    // 1. JENAYAH, CURI POKET & 10 OPERASI GELAP
+    // ==========================================
+    if (cmd === "curi" || cmd === "copet") {
+      const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+      if (!target) return sock.sendMessage(from, { text: `❌ Format: \`.curi @user\`` });
+      if (target === sender) return sock.sendMessage(from, { text: `❌ Takkan nak curi duit poket sendiri bro!` });
+
+      const cd = 10 * 60 * 1000;
+      if (now - (user.cooldowns.steal || 0) < cd) {
+        const rem = Math.ceil((cd - (now - (user.cooldowns.steal || 0))) / 1000);
+        return sock.sendMessage(from, { text: `🚨 Anda sedang diperhatikan orang sekeliling! Tunggu *${rem}s* lagi.` });
+      }
+
+      const targetUser = getUser(target);
+      if (targetUser.cash < 200) {
+        return sock.sendMessage(from, { text: `❌ Dompet sasaran kering (kurang daripada RM 200 cash)!` });
+      }
+
+      let stealRate = 50 + (user.phone?.stealthBonus || 0) + (user.vehicle ? 10 : 0) - ((user.stars || 0) * 8);
+      const isSuccess = Math.random() * 100 <= Math.max(15, Math.min(90, stealRate));
+
+      if (isSuccess) {
+        const percent = (Math.floor(Math.random() * 16) + 10) / 100; // 10% - 25%
+        const stolen = Math.floor(targetUser.cash * percent);
+        targetUser.cash -= stolen;
+        user.cash += stolen;
+        user.cooldowns.steal = now;
+        user.stars = Math.min(5, (user.stars || 0) + 1);
+        updateUser(target, targetUser);
+        updateUser(sender, user);
+
+        const curiUI = 
+          `*🥷 MISI PENCOPET BERJAYA*\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `• *Sasaran:* @${target.split('@')[0]}\n` +
+          `• *Tunai Dikebas:* +RM ${stolen.toLocaleString()}\n` +
+          `• *Wanted:* ${"⭐".repeat(user.stars)}\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━`;
+        return sock.sendMessage(from, { text: curiUI, mentions: [target] }, { quoted: m });
+      } else {
+        const penalty = Math.min(user.cash, Math.floor(targetUser.cash * 0.1));
+        user.cash -= penalty;
+        targetUser.cash += penalty;
+        user.cooldowns.steal = now;
+        user.stars = Math.min(5, (user.stars || 0) + 2);
+        user.cooldowns.jailUntil = now + (4 * 60 * 1000);
+        user.stats.jailCount = (user.stats.jailCount || 0) + 1;
+        updateUser(target, targetUser);
+        updateUser(sender, user);
+
+        const kantoiUI = 
+          `*🚨 KANTOI MENYELUK POKET!*\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `Mangsa perasan dan menjerit minta tolong!\n` +
+          `• *Pampasan Ganti Rugi:* -RM ${penalty.toLocaleString()} diberikan ke mangsa.\n` +
+          `• *Hukuman:* Disumbat ke Lokap Dang Wangi (4 Minit).\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━`;
+        return sock.sendMessage(from, { text: kantoiUI, mentions: [target] }, { quoted: m });
+      }
+    }
+
     if (cmd === "jenayah_menu" || cmd === "crime_menu") {
       let ui = `*🔫 OPERASI GELAP & JENAYAH*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
       CRIMES.forEach((c, i) => {
@@ -585,7 +646,9 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🔓 *BEBAS IKAT JAMIN:* Bayaran jamin RM ${bail.toLocaleString()} selesai.` });
     }
 
+    // ==========================================
     // 2. KEDAI & PAJAK GADAI
+    // ==========================================
     if (cmd === "kedai") {
       let ui = `*🏪 KEDAI MAKANAN (BOOSTER)*\n━━━━━━━━━━━━━━━━━━━━━━\n`;
       FOODS.forEach((f, i) => {
@@ -699,7 +762,9 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🏴‍☠️ *TRANSAKSI BAWAH TANAH:* Berjaya memperoleh *${targetB.name}*.` }, { quoted: m });
     }
 
-    // 3. KEWANGAN & KERJAYA
+    // ==========================================
+    // 3. KEWANGAN, KERJA & PROFIL
+    // ==========================================
     if (cmd === "dompet" || cmd === "wallet") {
       const title = getUserTitle(user);
       const ui = 
@@ -844,13 +909,14 @@ async function startBotEngine() {
         `• \`.jual_device\` / \`.jual_kenderaan\` (Pajak 70%)\n` +
         `• \`.blackmarket\` - Barangan gelap _(12AM-5AM)_\n\n` +
         `*4. JALANAN & JENAYAH*\n` +
+        `• \`.curi @user\` - Copet tunai poket mangsa\n` +
+        `• \`.hack @user\` - Godam baki bank akaun\n` +
         `• \`.jenayah_menu\` - Senarai 10 operasi gelap\n` +
         `• \`.buat_jenayah [id]\` - Laksana misi gelap\n` +
         `• \`.bicara free/pro\` - Rayuan peguam lokap\n` +
-        `• \`.ikatjamin\` - Bayar jaminan lokap\n` +
-        `• \`.hack @user\` - Godam bank musuh\n\n` +
+        `• \`.ikatjamin\` - Bayar jaminan lokap\n\n` +
         `*5. KECERDASAN BUATAN*\n` +
-        `• \`.ai [soalan]\` - Groq LLaMA 3.3 Engine\n` +
+        `• \`.ai [soalan]\` - Groq LLaMA 3 Engine\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
         `_Dimiliki oleh CEO Amar • Shadow Legacy Co., Ltd._`;
 
