@@ -66,6 +66,9 @@ http.createServer((req, res) => {
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
 
+// Senarai Padanan Nombor Telefon CEO Amar
+const CEO_NUMBER_STRINGS = ["601166533534", "01166533534", "1166533534", "66533534"];
+
 let activeAirdrop = null; 
 let activeRaces = {}; 
 
@@ -82,9 +85,15 @@ function saveDB(data) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
+function cleanUserId(rawId) {
+  if (!rawId) return "unknown@s.whatsapp.net";
+  const numOnly = rawId.split('@')[0].split(':')[0].replace(/\D/g, "");
+  return numOnly + "@s.whatsapp.net";
+}
+
 function getUser(userId) {
   const db = loadDB();
-  const cleanId = userId.replace(/:\d+/, "").replace(/@.+/, "") + "@s.whatsapp.net";
+  const cleanId = cleanUserId(userId);
   if (!db.users[cleanId]) {
     db.users[cleanId] = {
       cash: 1000,
@@ -106,24 +115,27 @@ function getUser(userId) {
 
 function updateUser(userId, data) {
   const db = loadDB();
-  const cleanId = userId.replace(/:\d+/, "").replace(/@.+/, "") + "@s.whatsapp.net";
+  const cleanId = cleanUserId(userId);
   db.users[cleanId] = { ...getUser(cleanId), ...data };
   saveDB(db);
 }
 
-// Pengecaman Nombor CEO Amar Kebal Multi-Device
-function checkIsCEO(senderJid, m = null) {
-  if (m?.key?.fromMe) return true;
-  const idsToCheck = [
-    senderJid,
-    m?.key?.remoteJid,
-    m?.key?.participant,
-    m?.participant
+// Pengecaman Nombor CEO Amar Kebal Semua Format WhatsApp
+function checkIsCEO(m, sender) {
+  if (!m) return false;
+  if (m.key?.fromMe) return true; // Jika mesej dihantar oleh akaun bot itu sendiri
+
+  const checkPool = [
+    sender,
+    m.key?.remoteJid,
+    m.key?.participant,
+    m.participant,
+    m.message?.extendedTextMessage?.contextInfo?.participant
   ].filter(Boolean);
 
-  for (let id of idsToCheck) {
-    const clean = id.split('@')[0].split(':')[0].replace(/\D/g, "");
-    if (clean.includes("1166533534") || clean.endsWith("66533534") || clean === "601166533534") {
+  for (let raw of checkPool) {
+    const digits = raw.split('@')[0].split(':')[0].replace(/\D/g, "");
+    if (CEO_NUMBER_STRINGS.some(val => digits.endsWith(val) || digits === val)) {
       return true;
     }
   }
@@ -375,7 +387,12 @@ async function startBotEngine() {
 
     const from = m.key.remoteJid;
     const isGroup = from.endsWith("@g.us");
-    const sender = m.key.participant || m.participant || from;
+    
+    // Kenalpasti penghantar sebenar (DM mahupun Group)
+    const sender = isGroup 
+      ? (m.key.participant || m.participant || from)
+      : (m.key.fromMe ? (sock.user?.id || from) : from);
+
     const body = m.message.conversation || m.message.extendedTextMessage?.text || "";
 
     if (isGroup) {
@@ -397,7 +414,15 @@ async function startBotEngine() {
     const args = body.slice(1).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
     const now = Date.now();
-    const isCEO = checkIsCEO(sender, m);
+    const isCEO = checkIsCEO(m, sender);
+
+    // Arahan Diagnosis ID Pengguna
+    if (cmd === "myid") {
+      const clean = cleanUserId(sender);
+      return sock.sendMessage(from, { 
+        text: `*🔍 MAKLUMAT IDENTITI JID*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Raw Sender:* ${sender}\n• *Clean ID:* ${clean}\n• *Status CEO:* ${isCEO ? "👑 DISAHKAN (CEO AMAR)" : "❌ PENGGUNA BIASA"}\n• *FromMe:* ${m.key.fromMe ? "Ya" : "Bukan"}\n━━━━━━━━━━━━━━━━━━━━━━` 
+      }, { quoted: m });
+    }
 
     // ==========================================
     // 🛡️ AMARAN KESELAMATAN & KUASA VETO CEO
@@ -416,17 +441,28 @@ async function startBotEngine() {
 
     function extractTargetUser() {
       const mentioned = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-      if (mentioned) return mentioned;
-      if (args[0] && args[0].replace(/\D/g, "").length >= 9) {
-        return args[0].replace(/\D/g, "") + "@s.whatsapp.net";
+      if (mentioned) return cleanUserId(mentioned);
+      
+      // Jika taip nombor terus
+      for (let arg of args) {
+        const numOnly = arg.replace(/\D/g, "");
+        if (numOnly.length >= 9) {
+          return numOnly + "@s.whatsapp.net";
+        }
       }
       return null;
     }
 
     if (cmd === "ceo_duit") {
       const target = extractTargetUser();
-      const amount = parseInt(args[1]) || parseInt(args[0]);
-      if (!target || isNaN(amount)) return sock.sendMessage(from, { text: `Format: \`.ceo_duit @user [jumlah]\`` });
+      // Ambil argumen yang mengandungi digit tulen untuk jumlah duit
+      const amountArg = args.find(a => !isNaN(parseInt(a)) && parseInt(a) < 100000000000);
+      const amount = parseInt(amountArg);
+
+      if (!target || isNaN(amount)) {
+        return sock.sendMessage(from, { text: `Format: \`.ceo_duit @user [jumlah]\` atau \`.ceo_duit 601166533534 [jumlah]\`` });
+      }
+
       const targetUser = getUser(target);
       targetUser.cash += amount;
       updateUser(target, targetUser);
@@ -435,7 +471,7 @@ async function startBotEngine() {
 
     if (cmd === "ceo_jail") {
       const target = extractTargetUser();
-      const minutes = parseInt(args[1]) || 10;
+      const minutes = parseInt(args.find(a => !isNaN(parseInt(a)))) || 10;
       if (!target) return sock.sendMessage(from, { text: `Format: \`.ceo_jail @user [minit]\`` });
       const targetUser = getUser(target);
       targetUser.cooldowns.jailUntil = now + (minutes * 60 * 1000);
@@ -466,7 +502,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🥶 *AKAUN ANDA DIBEKUKAN*\nAkaun anda telah dibekukan oleh CEO Amar. Hubungi beliau untuk rayuan.` }, { quoted: m });
     }
 
-    if (user.cooldowns.jailUntil > now && !["bicara", "ikatjamin", "lokap"].includes(cmd)) {
+    if (user.cooldowns.jailUntil > now && !["bicara", "ikatjamin", "lokap", "myid"].includes(cmd)) {
       const rem = Math.ceil((user.cooldowns.jailUntil - now) / 1000);
       const jailUI = 
         `*🔒 LOKAP DANG WANGI*\n` +
@@ -485,13 +521,13 @@ async function startBotEngine() {
     // 🏎️ SISTEM LUMBA HARAM / STREET RACE
     // ==========================================
     if (cmd === "race" || cmd === "lumba") {
-      const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-      const bet = parseInt(args[1]);
+      const target = extractTargetUser();
+      const bet = parseInt(args.find(a => !isNaN(parseInt(a))));
 
       if (!target || isNaN(bet) || bet <= 0) {
         return sock.sendMessage(from, { text: `❌ Format: \`.race @user [taruhan_cash]\`` });
       }
-      if (target === sender) return sock.sendMessage(from, { text: `❌ Tak boleh lumba dengan diri sendiri!` });
+      if (cleanUserId(target) === cleanUserId(sender)) return sock.sendMessage(from, { text: `❌ Tak boleh lumba dengan diri sendiri!` });
       if (!user.vehicle) return sock.sendMessage(from, { text: `❌ Anda tiada kenderaan! Sila beli di \`.showroom\`.` });
       if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Tunai anda tidak cukup untuk taruhan RM ${bet.toLocaleString()}!` });
 
@@ -506,8 +542,8 @@ async function startBotEngine() {
       }
 
       activeRaces[from] = {
-        challenger: sender,
-        target: target,
+        challenger: cleanUserId(sender),
+        target: cleanUserId(target),
         bet: bet,
         timestamp: now
       };
@@ -520,12 +556,13 @@ async function startBotEngine() {
         `• *Taruhan:* RM ${bet.toLocaleString()}\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
         `@${target.split('@')[0]}, taip *.accept_race* dalam masa 60 saat untuk sahkan litar!`;
-      return sock.sendMessage(from, { text: challengeUI, mentions: [sender, target] });
+      return sock.sendMessage(from, { text: challengeUI, mentions: [cleanUserId(sender), cleanUserId(target)] });
     }
 
     if (cmd === "accept_race") {
       const race = activeRaces[from];
-      if (!race || race.target !== sender) {
+      const curSender = cleanUserId(sender);
+      if (!race || race.target !== curSender) {
         return sock.sendMessage(from, { text: `❌ Tiada sebarang cabaran lumba aktif untuk anda di kumpulan ini.` });
       }
       if (now - race.timestamp > 60 * 1000) {
@@ -585,19 +622,19 @@ async function startBotEngine() {
     // ==========================================
     if (cmd === "bounty") {
       const target = extractTargetUser();
-      const amount = parseInt(args[1]) || parseInt(args[0]);
+      const amount = parseInt(args.find(a => !isNaN(parseInt(a))));
 
       if (!target || isNaN(amount) || amount < 500) {
         return sock.sendMessage(from, { text: `❌ Format: \`.bounty @user [jumlah_min_RM500]\`` });
       }
-      if (target === sender) return sock.sendMessage(from, { text: `❌ Jangan letak bounty atas kepala sendiri bro!` });
+      if (cleanUserId(target) === cleanUserId(sender)) return sock.sendMessage(from, { text: `❌ Jangan letak bounty atas kepala sendiri bro!` });
       if (user.cash < amount) return sock.sendMessage(from, { text: `❌ Duit tunai anda tidak cukup untuk meletakkan bounty!` });
 
       user.cash -= amount;
       updateUser(sender, user);
 
       const db = loadDB();
-      const cleanTarget = target.replace(/:\d+/, "").replace(/@.+/, "") + "@s.whatsapp.net";
+      const cleanTarget = cleanUserId(target);
       db.bounties[cleanTarget] = (db.bounties[cleanTarget] || 0) + amount;
       saveDB(db);
 
@@ -609,7 +646,7 @@ async function startBotEngine() {
         `• *Jumlah Terkumpul:* RM ${db.bounties[cleanTarget].toLocaleString()}\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
         `Gunakan arahan *.hunt @user* untuk memburu sasaran ini!`;
-      return sock.sendMessage(from, { text: bountyUI, mentions: [target] });
+      return sock.sendMessage(from, { text: bountyUI, mentions: [cleanTarget] });
     }
 
     if (cmd === "bounty_list" || cmd === "bounties") {
@@ -632,10 +669,10 @@ async function startBotEngine() {
     if (cmd === "hunt" || cmd === "buru") {
       const target = extractTargetUser();
       if (!target) return sock.sendMessage(from, { text: `❌ Format: \`.hunt @user\`` });
-      if (target === sender) return sock.sendMessage(from, { text: `❌ Tidak boleh memburu diri sendiri!` });
+      if (cleanUserId(target) === cleanUserId(sender)) return sock.sendMessage(from, { text: `❌ Tidak boleh memburu diri sendiri!` });
 
       const db = loadDB();
-      const cleanTarget = target.replace(/:\d+/, "").replace(/@.+/, "") + "@s.whatsapp.net";
+      const cleanTarget = cleanUserId(target);
       const bountyReward = db.bounties[cleanTarget] || 0;
 
       if (bountyReward <= 0) {
@@ -677,7 +714,7 @@ async function startBotEngine() {
           `• *Ganjaran Dikutip:* +RM ${bountyReward.toLocaleString()}\n` +
           `• *Hukuman Mangsa:* Disumbat ke Lokap (5 Minit)\n` +
           `━━━━━━━━━━━━━━━━━━━━━━`;
-        return sock.sendMessage(from, { text: huntWinUI, mentions: [sender, target] });
+        return sock.sendMessage(from, { text: huntWinUI, mentions: [cleanUserId(sender), cleanTarget] });
       } else {
         user.cooldowns.hunt = now;
         user.stars = Math.min(5, (user.stars || 0) + 1);
@@ -700,7 +737,7 @@ async function startBotEngine() {
     if (cmd === "curi" || cmd === "copet") {
       const target = extractTargetUser();
       if (!target) return sock.sendMessage(from, { text: `❌ Format: \`.curi @user\`` });
-      if (target === sender) return sock.sendMessage(from, { text: `❌ Takkan nak curi duit poket sendiri bro!` });
+      if (cleanUserId(target) === cleanUserId(sender)) return sock.sendMessage(from, { text: `❌ Takkan nak curi duit poket sendiri bro!` });
 
       const cd = 10 * 60 * 1000;
       if (now - (user.cooldowns.steal || 0) < cd) {
@@ -733,7 +770,7 @@ async function startBotEngine() {
           `• *Tunai Dikebas:* +RM ${stolen.toLocaleString()}\n` +
           `• *Wanted:* ${"⭐".repeat(user.stars)}\n` +
           `━━━━━━━━━━━━━━━━━━━━━━`;
-        return sock.sendMessage(from, { text: curiUI, mentions: [target] }, { quoted: m });
+        return sock.sendMessage(from, { text: curiUI, mentions: [cleanUserId(target)] }, { quoted: m });
       } else {
         const penalty = Math.min(user.cash, Math.floor(targetUser.cash * 0.1));
         user.cash -= penalty;
@@ -752,7 +789,7 @@ async function startBotEngine() {
           `• *Pampasan Ganti Rugi:* -RM ${penalty.toLocaleString()} diberikan ke mangsa.\n` +
           `• *Hukuman:* Disumbat ke Lokap Dang Wangi (4 Minit).\n` +
           `━━━━━━━━━━━━━━━━━━━━━━`;
-        return sock.sendMessage(from, { text: kantoiUI, mentions: [target] }, { quoted: m });
+        return sock.sendMessage(from, { text: kantoiUI, mentions: [cleanUserId(target)] }, { quoted: m });
       }
     }
 
@@ -1001,7 +1038,7 @@ async function startBotEngine() {
         `• *Wanted:* ${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}\n` +
         `• *Status Akaun:* ${user.frozen ? "❌ DIBEKUKAN" : "✅ AKTIF"}\n` +
         `━━━━━━━━━━━━━━━━━━━━━━`;
-      return sock.sendMessage(from, { text: ui, mentions: [sender] }, { quoted: m });
+      return sock.sendMessage(from, { text: ui, mentions: [cleanUserId(sender)] }, { quoted: m });
     }
 
     if (cmd === "bank") {
@@ -1080,7 +1117,7 @@ async function startBotEngine() {
         const stolen = Math.floor(targetUser.bank * 0.20);
         targetUser.bank -= stolen; user.cash += stolen; user.cooldowns.hack = now;
         updateUser(target, targetUser); updateUser(sender, user);
-        return sock.sendMessage(from, { text: `💻 *EKSPLOIT BERJAYA:* Rampasan *RM ${stolen.toLocaleString()}* dari akaun bank @${target.split('@')[0]}!`, mentions: [target] });
+        return sock.sendMessage(from, { text: `💻 *EKSPLOIT BERJAYA:* Rampasan *RM ${stolen.toLocaleString()}* dari akaun bank @${target.split('@')[0]}!`, mentions: [cleanUserId(target)] });
       } else {
         user.cooldowns.hack = now; updateUser(sender, user);
         return sock.sendMessage(from, { text: `🛑 Serangan godam disekat oleh sekuriti firewall mangsa!` });
@@ -1100,7 +1137,7 @@ async function startBotEngine() {
       if (!activeAirdrop || activeAirdrop.groupId !== from || activeAirdrop.claimed) return;
       user.cash += activeAirdrop.reward; activeAirdrop.claimed = true;
       updateUser(sender, user);
-      return sock.sendMessage(from, { text: `⚡ @${sender.split('@')[0]} berjaya menyambar kargo tunai *+RM ${activeAirdrop.reward.toLocaleString()}*!`, mentions: [sender] });
+      return sock.sendMessage(from, { text: `⚡ @${sender.split('@')[0]} berjaya menyambar kargo tunai *+RM ${activeAirdrop.reward.toLocaleString()}*!`, mentions: [cleanUserId(sender)] });
     }
 
     // ==========================================
@@ -1114,7 +1151,8 @@ async function startBotEngine() {
         `• \`.dompet\` - Semak baki & pangkat\n` +
         `• \`.bank dep [RM]\` - Simpan tunai\n` +
         `• \`.bank wit [RM]\` - Keluarkan duit\n` +
-        `• \`.claim_online\` - Tuntut elaun aktif\n\n` +
+        `• \`.claim_online\` - Tuntut elaun aktif\n` +
+        `• \`.myid\` - Semak identiti JID anda\n\n` +
         `*2. KERJAYA HALAL*\n` +
         `• \`.senarai_kerja\` - Papar 50 jawatan\n` +
         `• \`.pilih_kerja [ID]\` - Pilih jawatan\n` +
