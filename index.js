@@ -1,6 +1,5 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from "@whiskeysockets/baileys";
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers, delay } from "@whiskeysockets/baileys";
 import pino from "pino";
-import qrcode from "qrcode-terminal";
 import Groq from "groq-sdk";
 import fs from "fs";
 import http from "http";
@@ -8,22 +7,23 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // ==========================================
-// 1. PELAYAN WEB UNTUK RENDER (FREE WEB SERVICE)
+// 1. DUMMY WEB SERVER (PORT BINDING)
 // ==========================================
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("Airi WhatsApp Bot Berjalan 24/7 di Render!");
+  res.end("Airi WhatsApp Bot Berjalan 24/7!");
 }).listen(PORT, () => {
-  console.log(`🌐 Web Service aktif pada port: ${PORT}`);
+  console.log(`🌐 Server aktif pada port: ${PORT}`);
 });
 
 // ==========================================
-// 2. INISIALISASI GROQ AI & DATABASE
+// 2. CONFIGURATION & DATABASE
 // ==========================================
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
+const BOT_NUMBER = "60183490975"; // Nombor bot tanpa simbol '+' atau '-'
 
 function loadDB() {
   if (!fs.existsSync(DB_FILE)) {
@@ -64,7 +64,7 @@ function updateUser(userId, data) {
 async function askGroq(prompt, systemPrompt = null) {
   try {
     const persona = systemPrompt || 
-      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia yang santai, gaya streetwise, berpengetahuan luas pasal tech, kereta, dan info jalanan tempatan. Jangan bercakap terlalu skema atau kaku.`;
+      `Kau adalah ${BOT_NAME}, bot WhatsApp Malaysia yang santai, streetwise, berpengetahuan luas tentang tech, kereta, dan hal jalanan. Jangan kaku atau skema.`;
     const res = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [
@@ -82,7 +82,7 @@ async function askGroq(prompt, systemPrompt = null) {
 }
 
 // ==========================================
-// 3. MASTER DATA EKONOMI & SISTEM
+// 3. MASTER DATA
 // ==========================================
 const JOBS = [
   { id: 1, name: "Rider GrabFood", pay: 180 },
@@ -150,22 +150,22 @@ const VEHICLES = [
 const GADGETS = [
   { id: "burner", name: "Nokia 3310 (Burner Phone)", price: 250, stealthBonus: 15, desc: "Kebal trace polis" },
   { id: "iqoo", name: "iQOO 12 Flagship", price: 3400, workBonus: 25, desc: "Boost 25% gaji kerja & trading" },
-  { id: "rog", name: "Laptop ROG Zephyrus", price: 8500, hackBonus: 30, desc: "Alat khas tingkatkan peluang godam" }
+  { id: "rog", name: "Laptop ROG Zephyrus", price: 8500, hackBonus: 30, desc: "Tingkatkan peluang godam" }
 ];
 
 const SMUGGLE_ROUTES = [
   { id: "rokok", name: "Rokok & Vape Kontraban", baseChance: 70, reward: 6500 },
   { id: "gajet", name: "Komponen Telefon Gelap", baseChance: 50, reward: 24000 },
-  { id: "eksotik", name: "Haiwan Eksotik Rentas Sempadan", baseChance: 35, reward: 80000 },
+  { id: "eksotik", name: "Haiwan Eksotik Sempadan", baseChance: 35, reward: 80000 },
   { id: "cip", name: "Cip AI Rahsia Cyberjaya", baseChance: 20, reward: 300000 }
 ];
 
 const CRIME_TARGETS = [
-  "Maybank Cawangan Menara Raja Chulan",
-  "Kedai Emas Habib Jewels KLCC",
-  "Stesen Minyak Petronas Bukit Bintang",
-  "Kedai 7-Eleven Chow Kit",
-  "CIMB Bank Cawangan Dataran Merdeka"
+  "Maybank Menara Raja Chulan",
+  "Habib Jewels KLCC",
+  "Petronas Bukit Bintang",
+  "7-Eleven Chow Kit",
+  "CIMB Dataran Merdeka"
 ];
 
 function calculateChance(user, baseChance = 50) {
@@ -177,7 +177,7 @@ function calculateChance(user, baseChance = 50) {
 }
 
 // ==========================================
-// 4. ENJIN BAILEYS WHATSAPP
+// 4. ENGINE DENGAN PAIRING CODE STABIL
 // ==========================================
 async function startBotEngine() {
   const { state, saveCreds } = await useMultiFileAuthState("auth_session");
@@ -185,30 +185,41 @@ async function startBotEngine() {
   const sock = makeWASocket({
     auth: state,
     logger: pino({ level: "silent" }),
-    printQRInTerminal: true,
-    browser: Browsers.macOS("Desktop"),
+    printQRInTerminal: false,
+    browser: Browsers.ubuntu("Chrome"),
+    markOnlineOnConnect: true,
   });
+
+  if (!sock.authState.creds.registered) {
+    console.log("Menunggu WebSocket stabil sebelum meminta Pairing Code...");
+    await delay(6000);
+    try {
+      const code = await sock.requestPairingCode(BOT_NUMBER);
+      console.log(`\n=========================================`);
+      console.log(`🔑 PAIRING CODE KAU: \x1b[32m\x1b[1m${code}\x1b[0m`);
+      console.log(`Buka WhatsApp > Linked Devices > Link with phone number`);
+      console.log(`=========================================\n`);
+    } catch (err) {
+      console.error("Gagal mendapatkan pairing code:", err.message);
+    }
+  }
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("connection.update", (update) => {
-    const { connection, lastDisconnect, qr } = update;
-    if (qr) {
-      console.log("\n=========================================");
-      console.log("SILA SCAN QR CODE DI BAWAH (LOG RENDER):");
-      console.log("=========================================");
-      qrcode.generate(qr, { small: true });
-    }
+  sock.ev.on("connection.update", async (update) => {
+    const { connection, lastDisconnect } = update;
 
     if (connection === "close") {
-      const reason = lastDisconnect?.error?.output?.statusCode;
-      if (reason !== DisconnectReason.loggedOut) {
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+      console.log(`Sambungan terputus (Status: ${statusCode}). Reconnect: ${shouldReconnect}`);
+      if (shouldReconnect) {
         startBotEngine();
       } else {
-        console.log("Sesi tamat.");
+        console.log("Sesi tamat. Sila padam folder auth_session dan jalankan semula.");
       }
     } else if (connection === "open") {
-      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE & READY 24/7!]\n`);
+      console.log(`\n🔥 [${BOT_NAME.toUpperCase()} BOT ONLINE & READY!]\n`);
     }
   });
 
@@ -230,7 +241,7 @@ async function startBotEngine() {
     if (user.cooldowns.jailUntil > now && !["ikatjamin", "lokap"].includes(cmd)) {
       const rem = Math.ceil((user.cooldowns.jailUntil - now) / 1000);
       return sock.sendMessage(from, { 
-        text: `🔒 *[LOKAP POLIS DANG WANGI]*\nLu ditahan! Baki hukuman: *${rem}s*.\nTaip \`.ikatjamin\` untuk bebas segera.` 
+        text: `🔒 *[LOKAP POLIS DANG WANGI]*\nLu ditahan! Baki hukuman: *${rem}s*.\nTaip \`.ikatjamin\` untuk bebas.` 
       }, { quoted: m });
     }
 
@@ -244,7 +255,7 @@ async function startBotEngine() {
               `🛠️ Kerjaya: *${user.job}*\n` +
               `🏎️ Kenderaan: *${user.vehicle ? user.vehicle.name : "Jalan Kaki"}*\n` +
               `📱 Peranti: *${user.phone ? user.phone.name : "Tiada"}*\n` +
-              `⭐ Rekod: *${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}*`,
+              `⭐ Wanted: *${user.stars > 0 ? "⭐".repeat(user.stars) : "Bersih"}*`,
         mentions: [sender]
       }, { quoted: m });
     }
@@ -375,7 +386,7 @@ async function startBotEngine() {
         user.stats.jailCount = (user.stats.jailCount || 0) + 1;
         updateUser(sender, user);
         return sock.sendMessage(from, {
-          text: `🚨 *[TERPERANGKAP]* Kereta polis memintas! Lu ke Lokap Dang Wangi (5 Minit).`
+          text: `🚨 *[TERPERANGKAP]* Kereta polis memintas! Lu dihantar ke Lokap Dang Wangi (5 Minit).`
         }, { quoted: m });
       }
     }
