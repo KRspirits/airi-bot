@@ -66,8 +66,14 @@ http.createServer((req, res) => {
 const DB_FILE = "./database.json";
 const BOT_NAME = "Airi";
 
-// Senarai Padanan Nombor Telefon CEO Amar
-const CEO_NUMBER_STRINGS = ["601166533534", "01166533534", "1166533534", "66533534"];
+// Senarai Padanan Nombor Telefon & LID CEO Amar (Termasuk LID 38956007690292)
+const CEO_NUMBER_STRINGS = [
+  "38956007690292",
+  "601166533534", 
+  "01166533534", 
+  "1166533534", 
+  "66533534"
+];
 
 let activeAirdrop = null; 
 let activeRaces = {}; 
@@ -120,10 +126,10 @@ function updateUser(userId, data) {
   saveDB(db);
 }
 
-// Pengecaman Nombor CEO Amar Kebal Semua Format WhatsApp
+// Pengecaman Nombor CEO Amar Menggunakan LID & Nombor Sebenar
 function checkIsCEO(m, sender) {
   if (!m) return false;
-  if (m.key?.fromMe) return true; // Jika mesej dihantar oleh akaun bot itu sendiri
+  if (m.key?.fromMe) return true;
 
   const checkPool = [
     sender,
@@ -135,7 +141,7 @@ function checkIsCEO(m, sender) {
 
   for (let raw of checkPool) {
     const digits = raw.split('@')[0].split(':')[0].replace(/\D/g, "");
-    if (CEO_NUMBER_STRINGS.some(val => digits.endsWith(val) || digits === val)) {
+    if (CEO_NUMBER_STRINGS.some(val => digits.includes(val) || digits.endsWith(val) || digits === val)) {
       return true;
     }
   }
@@ -388,7 +394,6 @@ async function startBotEngine() {
     const from = m.key.remoteJid;
     const isGroup = from.endsWith("@g.us");
     
-    // Kenalpasti penghantar sebenar (DM mahupun Group)
     const sender = isGroup 
       ? (m.key.participant || m.participant || from)
       : (m.key.fromMe ? (sock.user?.id || from) : from);
@@ -443,7 +448,6 @@ async function startBotEngine() {
       const mentioned = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
       if (mentioned) return cleanUserId(mentioned);
       
-      // Jika taip nombor terus
       for (let arg of args) {
         const numOnly = arg.replace(/\D/g, "");
         if (numOnly.length >= 9) {
@@ -454,8 +458,7 @@ async function startBotEngine() {
     }
 
     if (cmd === "ceo_duit") {
-      const target = extractTargetUser();
-      // Ambil argumen yang mengandungi digit tulen untuk jumlah duit
+      const target = extractTargetUser() || cleanUserId(sender);
       const amountArg = args.find(a => !isNaN(parseInt(a)) && parseInt(a) < 100000000000);
       const amount = parseInt(amountArg);
 
