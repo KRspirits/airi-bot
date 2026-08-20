@@ -7,10 +7,13 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // =========================================================================
-// 👑 0. KUNCI KESELAMATAN FOUNDER / OWNER MUTLAK (AMAR)
+// 👑 0. KUNCI KESELAMATAN FOUNDER / OWNER MUTLAK (AMAR) - AUTO-RECOGNIZE
 // =========================================================================
-const OWNER_PHONE = "1166533534";
-const OWNER_NUMBER = "601166533534@s.whatsapp.net";
+const OWNER_NUMBERS = [
+  "1166533534",
+  "601166533534",
+  "38956007690292" // WhatsApp ID unik anda dikesan Baileys
+];
 
 let currentQR = "";
 let isConnected = false;
@@ -27,7 +30,7 @@ http.createServer((req, res) => {
         <h1 style="color:#22c55e;font-size:2.5rem;">⚡ AIRI'S CORNER CYBER OS ONLINE! ⚡</h1>
         <p style="color:#94a3b8;font-size:1.2rem;">Sistem WhatsApp RPG 24/7 aktif & stabil tanpa ralat.</p>
         <div style="display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;border-radius:8px;border:1px solid #334155;">
-          👑 <b>Founder:</b> Bos Amar (601166533534)
+          👑 <b>Founder:</b> Bos Amar (Auto-Veto Active)
         </div>
       </div>
     `);
@@ -733,8 +736,19 @@ async function startBotEngine() {
     const user = getUser(cleanSender, pushName);
     const now = Date.now();
 
-    // PENGESAHAN KUASA FOUNDER AMAR (KALIS FORMAT)
-    const isOwner = cleanSender.includes(OWNER_PHONE) || user.isOwner === true;
+    // =====================================================================
+    // 👑 AUTO-FOUNDER: KUNCI AUTOMATIK KEPADA NOMBOR/LID ANDA
+    // =====================================================================
+    const isOwner = OWNER_NUMBERS.some(num => cleanSender.includes(num)) || user.isOwner === true;
+
+    if (isOwner && !user.isOwner) {
+      user.isOwner = true;
+      if (!user.badges.includes("👑 [MYTHIC] Pengasas Mutlak")) {
+        user.badges.push("👑 [MYTHIC] Pengasas Mutlak");
+      }
+      updateUser(cleanSender, user);
+    }
+
     const activePhoneObj = PHONE_DEVICES.find(p => p.id === user.phoneDevice);
 
     // SEKATAN TAHANAN LOKAP
@@ -749,7 +763,7 @@ async function startBotEngine() {
     // 👑 SEKSYEN VETO MUTLAK FOUNDER (AMAR)
     // =====================================================================
     if (cmd === "claimfounder" || cmd === "iamowner") {
-      if (!cleanSender.includes(OWNER_PHONE)) {
+      if (!isOwner) {
         return sock.sendMessage(from, { 
           text: `🚫 *AKSES DITOLAK!* Nombor anda (${cleanSender.split("@")[0]}) bukan nombor Pengasas Amar. Percubaan rampasan kuasa telah direkodkan!` 
         });
