@@ -1,4 +1,4 @@
-import makeWASocket, { useMultiFileAuthState } from "@whiskeysockets/baileys";
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from "@whiskeysockets/baileys";
 import pino from "pino";
 import fs from "fs";
 import http from "http";
@@ -78,7 +78,7 @@ const FOOD_ITEMS = [
   { id: "burger", name: "Burger Special Banjir", price: 15, desc: "Mengenyangkan." }
 ];
 
-// --- 40 KENDERAAN SHOWROOM (20 Motor + 20 Kereta) ---
+// --- 40 KENDERAAN SHOWROOM ---
 const VEHICLES = [
   // MOTOR (20)
   { id: "ex5", name: "Honda EX5", price: 3000, type: "Motor" }, { id: "wave125", name: "Honda Wave 125i", price: 5500, type: "Motor" },
@@ -155,10 +155,31 @@ function getTitle(user) {
 
 async function startBotEngine() {
   const { state, saveCreds } = await useMultiFileAuthState("auth_session");
-  const sock = makeWASocket({ auth: state, logger: pino({ level: "silent" }) });
+  
+  const sock = makeWASocket({
+    auth: state,
+    logger: pino({ level: "silent" }),
+    browser: Browsers.macOS("Desktop"),
+    printQRInTerminal: true // PENTING: Membolehkan QR code dicetak pada log konsol
+  });
+
   sock.ev.on("creds.update", saveCreds);
 
-  // Simpan group ID yang aktif untuk auto-report
+  // --- CONNECTION UPDATE (PENTING SUPAYA QR CODE KELUAR) ---
+  sock.ev.on("connection.update", (update) => {
+    const { connection, lastDisconnect } = update;
+    if (connection === "close") {
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
+      console.log("Connection closed. Reconnecting...", shouldReconnect);
+      if (shouldReconnect) {
+        startBotEngine();
+      }
+    } else if (connection === "open") {
+      console.log("✅ AIRI'S CORNER BOT SUCCESSFULLY CONNECTED TO WHATSAPP!");
+    }
+  });
+
+  // Simpan group ID aktif untuk auto-report
   sock.ev.on("messages.upsert", async ({ messages }) => {
     const m = messages[0];
     if (!m.message) return;
@@ -222,7 +243,6 @@ async function startBotEngine() {
         }
       }
 
-      // Reset stats
       for (let id in db.users) {
         db.users[id].stats = { works: 0, crimes: 0, bails: 0 };
       }
@@ -268,13 +288,11 @@ async function startBotEngine() {
     const user = getUser(cleanSender);
     const now = Date.now();
 
-    // SEMAK LOKAP
     if (now < user.cooldowns.jailUntil && cmd !== "upah_lawyer" && cmd !== "myid") {
       const remMin = Math.ceil((user.cooldowns.jailUntil - now) / 60000);
       return sock.sendMessage(from, { text: `🚨 [DALAM LOKAP] Anda sedang ditahan polis! Baki hukuman: *${remMin} minit*.\nTaip \`.upah_lawyer\` (RM 500) untuk bebas dengan segera.` });
     }
 
-    // 1. MENU
     if (cmd === "menu" || cmd === "help") {
       let menuText = `╭━━━ 🖥️ *AIRI'S CORNER OS* 🖥️ ━━━
 ┃ 💼 *[HALAL]* \`.kerja\`, \`.showroom\`, \`.shop\`
@@ -284,7 +302,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: menuText });
     }
 
-    // 2. MYID
     if (cmd === "myid" || cmd === "ic") {
       const title = getTitle(user);
       const activeJobName = user.jobId ? JOBS.find(j => j.id === user.jobId)?.name || "Freelancer" : "Unassigned";
@@ -299,7 +316,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: cyberIdUI, mentions: [cleanSender] });
     }
 
-    // 3. LEADERBOARD
     if (cmd === "leaderboard" || cmd === "top") {
       const db = loadDB();
       const usersObj = db.users || {};
@@ -323,7 +339,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: lbText, mentions: sortedUsers.map(u => u.id) });
     }
 
-    // 4. SHOP MAKANAN
     if (cmd === "shop" || cmd === "makanan") {
       let shopText = `╭━━━ 🍔 *WARUNG MAKANAN (SHOP)* ━━━\n`;
       FOOD_ITEMS.forEach(f => {
@@ -347,7 +362,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🍽️ Berjaya beli *${food.name}*!` });
     }
 
-    // 5. UPAH LAWYER PRO
     if (cmd === "upah_lawyer" || cmd === "lawyer") {
       if (now >= user.cooldowns.jailUntil) return sock.sendMessage(from, { text: `ℹ️ Anda tidak berada di dalam lokap.` });
       const lawyerFee = 500;
@@ -361,7 +375,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `⚖️ [PEGUAM PRO BERJAYA] Anda telah membayar yuran guaman RM ${lawyerFee} dan bebas daripada lokap!` });
     }
 
-    // 6. KERJA HALAL
     if (cmd === "kerja" || cmd === "work") {
       const cd = 3 * 60 * 1000;
       if (now < user.cooldowns.work) {
@@ -372,7 +385,7 @@ async function startBotEngine() {
       const randomJob = JOBS[Math.floor(Math.random() * JOBS.length)];
       user.cash += randomJob.pay;
       user.jobId = randomJob.id;
-      user.stats.works += 1; // Rekod harian kerja
+      user.stats.works += 1;
       user.cooldowns.work = now + cd;
       updateUser(cleanSender, user);
 
@@ -385,7 +398,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: halalUI });
     }
 
-    // 7. SHOWROOM
     if (cmd === "showroom") {
       let ui = `╭━━━ 🏎️ *VEHICLE SHOWROOM* ━━━\n*🏍️ MOTOR*\n`;
       VEHICLES.filter(v => v.type === "Motor").forEach(v => ui += `• [${v.id}] ${v.name} - RM ${v.price.toLocaleString()}\n`);
@@ -394,7 +406,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: ui });
     }
 
-    // 8. BLACK MARKET
     if (cmd === "blackmarket" || cmd === "bm") {
       let bmText = `╭━━━ 🏴‍☠️ *DARKWEB MARKET* ━━━\n`;
       BLACKMARKET_ITEMS.forEach(i => {
@@ -403,7 +414,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: bmText });
     }
 
-    // 9. JENAYAH MENU
     if (cmd === "jenayah_menu" || cmd === "crime_menu") {
       let cText = `╭━━━ 🚨 *UNDERWORLD MISSIONS* ━━━\n`;
       CRIMES.forEach(c => {
@@ -412,7 +422,6 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: cText });
     }
 
-    // 10. BUAT JENAYAH
     if (cmd === "buat_jenayah" || cmd === "crime") {
       const cId = parseInt(args[0]);
       const targetCrime = CRIMES.find(c => c.id === cId || c.id.toString() === args[0]);
@@ -431,7 +440,7 @@ async function startBotEngine() {
       if (isSuccess) {
         const reward = Math.floor(Math.random() * (targetCrime.rewardMax - targetCrime.rewardMin + 1)) + targetCrime.rewardMin;
         user.cash += reward;
-        user.stats.crimes += 1; // Rekod harian jenayah berjaya
+        user.stats.crimes += 1;
         user.stars = Math.min(5, (user.stars || 0) + targetCrime.stars);
         updateUser(cleanSender, user);
         return sock.sendMessage(from, { text: `╭━━━ 🦹 *SUCCESS* ━━━\nLoot: +RM ${reward.toLocaleString()}\n╰━━━━━━━━━━━━━━━` });
