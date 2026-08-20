@@ -7,12 +7,12 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // =========================================================================
-// 👑 0. KUNCI KESELAMATAN FOUNDER / OWNER MUTLAK (AMAR) - AUTO-RECOGNIZE
+// 👑 0. KUNCI KESELAMATAN FOUNDER MUTLAK (AMAR) - AUTO RECOGNIZE
 // =========================================================================
 const OWNER_NUMBERS = [
   "1166533534",
   "601166533534",
-  "38956007690292" // WhatsApp ID unik anda dikesan Baileys
+  "38956007690292" // WhatsApp ID unik dikesan Baileys
 ];
 
 let currentQR = "";
@@ -57,17 +57,17 @@ http.createServer((req, res) => {
 }).listen(PORT);
 
 // =========================================================================
-// 💾 2. SISTEM DATABASE JSON KUKUH & FLEKSIBEL
+// 💾 2. SISTEM DATABASE JSON KUKUH
 // =========================================================================
 const DB_FILE = "./database.json";
 function loadDB() {
   if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify({ users: {}, groups: [] }, null, 2));
+    fs.writeFileSync(DB_FILE, JSON.stringify({ users: {}, groups: [], activeEvents: {} }, null, 2));
   }
   try {
     return JSON.parse(fs.readFileSync(DB_FILE));
   } catch (e) {
-    return { users: {}, groups: [] };
+    return { users: {}, groups: [], activeEvents: {} };
   }
 }
 function saveDB(data) {
@@ -94,13 +94,16 @@ function getUser(userId, pushName = "Warga Cyber") {
       pet: null,
       stars: 0,
       badges: ["🌱 [COMMON] Warga Baru"],
-      stats: { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0 },
+      stats: { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0, eventsWon: 0 },
       cooldowns: { workJobs: {}, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, rent: 0 }
     };
     saveDB(db);
   }
   const u = db.users[userId];
-  if (pushName && pushName !== "Warga Cyber" && !u.name) u.name = pushName;
+  if (pushName && pushName !== "Warga Cyber" && u.name !== pushName) {
+    u.name = pushName;
+    saveDB(db);
+  }
   if (!u.inventory) u.inventory = [];
   if (!u.vehicles) u.vehicles = [];
   if (!u.vehicleMods) u.vehicleMods = {};
@@ -108,7 +111,7 @@ function getUser(userId, pushName = "Warga Cyber") {
   if (!u.food) u.food = [];
   if (!u.properties) u.properties = [];
   if (!u.badges) u.badges = ["🌱 [COMMON] Warga Baru"];
-  if (!u.stats) u.stats = { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0 };
+  if (!u.stats) u.stats = { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0, eventsWon: 0 };
   if (!u.cooldowns) u.cooldowns = { workJobs: {}, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, rent: 0 };
   if (!u.cooldowns.workJobs) u.cooldowns.workJobs = {};
   return u;
@@ -395,7 +398,7 @@ const ROASTS = {
     "Kelajuan membunuh keraguan! Hadiah lumba dah selamat masuk akaun tunai kau.",
     "Litar Karak ke MEX Highway semua kau tapau bersih. Memang pelesit sejati!",
     "Jentera standard kilang pun boleh menang sebab rider ada ilmu. Tabik spring!",
-    "Lawan menangis tepi divider jalan tengok kau angkat piala kemenangan.",
+    "Lawan menangis tepi divider分裂 jalan tengok kau angkat piala kemenangan.",
     "Pecutan sempurna dari garisan mula! Tiada siapa mampu kejar bayang jentera kau.",
     "Drag race tamat dengan kemenangan manis! Belanja member ngeteh malam ni bro!",
     "Hebat tak bertempat! Nama kau kini meniti di bibir geng lumba haram seluruh bandar."
@@ -629,14 +632,22 @@ async function startBotEngine() {
     }
   });
 
-  // Sambut Ahli Baharu
+  // Sambut Ahli Baharu dengan Tag Nama Profil WhatsApp Sebenar
   sock.ev.on("group-participants.update", async (anu) => {
     if (anu.action === "add") {
       for (const num of anu.participants) {
         const cleanId = num.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-        getUser(cleanId, "Warga Baru");
+        let memberName = "";
+        try {
+          const [contactInfo] = await sock.onWhatsApp(cleanId);
+          memberName = contactInfo?.notify || "";
+        } catch (e) {}
+
+        const dbUser = getUser(cleanId, memberName || "Warga Baru");
+        const displayName = dbUser.name && dbUser.name !== "Warga Baru" ? dbUser.name : `@${num.split("@")[0]}`;
+
         await sock.sendMessage(anu.id, {
-          text: `👋 Salam @${num.split("@")[0]}! Selamat datang ke komuniti Airi's Corner. Starter pack RM500 dan Badge [🌱 [COMMON] Warga Baru] dah dikreditkan ke akaun anda.\n\nTaip *.menu* untuk mula! Jangan jadi batu kayu dalam group ni ye.`,
+          text: `👋 Salam *${displayName}*! Selamat datang ke komuniti Airi's Corner.\nStarter pack RM500 dan Badge [🌱 [COMMON] Warga Baru] dah dikreditkan ke akaun anda.\n\nTaip *.menu* untuk mula! Jangan jadi batu kayu dalam group ni ye.`,
           mentions: [cleanId]
         }).catch(() => {});
       }
@@ -656,6 +667,109 @@ async function startBotEngine() {
       }
     }
   });
+
+  // =========================================================================
+  // 🎲 5 RANDOM GROUP INTERACTIVE EVENTS (Setiap 20-35 Minit)
+  // =========================================================================
+  setInterval(async () => {
+    const db = loadDB();
+    if (!db.groups || db.groups.length === 0) return;
+
+    const eventTypes = ["airdrop", "roadblock", "boss", "soalan", "lelong"];
+    const chosenEvent = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+
+    for (const gId of db.groups) {
+      if (!db.activeEvents) db.activeEvents = {};
+
+      if (chosenEvent === "airdrop") {
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        const reward = Math.floor(1000 + Math.random() * 2500);
+        db.activeEvents[gId] = { type: "airdrop", code, reward, expires: Date.now() + 120000 };
+        saveDB(db);
+
+        const airdropMsg = `╭━━━ 🪂 *KOTAK AIRDROP JATUH DARI LANGIT!* ━━━
+┃ 📦 Sebuah peti bekalan tunai cyber terhempas di tengah group!
+┃ 💰 Nilai Bekalan: *RM ${reward.toLocaleString()}*
+┃ 🔑 Kod Akses Dekripsi: *${code}*
+┃
+┃ ⚡ *CARA REBUT:*
+┃ Taip *.rebut ${code}* terpantas untuk kaut semua duit!
+┃ ⏳ _Peti akan meletup musnah dalam masa 2 minit._
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        await sock.sendMessage(gId, { text: airdropMsg }).catch(() => {});
+      }
+
+      else if (chosenEvent === "roadblock") {
+        db.activeEvents[gId] = { type: "roadblock", expires: Date.now() + 180000 };
+        saveDB(db);
+
+        const roadblockMsg = `╭━━━ 🚨 *SEKATAN JALAN RAYA (ROADBLOCK PANAS)* ━━━
+┃ 🚔 Pasukan Trafik & JPJ membuka sekatan besar-besaran di bandar!
+┃ ⚠️ Semua warga yang mempunyai 2 Bintang Wanted ke atas berisiko disaman!
+┃
+┃ 🛡️ *CARA SELESAIKAN:*
+┃ Taip *.tunjuk_lesen* untuk elak disita dan dapat bonus RM 300!
+┃ ⏳ _Operasi roadblock berlangsung selama 3 minit._
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        await sock.sendMessage(gId, { text: roadblockMsg }).catch(() => {});
+      }
+
+      else if (chosenEvent === "boss") {
+        const bossHp = 5;
+        const reward = 5000;
+        db.activeEvents[gId] = { type: "boss", hp: bossHp, maxHp: bossHp, reward, attackers: [], expires: Date.now() + 180000 };
+        saveDB(db);
+
+        const bossMsg = `╭━━━ 👹 *SERANGAN BOSS UNDERWORLD: KINGPIN GENG* ━━━
+┃ 🦹 Boss Mafia sedang mengganas & memeras ugut warga group!
+┃ ❤️ Nyawa Boss: *[ 5 / 5 HP ]*
+┃ 💰 Ganjaran Tumbangkan: *RM ${reward.toLocaleString()}*
+┃
+┃ ⚔️ *CARA SERANG:*
+┃ Taip *.serang_boss* beramai-ramai untuk kurangkan HP!
+┃ ⏳ _Boss akan melarikan diri dalam 3 minit jika tidak dikalahkan._
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        await sock.sendMessage(gId, { text: bossMsg }).catch(() => {});
+      }
+
+      else if (chosenEvent === "soalan") {
+        const mathA = Math.floor(15 + Math.random() * 45);
+        const mathB = Math.floor(12 + Math.random() * 38);
+        const ans = (mathA * 2 + mathB).toString();
+        const reward = 1200;
+        db.activeEvents[gId] = { type: "soalan", ans, reward, expires: Date.now() + 90000 };
+        saveDB(db);
+
+        const soalanMsg = `╭━━━ 🧠 *KUIZ MINDA SIBER KILAT* ━━━
+┃ 🤖 AI Grid menguji kepantasan logik minda warga group!
+┃ ❓ Soalan: *Berapakah (${mathA} x 2) + ${mathB}?*
+┃ 💰 Hadiah Pintar: *RM ${reward.toLocaleString()}*
+┃
+┃ 💡 *CARA JAWAB:*
+┃ Taip *.jawab [jawapan]* (Contoh: *.jawab 50*)
+┃ ⏳ _Masa menjawab: 90 saat sahaja._
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        await sock.sendMessage(gId, { text: soalanMsg }).catch(() => {});
+      }
+
+      else if (chosenEvent === "lelong") {
+        const reward = Math.floor(2000 + Math.random() * 3000);
+        db.activeEvents[gId] = { type: "lelong", highestBid: 500, winner: null, reward, expires: Date.now() + 120000 };
+        saveDB(db);
+
+        const lelongMsg = `╭━━━ 🏷️ *LELONGAN KOTAK MISTERI BLACK MARKET* ━━━
+┃ 📦 Sebuah kontena kargo gelap tanpa nama dibuka untuk lelongan!
+┃ 💵 Bidaan Pembukaan: *RM 500*
+┃ 🎁 Kandungan Tersembunyi: Barangan bernilai tinggi!
+┃
+┃ 📢 *CARA BIDA:*
+┃ Taip *.bida [jumlah]* untuk meletakkan tawaran tertinggi!
+┃ ⏳ _Palu lelongan akan diketuk dalam 2 minit._
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        await sock.sendMessage(gId, { text: lelongMsg }).catch(() => {});
+      }
+    }
+  }, 25 * 60 * 1000);
 
   // AUTO REPORT 12:00 MALAM (5 KATEGORI MALAYSIA)
   let lastResetDate = new Date().getDate();
@@ -708,7 +822,7 @@ async function startBotEngine() {
       }
 
       for (let id in db.users) {
-        db.users[id].stats = { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0 };
+        db.users[id].stats = { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0, eventsWon: 0 };
       }
       saveDB(db);
     }
@@ -754,8 +868,128 @@ async function startBotEngine() {
     // SEKATAN TAHANAN LOKAP
     if (now < user.cooldowns.jailUntil && cmd !== "upah_lawyer" && cmd !== "myid" && !isOwner) {
       const remMin = Math.ceil((user.cooldowns.jailUntil - now) / 60000);
+      const jailAlert = `╭━━━ 🚨 *LOKAP BALAI POLIS BUKIT AMAN* 🚨 ━━━
+┃ ⛓️ *STATUS:* Tahanan Lokap Mahkamah
+┃ 👤 Banduan: *${user.name}*
+┃ ⏳ Baki Hukuman: *${remMin} minit lagi*
+┃ 🔒 Sekatan: Dilarang bekerja, berlumba atau merompak!
+┃
+┃ 💡 *Jaminan Peguam:* Taip *.upah_lawyer* (Kos: RM 500)
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+      return sock.sendMessage(from, { text: jailAlert });
+    }
+
+    // =====================================================================
+    // 🎮 PENGENDALI 5 RANDOM GROUP INTERACTIVE EVENTS
+    // =====================================================================
+    const db = loadDB();
+    const currentEvent = db.activeEvents?.[from];
+
+    // Event 1: Rebut Airdrop (.rebut [kod])
+    if (cmd === "rebut") {
+      if (!currentEvent || currentEvent.type !== "airdrop" || now > currentEvent.expires) {
+        return sock.sendMessage(from, { text: `❌ Tiada airdrop aktif atau kotak kargo telah meletup musnah!` });
+      }
+      const codeInput = args[0];
+      if (codeInput !== currentEvent.code) {
+        return sock.sendMessage(from, { text: `❌ Kod dekripsi salah! Tengok kod betul-betul di peti airdrop.` });
+      }
+      const reward = currentEvent.reward;
+      user.cash += reward;
+      user.stats.eventsWon = (user.stats.eventsWon || 0) + 1;
+      delete db.activeEvents[from];
+      saveDB(db);
+      updateUser(cleanSender, user);
+
       return sock.sendMessage(from, { 
-        text: `🚨 *LOKAP BALAI POLIS!*\nAnda sedang ditahan di dalam lokap selama *${remMin} minit* lagi atas kesalahan jenayah lampau.\n\n💡 *Tip Bebas Segera:* Taip *.upah_lawyer* (Kos: RM 500) untuk jaminan peguam pro.` 
+        text: `🎉 *AIRDROP BERJAYA DIDEKRIPSI!* 🪂\n*${user.name}* telah memasukkan kod dengan pantas dan merampas *+RM ${reward.toLocaleString()}* tunai!` 
+      });
+    }
+
+    // Event 2: Tunjuk Lesen Roadblock (.tunjuk_lesen)
+    if (cmd === "tunjuk_lesen") {
+      if (!currentEvent || currentEvent.type !== "roadblock" || now > currentEvent.expires) {
+        return sock.sendMessage(from, { text: `❌ Tiada sekatan roadblock aktif di kawasan ini!` });
+      }
+      user.cash += 300;
+      user.stars = Math.max(0, user.stars - 1);
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { 
+        text: `👮 *PELEPASAN ROADBLOCK:* Pegawai memeriksa dokumen *${user.name}*. Lesen sah, rekod bersih! Anda diberi elaun disiplin *+RM 300* dan bintang wanted berkurang.` 
+      });
+    }
+
+    // Event 3: Serang Boss Underworld (.serang_boss)
+    if (cmd === "serang_boss") {
+      if (!currentEvent || currentEvent.type !== "boss" || now > currentEvent.expires) {
+        return sock.sendMessage(from, { text: `❌ Tiada Boss Underworld aktif pada saat ini!` });
+      }
+      currentEvent.hp -= 1;
+      if (!currentEvent.attackers.includes(user.name)) currentEvent.attackers.push(user.name);
+
+      if (currentEvent.hp <= 0) {
+        const rewardEach = Math.floor(currentEvent.reward / Math.max(1, currentEvent.attackers.length));
+        for (const atkName of currentEvent.attackers) {
+          const uEntry = Object.entries(db.users).find(([k, v]) => v.name === atkName);
+          if (uEntry) {
+            uEntry[1].cash += rewardEach;
+            updateUser(uEntry[0], uEntry[1]);
+          }
+        }
+        delete db.activeEvents[from];
+        saveDB(db);
+
+        return sock.sendMessage(from, { 
+          text: `💥 *BOSS UNDERWORLD TEWAS!* 👹\nPasukan warga group berjaya menumbangkan Kingpin Mafia!\n💰 Ganjaran *RM ${rewardEach.toLocaleString()}* tunai diagihkan kepada setiap penyerang: _${currentEvent.attackers.join(", ")}_!` 
+        });
+      } else {
+        saveDB(db);
+        return sock.sendMessage(from, { 
+          text: `⚔️ *SERANGAN TEPAT!* *${user.name}* menghayunkan tumbukan padu ke arah Boss!\n❤️ Baki Nyawa Boss: *[ ${currentEvent.hp} / ${currentEvent.maxHp} HP ]*` 
+        });
+      }
+    }
+
+    // Event 4: Jawab Kuiz Kilat (.jawab [ans])
+    if (cmd === "jawab") {
+      if (!currentEvent || currentEvent.type !== "soalan" || now > currentEvent.expires) {
+        return sock.sendMessage(from, { text: `❌ Tiada kuiz aktif atau masa menjawab telah tamat!` });
+      }
+      const userAns = args[0];
+      if (userAns !== currentEvent.ans) {
+        return sock.sendMessage(from, { text: `❌ Jawapan salah! Cuba kira semula pantas.` });
+      }
+      const reward = currentEvent.reward;
+      user.cash += reward;
+      delete db.activeEvents[from];
+      saveDB(db);
+      updateUser(cleanSender, user);
+
+      return sock.sendMessage(from, { 
+        text: `🧠 *JAWAPAN TEPAT!* *${user.name}* membuktikan IQ tinggi dengan menjawab *${userAns}*!\n💰 Hadiah Pintar: *+RM ${reward.toLocaleString()}* tunai dikreditkan.` 
+      });
+    }
+
+    // Event 5: Bida Lelongan (.bida [jumlah])
+    if (cmd === "bida") {
+      if (!currentEvent || currentEvent.type !== "lelong" || now > currentEvent.expires) {
+        return sock.sendMessage(from, { text: `❌ Tiada lelongan kargo aktif pada masa ini!` });
+      }
+      const bidAmt = parseInt(args[0]);
+      if (isNaN(bidAmt) || bidAmt <= currentEvent.highestBid) {
+        return sock.sendMessage(from, { text: `❌ Nilai bidaan mestilah lebih tinggi daripada bidaan semasa (RM ${currentEvent.highestBid.toLocaleString()})!` });
+      }
+      if (user.cash < bidAmt) {
+        return sock.sendMessage(from, { text: `❌ Tunai anda tidak cukup untuk meletakkan bidaan RM ${bidAmt.toLocaleString()}!` });
+      }
+
+      currentEvent.highestBid = bidAmt;
+      currentEvent.winner = cleanSender;
+      currentEvent.winnerName = user.name;
+      saveDB(db);
+
+      return sock.sendMessage(from, { 
+        text: `🏷️ *BIDAAN DITERIMA!* *${user.name}* memegang tawaran tertinggi terkini: *RM ${bidAmt.toLocaleString()}*!` 
       });
     }
 
@@ -774,7 +1008,11 @@ async function startBotEngine() {
       }
       updateUser(cleanSender, user);
       return sock.sendMessage(from, { 
-        text: `👑 *SISTEM VETO PENGASAS DIAKTIFKAN!* Selamat kembali, Bos Amar. Kuasa mutlak, kebal lokap, kebal cooldown dan akses admin kini beroperasi 100%.` 
+        text: `╭━━━ 👑 *SISTEM VETO PENGASAS AKTIF* ━━━
+┃ 🌐 Status: *Pengasas Mutlak Disahkan*
+┃ 👤 Nama: *${user.name}*
+┃ ⚡ Akses: Kebal Lokap • Kebal Cooldown • Kuasa Veto Penuh
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
       });
     }
 
@@ -804,7 +1042,12 @@ async function startBotEngine() {
       updateUser(cleanTarget, targetUser);
 
       return sock.sendMessage(from, { 
-        text: `🚨 *[HUKUMAN VETO PENGASAS]*\nAtas titah perintah Pengasas Amar, *${targetUser.name}* telah dihumban ke dalam lokap selama *${minutes} minit* dan dilabel 5 bintang wanted! Mereput lah dalam tu.`,
+        text: `╭━━━ 🚨 *HUKUMAN VETO PENGASAS* 🚨 ━━━
+┃ 🚔 *PERINTAH MAHKAMAH MUTLAK*
+┃ 👤 Pesalah: *${targetUser.name}*
+┃ ⛓️ Hukuman: Lokap Balai Polis selama *${minutes} minit*
+┃ ⭐ Wanted: Dilabel 5 Bintang Penjenayah Tegar!
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
         mentions: [cleanTarget]
       });
     }
@@ -1206,18 +1449,30 @@ async function startBotEngine() {
         updateUser(cleanSender, user);
 
         const roast = ROASTS.race_win[Math.floor(Math.random() * ROASTS.race_win.length)];
-        return sock.sendMessage(from, { 
-          text: `🏁 *MENANG DRAG RACE MALAM!* 🏁\nJentera *${vehicle.name}* (Speed: ${totalSpeed} km/h) dipandu *${user.name}* menewaskan lawan!\n💰 Hadiah Tunai: *+RM ${reward.toLocaleString()}*\n\n💬 _"${roast}"_` 
-        });
+        const dragWinUI = `╭━━━ 🏁 *JUARA DRAG RACE MALAM* 🏁 ━━━
+┃ 🏎️ Jentera: *${vehicle.name}*
+┃ ⚡ Kelajuan Tercapai: *${totalSpeed} km/h*
+┃ 👤 Pelumba: *${user.name}*
+┃ 💰 Hadiah Taruhan: *+RM ${reward.toLocaleString()}*
+┃
+┃ 💬 _"${roast}"_
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        return sock.sendMessage(from, { text: dragWinUI });
       } else {
         const repairCost = Math.floor(vehicle.price * 0.02);
         user.cash = Math.max(0, user.cash - repairCost);
         updateUser(cleanSender, user);
 
         const roast = ROASTS.race_lose[Math.floor(Math.random() * ROASTS.race_lose.length)];
-        return sock.sendMessage(from, { 
-          text: `💥 *TERBABAS DI SELEKOH MAUT!* Jentera *${vehicle.name}* tewas. Kos baiki bengkel: *-RM ${repairCost.toLocaleString()}*.\n\n💬 _"${roast}"_` 
-        });
+        const dragLoseUI = `╭━━━ 💥 *KEMALANGAN SELEKOH MAUT* 💥 ━━━
+┃ 🏎️ Jentera: *${vehicle.name}*
+┃ 👤 Pelumba: *${user.name}*
+┃ ❌ Status: Tewas & Terbabas di Divider!
+┃ 🛠️ Kos Baiki Bengkel: *-RM ${repairCost.toLocaleString()}*
+┃
+┃ 💬 _"${roast}"_
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        return sock.sendMessage(from, { text: dragLoseUI });
       }
     }
 
@@ -1256,11 +1511,11 @@ async function startBotEngine() {
     }
 
     if (cmd === "jenayah" || cmd === "crime_menu" || cmd === "jenayah_menu") {
-      let ui = `╭━━━ 🚨 *SENARAI 15 MISI UNDERWORLD AIRI* ━━━\n┃\n`;
+      let ui = `╭━━━ 💀 *DARKWEB UNDERWORLD NETWORK* 💀 ━━━\n┃ Misi rompakan berskala tinggi & sindiket penyeludupan!\n┃\n`;
       CRIMES.forEach(c => {
         const reqObj = c.reqItem ? BLACKMARKET_ITEMS.find(i => i.id === c.reqItem) : null;
-        const reqStr = reqObj ? `[Perlu: ${reqObj.name}]` : `[Tiada Syarat]`;
-        ui += `┃ • *[ID ${c.id}]* ${c.name}\n┃   💵 Loot: RM ${c.rewardMin.toLocaleString()} - ${c.rewardMax.toLocaleString()} | Denda: RM ${c.fine.toLocaleString()}\n┃   ⚠️ ${reqStr}\n┃\n`;
+        const reqStr = reqObj ? `[Syarat: ${reqObj.name}]` : `[Bebas]`;
+        ui += `┃ • *[ID ${c.id}]* ${c.name}\n┃   💵 Loot: RM ${c.rewardMin.toLocaleString()} - ${c.rewardMax.toLocaleString()} | ⚠️ Denda: RM ${c.fine.toLocaleString()}\n┃   🔒 ${reqStr}\n┃\n`;
       });
       ui += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n💡 *Cara Mula:* Taip *.buat_jenayah [id]* (Contoh: *.buat_jenayah 6*)\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: ui });
@@ -1310,9 +1565,17 @@ async function startBotEngine() {
         updateUser(cleanSender, user);
 
         const roast = ROASTS.crime_fail[Math.floor(Math.random() * ROASTS.crime_fail.length)];
-        return sock.sendMessage(from, { 
-          text: `🚨 *KANTOI DENGAN POLIS!* Misi gagal. Denda *-RM ${fine.toLocaleString()}* dan dihumban ke lokap balai selama 3 minit!\n\n💬 _"${roast}"_\n\n💡 *Bebas Cepat:* Taip *.upah_lawyer* (RM 500).` 
-        });
+        const arrestUI = `╭━━━ 🚨 *SERBUAN KONTRAK POLIS DI-KUTIP!* 🚨 ━━━
+┃ 🚔 Unit Tindakan Khas Polis menyerbu lokasi!
+┃ 👤 Pesalah: *${user.name}*
+┃ ❌ Misi: ${c.name} Gagal!
+┃ 💸 Denda Mahkamah: *-RM ${fine.toLocaleString()}*
+┃ ⛓️ Hukuman: Dihumban ke lokap balai selama 3 minit!
+┃
+┃ 💬 _"${roast}"_
+┃ 💡 *Bebas Cepat:* Taip *.upah_lawyer* (RM 500).
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        return sock.sendMessage(from, { text: arrestUI });
       }
     }
 
