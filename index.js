@@ -3,9 +3,11 @@ import pino from "pino";
 import fs from "fs";
 import http from "http";
 import QRCode from "qrcode";
-import { createCanvas } from "canvas";
 import dotenv from "dotenv";
 dotenv.config();
+
+// --- 0. KUNCI KESELAMATAN OWNER MUTLAK (AMAR) ---
+const OWNER_NUMBER = "601166533534@s.whatsapp.net";
 
 let currentQR = "";
 let isConnected = false;
@@ -15,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 http.createServer(async (req, res) => {
   res.writeHead(200, { "Content-Type": "text/html" });
   if (isConnected) {
-    res.end("<div style='text-align:center;margin-top:50px;font-family:sans-serif;'><h1 style='color:#00e676;'>✅ AIRI'S CORNER BOT ONLINE!</h1><p>Sistem aktif 24/7. Mulut pedas sedia membakar group!</p></div>");
+    res.end("<div style='text-align:center;margin-top:50px;font-family:sans-serif;'><h1 style='color:#00e676;'>✅ AIRI'S CORNER BOT ONLINE!</h1><p>Sistem aktif 24/7. Kuasa Founder terkunci selamat.</p></div>");
   } else if (currentQR) {
     try {
       const qrImage = await QRCode.toDataURL(currentQR);
@@ -64,7 +66,7 @@ function getUser(userId, pushName = "Warga Cyber") {
       vehicles: [],
       food: [],
       stars: 0,
-      badges: ["🌱 Warga Baru"],
+      badges: ["🌱 [COMMON] Warga Baru"],
       stats: { works: 0, crimes: 0, bails: 0, racesWon: 0 },
       cooldowns: { workJobs: {}, crime: 0, jailUntil: 0, daily: 0, race: 0 }
     };
@@ -73,7 +75,7 @@ function getUser(userId, pushName = "Warga Cyber") {
   const u = db.users[userId];
   if (pushName && pushName !== "Warga Cyber") u.name = pushName;
   if (!u.stats) u.stats = { works: 0, crimes: 0, bails: 0, racesWon: 0 };
-  if (!u.badges) u.badges = ["🌱 Warga Baru"];
+  if (!u.badges) u.badges = ["🌱 [COMMON] Warga Baru"];
   if (!u.food) u.food = [];
   if (!u.vehicles) u.vehicles = [];
   if (!u.inventory) u.inventory = [];
@@ -90,55 +92,7 @@ function updateUser(userId, userData) {
   saveDB(db);
 }
 
-// --- 3. GENERATOR BADGE (CANVAS DIPERBAIKI) ---
-async function generateBadge(badgeName, userName) {
-  const width = 650;
-  const height = 350;
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext("2d");
-
-  ctx.fillStyle = "#161b22";
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.fillStyle = "#0d1117";
-  ctx.fillRect(15, 15, width - 30, height - 30);
-
-  ctx.strokeStyle = "#00ffff";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(15, 15, width - 30, height - 30);
-
-  ctx.fillStyle = "#00ffff";
-  ctx.font = "bold 26px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("⚡ AIRI'S CORNER OFFICIAL BADGE ⚡", width / 2, 65);
-
-  ctx.strokeStyle = "#ff007f";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(50, 85);
-  ctx.lineTo(600, 85);
-  ctx.stroke();
-
-  ctx.fillStyle = "#ffd700";
-  ctx.font = "bold 34px sans-serif";
-  ctx.fillText(badgeName.toUpperCase(), width / 2, 155);
-
-  ctx.fillStyle = "#8b949e";
-  ctx.font = "18px sans-serif";
-  ctx.fillText("DIANUGERAHKAN KEPADA:", width / 2, 210);
-
-  ctx.fillStyle = "#00e676";
-  ctx.font = "bold 26px sans-serif";
-  ctx.fillText(userName, width / 2, 250);
-
-  ctx.fillStyle = "#58a6ff";
-  ctx.font = "13px monospace";
-  ctx.fillText(`VERIFIED ID: 0x${Math.floor(Math.random() * 899999 + 100000)} • SYSTEM AUTHENTICATED`, width / 2, 305);
-
-  return canvas.toBuffer("image/png");
-}
-
-// --- 4. 10 SENARAI TELEFON / PERANTI ASLI BESERTA FUNGSI ---
+// --- 3. 10 SENARAI TELEFON / PERANTI ASLI BESERTA FUNGSI ---
 const PHONE_DEVICES = [
   { id: "nokia3310", name: "Nokia 3310 Brick", price: 150, bonus: "Tahan lasak! Potong 15% denda polis", perk: "def", val: 0.15 },
   { id: "redmi12", name: "Redmi Note 12 5G", price: 750, bonus: "Multi-tasking asas, gaji kerja halal +5%", perk: "work", val: 0.05 },
@@ -152,7 +106,7 @@ const PHONE_DEVICES = [
   { id: "shadow_phone", name: "Shadow Legion X CyberDeck", price: 15000, bonus: "Gajet Ultimate, +20% Lumba, +20% Kerja & 50% Kebal Denda!", perk: "god", val: 0.20 }
 ];
 
-// --- 5. 50 KERJA HALAL LENGKAP ---
+// --- 4. 50 KERJA HALAL LENGKAP ---
 const JOBS = [
   { id: 1, name: "Pekerja Am", pay: 30 }, { id: 2, name: "Pencuci Pinggan", pay: 40 }, { id: 3, name: "Rider GrabFood", pay: 60 },
   { id: 4, name: "Runner Foodpanda", pay: 65 }, { id: 5, name: "Pemandu Van", pay: 80 }, { id: 6, name: "Kerani Pejabat", pay: 100 },
@@ -173,7 +127,7 @@ const JOBS = [
   { id: 49, name: "Pelabur", pay: 2000 }, { id: 50, name: "CEO Korporat", pay: 2500 }
 ];
 
-// --- 6. 40 KENDERAAN LENGKAP BESERTA STATS & DETAIL ---
+// --- 5. 40 KENDERAAN LENGKAP ---
 const VEHICLES = [
   // 20 MOTOR
   { id: "ex5", name: "Honda EX5 High Power", price: 3000, type: "Motor", speed: 50, desc: "Jentera legenda bandar, servis murah & jimat petrol" },
@@ -219,7 +173,7 @@ const VEHICLES = [
   { id: "911", name: "Porsche 911 GT3 RS", price: 1800000, type: "Kereta", speed: 195, desc: "Senjata litar terhebat dunia, raja selekoh dan penakluk rekod" }
 ];
 
-// --- 7. WARUNG MAKANAN & BLACK MARKET ---
+// --- 6. WARUNG MAKANAN & BLACK MARKET ---
 const FOOD_ITEMS = [
   { id: "tehtarik", name: "Teh Tarik Kaw", price: 4, desc: "Potong 1 minit cooldown kerja" },
   { id: "roticanai", name: "Roti Canai Banjir", price: 7, desc: "Potong 2 minit cooldown kerja" },
@@ -235,7 +189,7 @@ const BLACKMARKET_ITEMS = [
   { id: "flipper", name: "Flipper Zero Modded", price: 500000, desc: "Godam pangkalan data induk bandar" }
 ];
 
-// --- 8. 10 MISI JENAYAH ---
+// --- 7. 10 MISI JENAYAH ---
 const CRIMES = [
   { id: 1, name: "Ragut Beg Tepi Jalan", rewardMin: 50, rewardMax: 150, stars: 1, fine: 100 },
   { id: 2, name: "Rompak Kedai Runcit Acheh", rewardMin: 150, rewardMax: 300, stars: 1, fine: 250 },
@@ -249,7 +203,7 @@ const CRIMES = [
   { id: 10, name: "Eksploitasi Darkweb Zero", rewardMin: 80000, rewardMax: 200000, reqItem: "flipper", stars: 5, fine: 45000 }
 ];
 
-// --- 9. ENJIN ROASTING MALAYSIA (DIALOG PEDAS) ---
+// --- 8. DIALOG ROASTING MALAYSIA ---
 const ROAST_KERJA = [
   "Wah berpeluh dahi macam lari marathon tapi gaji ciput je masuk. Jadilah buat beli kuaci!",
   "Rajin betul kau grind harini, ingatkan pemalas tegar dalam group ni.",
@@ -321,50 +275,84 @@ function getTitle(user) {
   return "🌱 Warga Cyber";
 }
 
-async function checkAndAwardBadges(user, sock, from, cleanSender) {
+// --- 9. SISTEM BADGE BERKATEGORI (COMMON -> MYTHIC) ---
+async function checkAndAwardBadges(user, sock, from) {
   const newBadges = [];
   const totalMoney = user.cash + user.bank;
-  const userName = user.name || cleanSender.split("@")[0];
+  const userName = user.name;
 
-  if (user.stats.works >= 5 && !user.badges.includes("🔨 Buruh Gigih")) {
-    user.badges.push("🔨 Buruh Gigih");
-    newBadges.push("🔨 Buruh Gigih");
+  // COMMON & UNCOMMON
+  if (user.stats.works >= 5 && !user.badges.includes("🔨 [COMMON] Buruh Gigih")) {
+    user.badges.push("🔨 [COMMON] Buruh Gigih");
+    newBadges.push("🔨 [COMMON] Buruh Gigih");
   }
-  if (user.stats.works >= 25 && !user.badges.includes("🏆 Raja Halal")) {
-    user.badges.push("🏆 Raja Halal");
-    newBadges.push("🏆 Raja Halal");
-  }
-  if (user.stats.crimes >= 5 && !user.badges.includes("🕶️ Buronan Jalanan")) {
-    user.badges.push("🕶️ Buronan Jalanan");
-    newBadges.push("🕶️ Buronan Jalanan");
-  }
-  if (user.stats.crimes >= 20 && !user.badges.includes("💀 Legend Underworld")) {
-    user.badges.push("💀 Legend Underworld");
-    newBadges.push("💀 Legend Underworld");
-  }
-  if (totalMoney >= 100000 && !user.badges.includes("💰 Bangsawan Cyber")) {
-    user.badges.push("💰 Bangsawan Cyber");
-    newBadges.push("💰 Bangsawan Cyber");
-  }
-  if (user.vehicles.length >= 3 && !user.badges.includes("🏎️ Kaki Koleksi")) {
-    user.badges.push("🏎️ Kaki Koleksi");
-    newBadges.push("🏎️ Kaki Koleksi");
-  }
-  if ((user.stats.racesWon || 0) >= 5 && !user.badges.includes("⚡ Raja Rempit")) {
-    user.badges.push("⚡ Raja Rempit");
-    newBadges.push("⚡ Raja Rempit");
+  if (user.stats.crimes >= 5 && !user.badges.includes("🕶️ [UNCOMMON] Pencuri Jalanan")) {
+    user.badges.push("🕶️ [UNCOMMON] Pencuri Jalanan");
+    newBadges.push("🕶️ [UNCOMMON] Pencuri Jalanan");
   }
 
+  // RARE
+  if (user.stats.works >= 20 && !user.badges.includes("💼 [RARE] Pekerja Berdedikasi")) {
+    user.badges.push("💼 [RARE] Pekerja Berdedikasi");
+    newBadges.push("💼 [RARE] Pekerja Berdedikasi");
+  }
+  if (user.stats.crimes >= 15 && !user.badges.includes("🥷 [RARE] Buronan Lincah")) {
+    user.badges.push("🥷 [RARE] Buronan Lincah");
+    newBadges.push("🥷 [RARE] Buronan Lincah");
+  }
+  if ((user.stats.racesWon || 0) >= 5 && !user.badges.includes("🏎️ [RARE] Kaki Drag Litar")) {
+    user.badges.push("🏎️ [RARE] Kaki Drag Litar");
+    newBadges.push("🏎️ [RARE] Kaki Drag Litar");
+  }
+
+  // EPIC
+  if (user.stats.works >= 50 && !user.badges.includes("🏆 [EPIC] Raja Halal")) {
+    user.badges.push("🏆 [EPIC] Raja Halal");
+    newBadges.push("🏆 [EPIC] Raja Halal");
+  }
+  if (user.stats.crimes >= 35 && !user.badges.includes("💀 [EPIC] Dalang Jenayah")) {
+    user.badges.push("💀 [EPIC] Dalang Jenayah");
+    newBadges.push("💀 [EPIC] Dalang Jenayah");
+  }
+  if (user.vehicles.length >= 5 && !user.badges.includes("🚘 [EPIC] Pengumpul Jentera")) {
+    user.badges.push("🚘 [EPIC] Pengumpul Jentera");
+    newBadges.push("🚘 [EPIC] Pengumpul Jentera");
+  }
+
+  // LEGENDARY
+  if (totalMoney >= 100000 && !user.badges.includes("💰 [LEGENDARY] Bangsawan Cyber")) {
+    user.badges.push("💰 [LEGENDARY] Bangsawan Cyber");
+    newBadges.push("💰 [LEGENDARY] Bangsawan Cyber");
+  }
+  if ((user.stats.racesWon || 0) >= 20 && !user.badges.includes("⚡ [LEGENDARY] Raja Rempit Kebangsaan")) {
+    user.badges.push("⚡ [LEGENDARY] Raja Rempit Kebangsaan");
+    newBadges.push("⚡ [LEGENDARY] Raja Rempit Kebangsaan");
+  }
+  if (user.stats.crimes >= 60 && !user.badges.includes("🏴‍☠️ [LEGENDARY] Kingpin Underworld")) {
+    user.badges.push("🏴‍☠️ [LEGENDARY] Kingpin Underworld");
+    newBadges.push("🏴‍☠️ [LEGENDARY] Kingpin Underworld");
+  }
+
+  // MYTHIC
+  if (totalMoney >= 1000000 && !user.badges.includes("👑 [MYTHIC] Jutawan Trilion Airi")) {
+    user.badges.push("👑 [MYTHIC] Jutawan Trilion Airi");
+    newBadges.push("👑 [MYTHIC] Jutawan Trilion Airi");
+  }
+  if (user.vehicles.length >= 15 && !user.badges.includes("🌌 [MYTHIC] Maharaja Garaj")) {
+    user.badges.push("🌌 [MYTHIC] Maharaja Garaj");
+    newBadges.push("🌌 [MYTHIC] Maharaja Garaj");
+  }
+
+  // HANTAR NOTIFIKASI KAD LENCANA DIGITAL (TEKS KEMAS)
   for (const bName of newBadges) {
-    try {
-      const imgBuffer = await generateBadge(bName, userName);
-      await sock.sendMessage(from, {
-        image: imgBuffer,
-        caption: `╭━━━ 🎖️ *PENSIJILAN LENCANA RASMI* ━━━\n┃ 👤 Penerima: *${userName}*\n┃ 🏅 Lencana: *${bName}*\n┃ 🏛️ Pengeluar: *Airi's Corner Grid*\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
-      });
-    } catch (e) {
-      console.log("Canvas Error:", e.message);
-    }
+    const badgeCert = `╭━━━ 🎖️ *PENSIJILAN LENCANA RASMI* ━━━
+┃ 🌐 *AIRI'S CORNER RECOGNITION*
+┃ 👤 Penerima: *${userName}*
+┃ 🏅 Lencana: *${bName}*
+┃ 🏛️ Pengeluar: *Airi's Corner Grid Authority*
+┃ 📜 Status: *SAH & TERPAUT DI PROFIL*
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    await sock.sendMessage(from, { text: badgeCert });
   }
 }
 
@@ -405,7 +393,7 @@ async function startBotEngine() {
         const cleanId = num.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
         getUser(cleanId, "Warga Baru");
         await sock.sendMessage(anu.id, {
-          text: `👋 Salam @${num.split("@")[0]}! Selamat datang ke Airi's Corner. Starter pack RM500 dan Badge [🌱 Warga Baru] sedia ada. Taip *.menu* untuk mula! Jangan jadi batu kayu dalam group ni ya.`,
+          text: `👋 Salam @${num.split("@")[0]}! Selamat datang ke Airi's Corner. Starter pack RM500 dan Badge [🌱 [COMMON] Warga Baru] sedia ada. Taip *.menu* untuk mula! Jangan jadi batu kayu dalam group ni ya.`,
           mentions: [cleanId]
         }).catch(() => {});
       }
@@ -425,7 +413,7 @@ async function startBotEngine() {
     }
   });
 
-  // --- AUTO-REPORT 12:00 MALAM DENGAN ROASTING ---
+  // --- AUTO-REPORT 12:00 MALAM ---
   let lastResetDate = new Date().getDate();
   setInterval(async () => {
     const now = new Date();
@@ -502,8 +490,8 @@ async function startBotEngine() {
     const user = getUser(cleanSender, pushName);
     const now = Date.now();
 
-    // Veto Owner check
-    const isOwner = user.isOwner || cleanSender.startsWith("60") || cleanSender.includes("amar");
+    // KUNCI ISOWNER KEPADA NOMBOR AMAR SAHAJA
+    const isOwner = cleanSender === OWNER_NUMBER;
     const activePhoneObj = PHONE_DEVICES.find(p => p.id === user.phoneDevice);
 
     // Sekatan Lokap
@@ -512,12 +500,15 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🚨 Duduk diam-diam dalam lokap tu *${remMin} minit* lagi! Buat jahat kantoi, kan dah mereput.\n\nTaip *.upah_lawyer* (RM500) kalau ada duit nak tebus bebas.` });
     }
 
-    // --- VETO PERINTAH KHAS ---
+    // --- VETO PERINTAH KHAS PENGASAS (AMAR) ---
     if (cmd === "claimfounder" || cmd === "iamowner") {
+      if (!isOwner) {
+        return sock.sendMessage(from, { text: `🚫 *AKSES DITOLAK!* Muka macam kau ada hati nak mengaku Pengasas? Jangan sampai aku humban dalam lokap seumur hidup!` });
+      }
       user.isOwner = true;
-      if (!user.badges.includes("👑 Pengasas Mutlak")) user.badges.push("👑 Pengasas Mutlak");
+      if (!user.badges.includes("👑 [MYTHIC] Pengasas Mutlak")) user.badges.push("👑 [MYTHIC] Pengasas Mutlak");
       updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `👑 *SISTEM VETO AKTIF:* Selamat kembali, Bos Amar! Hak pentadbir mutlak telah dipulihkan. Siapa buat hal kita humban lokap!` });
+      return sock.sendMessage(from, { text: `👑 *SISTEM VETO PENGASAS AKTIF:* Selamat kembali, Bos Amar! Kuasa mutlak kini beroperasi sepenuhnya.` });
     }
 
     if (cmd === "setmoney" && isOwner) {
@@ -532,6 +523,74 @@ async function startBotEngine() {
       user.stars = 0;
       updateUser(cleanSender, user);
       return sock.sendMessage(from, { text: `👑 [VETO] Rekod polis & lokap dibersihkan serta-merta. Kebal undang-undang!` });
+    }
+
+    // VETO ADMIN : JAIL USER
+    if (cmd === "jail" && isOwner) {
+      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+      const minutes = parseInt(args[1]) || 3;
+      if (!targetTag) return sock.sendMessage(from, { text: `👑 [VETO] Tag mangsa yang nak dihumban ke lokap! Contoh: *.jail @user 5*` });
+      
+      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+      const targetUser = getUser(cleanTarget);
+      targetUser.cooldowns.jailUntil = Date.now() + (minutes * 60 * 1000);
+      targetUser.stars = 5;
+      updateUser(cleanTarget, targetUser);
+
+      return sock.sendMessage(from, { 
+        text: `🚨 *[HUKUMAN VETO PENGASAS]*\nAtas titah perintah Pengasas Amar, *${targetUser.name}* telah dihumban ke lokap selama *${minutes} minit* dan dilabel 5 bintang wanted! Mereput lah dalam tu.` 
+      });
+    }
+
+    // VETO ADMIN : UNJAIL USER
+    if (cmd === "unjail" && isOwner) {
+      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+      if (!targetTag) return sock.sendMessage(from, { text: `👑 [VETO] Tag pemain yang nak diampunkan! Contoh: *.unjail @user*` });
+      
+      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+      const targetUser = getUser(cleanTarget);
+      targetUser.cooldowns.jailUntil = 0;
+      targetUser.stars = 0;
+      updateUser(cleanTarget, targetUser);
+
+      return sock.sendMessage(from, { 
+        text: `⚖️ *[PENGAMPUNAN VETO]*\nPengasas Amar telah memberi pengampunan khas! *${targetUser.name}* dibebaskan daripada lokap serta-merta dengan rekod suci murni.` 
+      });
+    }
+
+    // VETO ADMIN : CETAK DUIT KE ORANG LAIN
+    if (cmd === "vtotransfer" && isOwner) {
+      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+      const amt = parseInt(args[1]);
+      if (!targetTag || isNaN(amt) || amt <= 0) {
+        return sock.sendMessage(from, { text: `👑 [VETO] Format: *.vtotransfer @user [jumlah]*` });
+      }
+      
+      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+      const targetUser = getUser(cleanTarget);
+      targetUser.cash += amt;
+      updateUser(cleanTarget, targetUser);
+
+      return sock.sendMessage(from, { 
+        text: `💸 *[CETAKAN DUIT VETO]*\nPengasas Amar telah memasukkan *RM ${amt.toLocaleString()}* terus ke poket *${targetUser.name}*! Rezeki terpijak.` 
+      });
+    }
+
+    // VETO ADMIN : RAMPAS DAN KOSONGKAN DUIT USER
+    if (cmd === "vtoclear" && isOwner) {
+      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+      if (!targetTag) return sock.sendMessage(from, { text: `👑 [VETO] Tag sasaran yang mahu di-bankrupt-kan! Contoh: *.vtoclear @user*` });
+      
+      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+      const targetUser = getUser(cleanTarget);
+      const totalTaken = targetUser.cash + targetUser.bank;
+      targetUser.cash = 0;
+      targetUser.bank = 0;
+      updateUser(cleanTarget, targetUser);
+
+      return sock.sendMessage(from, { 
+        text: `🏴‍☠️ *[CUKAI PENGASAS / BANKRUPT]*\nPengasas Amar telah menyita dan merampas kesemua harta (RM ${totalTaken.toLocaleString()}) milik *${targetUser.name}*! Poket kini sifar merempat.` 
+      });
     }
 
     // MENU UTAMA
@@ -636,7 +695,7 @@ async function startBotEngine() {
 ┃ 💎 Nilai Aset: RM ${totalWealth.toLocaleString()}
 ┃ 🚗 Kenderaan: ${user.vehicles.length} Unit
 ┃ ⭐ Wanted: ${"⭐".repeat(user.stars) || "0 (Suci Murni)"}
-┃ 🏅 Badges: ${user.badges.join(" | ")}
+┃ 🏅 Badges (${user.badges.length}):\n┃ ${user.badges.join("\n┃ ")}
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: ui });
     }
@@ -680,7 +739,7 @@ async function startBotEngine() {
     // SENARAI BADGES
     if (cmd === "badges" || cmd === "lencana") {
       return sock.sendMessage(from, { 
-        text: `╭━━━ 🏅 *KOLEKSI BADGES ANDA* ━━━\n┃ Nama: *${user.name}*\n┃\n┃ ${user.badges.map(b => `• ${b}`).join("\n┃ ")}\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+        text: `╭━━━ 🏅 *KOLEKSI BADGES ANDA* ━━━\n┃ Nama: *${user.name}*\n┃ Jumlah: ${user.badges.length} Lencana\n┃\n┃ ${user.badges.join("\n┃ ")}\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
       });
     }
 
@@ -734,7 +793,7 @@ async function startBotEngine() {
       user.stats.works += 1;
       user.cooldowns.workJobs[jobCdKey] = now + cdDuration;
 
-      await checkAndAwardBadges(user, sock, from, cleanSender);
+      await checkAndAwardBadges(user, sock, from);
       updateUser(cleanSender, user);
 
       const d = ROAST_KERJA[Math.floor(Math.random() * ROAST_KERJA.length)];
@@ -790,7 +849,7 @@ async function startBotEngine() {
       if (Math.random() < successRate) {
         const stolen = Math.floor(targetUser.cash * 0.25);
         targetUser.cash -= stolen; user.cash += stolen; user.stars = Math.min(5, user.stars + 1);
-        await checkAndAwardBadges(user, sock, from, cleanSender);
+        await checkAndAwardBadges(user, sock, from);
         updateUser(cleanSender, user); updateUser(cleanTarget, targetUser);
         const rR = ROAST_ROMPAK_SUCCESS[Math.floor(Math.random() * ROAST_ROMPAK_SUCCESS.length)];
         return sock.sendMessage(from, { text: `🥷 *ROMPAKAN BERJAYA!*\n*${user.name}* merembat *RM ${stolen.toLocaleString()}* daripada poket *${targetUser.name}*!\n\n💬 _"${rR}"_` });
@@ -831,7 +890,7 @@ async function startBotEngine() {
         const reward = Math.floor((vehicle.price * 0.08) + 250);
         user.cash += reward;
         user.stats.racesWon = (user.stats.racesWon || 0) + 1;
-        await checkAndAwardBadges(user, sock, from, cleanSender);
+        await checkAndAwardBadges(user, sock, from);
         updateUser(cleanSender, user);
         const rW = ROAST_RACE_WIN[Math.floor(Math.random() * ROAST_RACE_WIN.length)];
         return sock.sendMessage(from, { text: `🏁 *MENANG DRAG RACE!* 🏁\nJentera *${vehicle.name}* dipandu *${user.name}* potong angin di garisan penamat!\nHadiah Tunai: *+RM ${reward.toLocaleString()}*\n\n💬 _"${rW}"_` });
@@ -866,7 +925,7 @@ async function startBotEngine() {
       if (user.cash < v.price) return sock.sendMessage(from, { text: `❌ Duit poket tak cukup nak angkat *${v.name}*! Jangan nak berangan kaya sangat.` });
       
       user.cash -= v.price; user.vehicles.push(v.id);
-      await checkAndAwardBadges(user, sock, from, cleanSender);
+      await checkAndAwardBadges(user, sock, from);
       updateUser(cleanSender, user);
       return sock.sendMessage(from, { text: `🎉 Tahniah *${user.name}*! Geran sah *${v.name}* kini milik anda. Bawa elok-elok jangan sampai hancur lumba nanti!` });
     }
@@ -940,7 +999,7 @@ async function startBotEngine() {
       if (Math.random() < crimeRate || isOwner) {
         const reward = Math.floor(Math.random() * (c.rewardMax - c.rewardMin + 1)) + c.rewardMin;
         user.cash += reward; user.stats.crimes += 1; user.stars = Math.min(5, user.stars + c.stars);
-        await checkAndAwardBadges(user, sock, from, cleanSender);
+        await checkAndAwardBadges(user, sock, from);
         updateUser(cleanSender, user);
         const randD = ROAST_CRIME_SUCCESS[Math.floor(Math.random() * ROAST_CRIME_SUCCESS.length)];
         return sock.sendMessage(from, { text: `╭━━━ 🦹 *UNDERWORLD : BERJAYA* ━━━\n┃ Pelaku: *${user.name}*\n┃ Loot: +RM ${reward.toLocaleString()}\n┃ Wanted: ${"⭐".repeat(user.stars)}\n┃\n┃ _"${randD}"_\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━` });
