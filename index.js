@@ -79,6 +79,7 @@ function getUser(userId, pushName = "Warga Cyber") {
   if (!db.users[userId]) {
     db.users[userId] = {
       name: pushName || "Warga Cyber",
+      bio: "Tiada Bio",
       cash: 500,
       bank: 0,
       debt: 0,
@@ -398,7 +399,7 @@ const ROASTS = {
     "Kelajuan membunuh keraguan! Hadiah lumba dah selamat masuk akaun tunai kau.",
     "Litar Karak ke MEX Highway semua kau tapau bersih. Memang pelesit sejati!",
     "Jentera standard kilang pun boleh menang sebab rider ada ilmu. Tabik spring!",
-    "Lawan menangis tepi divider分裂 jalan tengok kau angkat piala kemenangan.",
+    "Lawan menangis tepi divider jalan tengok kau angkat piala kemenangan.",
     "Pecutan sempurna dari garisan mula! Tiada siapa mampu kejar bayang jentera kau.",
     "Drag race tamat dengan kemenangan manis! Belanja member ngeteh malam ni bro!",
     "Hebat tak bertempat! Nama kau kini meniti di bibir geng lumba haram seluruh bandar."
@@ -632,22 +633,47 @@ async function startBotEngine() {
     }
   });
 
-  // Sambut Ahli Baharu dengan Tag Nama Profil WhatsApp Sebenar
+  // Sambut Ahli Baharu: Tarik Nama WhatsApp & Bio Terkini
   sock.ev.on("group-participants.update", async (anu) => {
     if (anu.action === "add") {
       for (const num of anu.participants) {
         const cleanId = num.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-        let memberName = "";
+        
+        let wsName = "";
+        let wsBio = "";
+
         try {
           const [contactInfo] = await sock.onWhatsApp(cleanId);
-          memberName = contactInfo?.notify || "";
+          wsName = contactInfo?.notify || "";
         } catch (e) {}
 
-        const dbUser = getUser(cleanId, memberName || "Warga Baru");
-        const displayName = dbUser.name && dbUser.name !== "Warga Baru" ? dbUser.name : `@${num.split("@")[0]}`;
+        try {
+          const statusObj = await sock.fetchStatus(cleanId);
+          wsBio = statusObj?.status || "";
+        } catch (e) {
+          wsBio = "Tiada Bio";
+        }
+
+        const dbUser = getUser(cleanId, wsName || "Warga Baru");
+        const finalName = wsName || (dbUser.name !== "Warga Baru" ? dbUser.name : "Warga Baru");
+        const finalBio = wsBio && wsBio.trim() !== "" ? wsBio : "Tiada status bio";
+
+        dbUser.name = finalName;
+        dbUser.bio = finalBio;
+        updateUser(cleanId, dbUser);
+
+        const welcomeText = `╭━━━ 👋 *SELAMAT DATANG KE AIRI'S CORNER* ━━━
+┃ 👤 *Nama WhatsApp:* ${finalName}
+┃ 📝 *Bio / Status:* _"${finalBio}"_
+┃
+┃ 🎁 *Starter Pack:* +RM 500 & Badge [🌱 [COMMON] Warga Baru]
+┃ 📜 Sila patuhi peraturan komuniti & jangan jadi batu kayu!
+┃
+┃ 💡 Taip *.menu* untuk memulakan kerjaya & aktiviti RPG.
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
         await sock.sendMessage(anu.id, {
-          text: `👋 Salam *${displayName}*! Selamat datang ke komuniti Airi's Corner.\nStarter pack RM500 dan Badge [🌱 [COMMON] Warga Baru] dah dikreditkan ke akaun anda.\n\nTaip *.menu* untuk mula! Jangan jadi batu kayu dalam group ni ye.`,
+          text: welcomeText,
           mentions: [cleanId]
         }).catch(() => {});
       }
@@ -669,7 +695,7 @@ async function startBotEngine() {
   });
 
   // =========================================================================
-  // 🎲 5 RANDOM GROUP INTERACTIVE EVENTS (Setiap 20-35 Minit)
+  // 🎲 5 RANDOM GROUP INTERACTIVE EVENTS (Setiap 25 Minit)
   // =========================================================================
   setInterval(async () => {
     const db = loadDB();
@@ -1948,18 +1974,29 @@ async function startBotEngine() {
       const activeJob = JOBS.find(j => j.id === user.jobId)?.name || "Pekerja Am";
       const totalWealth = user.cash + user.bank;
 
+      let currentBio = user.bio || "Tiada Bio";
+      try {
+        const statusObj = await sock.fetchStatus(cleanSender);
+        if (statusObj?.status) {
+          currentBio = statusObj.status;
+          user.bio = currentBio;
+          updateUser(cleanSender, user);
+        }
+      } catch (e) {}
+
       const ui = `╭━━━ 🪪 *CYBER IDENTITY CARD (AIRI OS)* ━━━
-┃ 👤 Nama Warga: *${user.name}*
-┃ 🎖️ Gelaran: ${title}
-┃ 📱 Peranti Aktif: ${user.phoneName}
-┃ 💼 Jawatan Tetap: ${activeJob} [ID ${user.jobId}]
-┃ 💵 Tunai Poket: RM ${user.cash.toLocaleString()}
-┃ 🏦 Simpanan Bank: RM ${user.bank.toLocaleString()}
-┃ 🦈 Hutang Ah Long: RM ${user.debt ? user.debt.toLocaleString() : "0"}
-┃ 💎 Jumlah Nilai Aset: RM ${totalWealth.toLocaleString()}
-┃ 🏎️ Koleksi Jentera: ${user.vehicles.length} Unit
-┃ ⭐ Bintang Wanted: ${"⭐".repeat(user.stars) || "0 (Suci Murni)"}
-┃ 🏅 Jumlah Badges: ${user.badges.length} Lencana
+┃ 👤 *Nama Warga:* ${user.name}
+┃ 📝 *Bio / Status:* _"${currentBio}"_
+┃ 🎖️ *Gelaran:* ${title}
+┃ 📱 *Peranti Aktif:* ${user.phoneName}
+┃ 💼 *Jawatan:* ${activeJob} [ID ${user.jobId}]
+┃ 💵 *Tunai Poket:* RM ${user.cash.toLocaleString()}
+┃ 🏦 *Simpanan Bank:* RM ${user.bank.toLocaleString()}
+┃ 🦈 *Hutang Ah Long:* RM ${user.debt ? user.debt.toLocaleString() : "0"}
+┃ 💎 *Jumlah Nilai Aset:* RM ${totalWealth.toLocaleString()}
+┃ 🏎️ *Koleksi Jentera:* ${user.vehicles.length} Unit
+┃ ⭐ *Bintang Wanted:* ${"⭐".repeat(user.stars) || "0 (Suci Murni)"}
+┃ 🏅 *Jumlah Badges:* ${user.badges.length} Lencana
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
       return sock.sendMessage(from, { text: ui });
     }
