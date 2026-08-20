@@ -2,11 +2,47 @@ import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from 
 import pino from "pino";
 import fs from "fs";
 import http from "http";
+import QRCode from "qrcode";
 import dotenv from "dotenv";
 dotenv.config();
 
+let currentQR = "";
+let isConnected = false;
+
+// --- SERVER WEB SUPAYA QR KELUAR KAT BROWSER ---
 const PORT = process.env.PORT || 3000;
-http.createServer((req, res) => { res.end("Airi's Corner Bot Online"); }).listen(PORT);
+http.createServer(async (req, res) => {
+  res.writeHead(200, { "Content-Type": "text/html" });
+  if (isConnected) {
+    res.end(`
+      <div style="text-align:center;margin-top:50px;font-family:sans-serif;">
+        <h1 style="color:green;">✅ Airi's Corner Bot Online!</h1>
+        <p>WhatsApp bot sudah berjaya disambungkan dan sedang berjalan 24/7.</p>
+      </div>
+    `);
+  } else if (currentQR) {
+    try {
+      const qrImage = await QRCode.toDataURL(currentQR);
+      res.end(`
+        <div style="text-align:center;margin-top:40px;font-family:sans-serif;">
+          <h2>⚡ AIRI'S CORNER - SCAN QR CODE ⚡</h2>
+          <p>Buka WhatsApp > Linked Devices > Link a Device, dan scan QR di bawah:</p>
+          <img src="${qrImage}" style="border: 4px solid #333; border-radius: 8px; width: 300px; height: 300px;"/>
+          <p style="color:gray;font-size:12px;margin-top:10px;">Refresh page jika QR tamat tempoh.</p>
+        </div>
+      `);
+    } catch (err) {
+      res.end("Ralat memaparkan QR: " + err.message);
+    }
+  } else {
+    res.end(`
+      <div style="text-align:center;margin-top:50px;font-family:sans-serif;">
+        <h2>Sedang Menjana QR Code...</h2>
+        <p>Sila tunggu beberapa saat dan refresh semula page ini.</p>
+      </div>
+    `);
+  }
+}).listen(PORT);
 
 const DB_FILE = "./database.json";
 function loadDB() {
@@ -160,21 +196,31 @@ async function startBotEngine() {
     auth: state,
     logger: pino({ level: "silent" }),
     browser: Browsers.macOS("Desktop"),
-    printQRInTerminal: true // PENTING: Membolehkan QR code dicetak pada log konsol
+    printQRInTerminal: false
   });
 
   sock.ev.on("creds.update", saveCreds);
 
-  // --- CONNECTION UPDATE (PENTING SUPAYA QR CODE KELUAR) ---
+  // --- HANTAR QR CODE KE BROWSER ---
   sock.ev.on("connection.update", (update) => {
-    const { connection, lastDisconnect } = update;
+    const { connection, lastDisconnect, qr } = update;
+    
+    if (qr) {
+      currentQR = qr;
+      isConnected = false;
+      console.log("⚡ QR Code sedia untuk diimbas di Web Browser!");
+    }
+
     if (connection === "close") {
+      isConnected = false;
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
       console.log("Connection closed. Reconnecting...", shouldReconnect);
       if (shouldReconnect) {
         startBotEngine();
       }
     } else if (connection === "open") {
+      isConnected = true;
+      currentQR = "";
       console.log("✅ AIRI'S CORNER BOT SUCCESSFULLY CONNECTED TO WHATSAPP!");
     }
   });
