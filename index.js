@@ -7,7 +7,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // --- 0. KUNCI KESELAMATAN OWNER MUTLAK (AMAR) ---
-const OWNER_NUMBER = "601166533534@s.whatsapp.net";
+// Mengiktiraf nombor 01166533534 dalam pelbagai variasi format
+const OWNER_PHONE = "1166533534";
 
 let currentQR = "";
 let isConnected = false;
