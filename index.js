@@ -31,33 +31,17 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (DYNAMIC AUTO-DISCOVERY MODEL GROQ)
+// 🤖 1. ENJIN AI SHADOW AIRI (MODEL DISAHKAN DARI LOG AKAUN GROQ)
 // =========================================================================
 const RAW_GROQ_KEY = (process.env.GROQ_API_KEY || "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").trim();
 const groq = new Groq({ apiKey: RAW_GROQ_KEY });
 
-let cachedActiveModel = null;
-
-// Fungsi auto-fetch model yang sah dan aktif dari pelayan Groq secara real-time
-async function getWorkingGroqModel() {
-  if (cachedActiveModel) return cachedActiveModel;
-  try {
-    const list = await groq.models.list();
-    const activeModels = list.data
-      .filter(m => m.active !== false && !m.id.includes("whisper") && !m.id.includes("tts") && !m.id.includes("vision"))
-      .map(m => m.id);
-
-    console.log("📋 Model Groq Aktif Terkini:", activeModels);
-
-    // Utamakan model LLaMA atau Mixtral yang tersedia
-    const preferred = activeModels.find(id => id.includes("llama") || id.includes("mixtral") || id.includes("gemma")) || activeModels[0];
-    cachedActiveModel = preferred;
-    return preferred;
-  } catch (e) {
-    console.error("⚠️ Gagal menyenaraikan model Groq:", e.message);
-    return "llama-3.3-70b-versatile";
-  }
-}
+const ACTIVE_CHAT_MODELS = [
+  "qwen/qwen3.6-27b",
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+  "allam-2-7b"
+];
 
 async function askAiriAI(promptText, userName = "Warga Cyber") {
   const currentTimeMY = new Date().toLocaleString("ms-MY", { 
@@ -78,60 +62,438 @@ Personaliti:
 - Jawab secara padat, jelas dan tidak terlalu meleret (maksimum 2-3 perenggan).
 `;
 
-  try {
-    const modelToUse = await getWorkingGroqModel();
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: promptText }
-      ],
-      model: modelToUse,
-      temperature: 0.7,
-      max_tokens: 400
-    });
+  for (const modelId of ACTIVE_CHAT_MODELS) {
+    try {
+      const completion = await groq.chat.completions.create({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: promptText }
+        ],
+        model: modelId,
+        temperature: 0.7,
+        max_tokens: 400
+      });
 
-    return chatCompletion.choices[0]?.message?.content?.trim() || "Airi dengar! Tapi tak pasti nak jawab macam mana tadi hehe~ 💙";
-  } catch (err) {
-    console.error("⚠️ Ralat askAiriAI:", err?.message || err);
-    cachedActiveModel = null;
-    return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
+      const reply = completion.choices[0]?.message?.content?.trim();
+      if (reply) return reply;
+    } catch (err) {
+      console.warn(`⚠️ Model [${modelId}] gagal: ${err?.message}`);
+    }
   }
-}
 
-// Enjin Naratif Dinamik untuk Hasil Aksi & Event RPG
-async function generateNarrative(scenarioType, details, fallbackText) {
-  try {
-    const prompt = `
-Kau ialah Airi, maskot AI bot RPG komuniti WhatsApp "Airi's Corner".
-Tugas kau: Tulis 1 atau 2 ayat naratif / ulasan santai Melayu yang unik, kelakar, bersemangat, atau menyengat untuk situasi berikut:
-
-Jenis Senario: ${scenarioType}
-Maklumat: ${JSON.stringify(details)}
-
-Syarat:
-- Bahasa santai Melayu pasar/slanga moden harian (contoh: tapau, rempit, gempak, padu, kantoi, menangis dompet, fuhh, mantap).
-- Maksimum 1-2 ayat sahaja. Padat, hidup dan terus ke situasi!
-`;
-
-    const modelToUse = await getWorkingGroqModel();
-    const res = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: "Kau ialah pencerita naratif aksi RPG yang sangat santai, ceria dan berbisa." },
-        { role: "user", content: prompt }
-      ],
-      model: modelToUse,
-      temperature: 0.85,
-      max_tokens: 120
-    });
-
-    return res.choices[0]?.message?.content?.trim() || fallbackText;
-  } catch (e) {
-    return fallbackText;
-  }
+  return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
 }
 
 // =========================================================================
-// 🌐 2. PELAYAN WEB RINGAN UNTUK PAPARAN QR DI RENDER
+// 💬 2. BANK 20 VARIASI AYAT SETIAP SENARIO RPG (ZERO API TOKEN USAGE)
+// =========================================================================
+const NARRATIVE_BANKS = {
+  WORK_SHIFT: [
+    "Fuhh berpeluh ketiak buat kerja tadi, tapi bila nampak duit masuk terus hilang penat hehe~!",
+    "Bagus betul disiplin kerja hari ni! Bos tengok pun senyum lebar sampai telinga.",
+    "Shift harini memang brutal, nasib baik sempat tapau upah sebelum balik rumah!",
+    "Siap pun tugasan! Jangan lupa simpan separuh dalam bank, jangan boros sangat tau~",
+    "Gaya kerja dah macam profesional cyberpunk, upah masuk poket terus tersenyum manis!",
+    "Alhamdulillah selesai satu shift halal. Rezeki jangan ditolak, musuh jangan dicari!",
+    "Penat-penat buat kerja pun berbaloi, dompet dah mula kembung balik uwu~",
+    "Tenaga kerja berkaliber! Majikan siap puji cara kau selesaikan tugasan sepantas kilat.",
+    "Bekerja bersungguh-sungguh demi sesuap nasi lemak dan segelas teh tarik kaw!",
+    "Tugasan mencabar berjaya diselesaikan tanpa sebarang kecacatan sistem. Mantap!",
+    "Hasil titik peluh hari ini sungguh manis, boleh la buat belanja member lepak kedai mamak!",
+    "Kerja santai tapi masyuk! Teruskan usaha tangga kejayaan dalam dunia Airi's Corner.",
+    "Shift penuh produktiviti! Dompet yang kempis kini kembali bertenaga.",
+    "Bos bagi bonus senyuman sebab kau buat kerja laju gila macam enjin V12!",
+    "Selesai tugas dengan penuh dedikasi. Jangan lupa bayar zakat dan belanja Airi ya hehe~",
+    "Kerja keras demi mengejar impian menjadi taikun terulung di Airi's Corner!",
+    "Minyak pelincir ekonomi berjalan lancar, upah berbaloi dengan usaha yang dicurahkan.",
+    "Fuhh selesai satu lagi misi kerja halal, boleh balik rumah rehat dengan tenang!",
+    "Prestasi kerja cemerlang! Gaji masuk terus rasa nak pergi showroom usha jentera baru.",
+    "Keringat hari ini penentu masa depan jutawan esok. Terbaik pekerja teladan!"
+  ],
+  FISHING_SUCCESS: [
+    "Perghh joran melengkung tajam macam nak patah, sekali tarik ikan padu naik darat!",
+    "Mantap tarikan reel kau harini! Peraih ikan jeti terus buka dompet tebal.",
+    "Bukan biasa-biasa ilmu memancing kau ni, ikan monster pun tunduk pasrah!",
+    "Ikan ni punya la melawan arus, nasib baik tali pancing tak putus tengah laut!",
+    "Rezeki tak pernah salah alamat! Sekali sentap terus dapat hasil tangkapan lumayan.",
+    "Tergolek ikan atas jeti! Bau hanyir tolak tepi, yang penting fulus berkepuk!",
+    "Fuhh pertarungan sengit 10 minit akhirnya dimenangi oleh pemancing handal kita!",
+    "Umpan mantap hasil pun padu! Ikan besar ni kalau jual terus kaya mendadak.",
+    "Peraih jeti senyum sampai telinga nampak hasil tangkapan rare macam ni hehe~",
+    "Kail berumpan di laut dalam, ikan terpikat masuk ke balang!",
+    "Umpan bau peram memang menjadi rahsia tangkapan monster harini. Padu bos!",
+    "Air tenang jangan disangka tiada buaya, sekali tarik ikan mahal lekat di mata kail!",
+    "Skill memancing bertaraf pro! Reel berpusing ligat menahan asakan mangsa.",
+    "Hasil tangkapan segar dari muara, terus jadi rebutan restoran lima bintang!",
+    "Rezeki joran bergoyang! Hari ni makan besar warga Airi's Corner.",
+    "Tangkapan emas hari ini membuktikan kesabaran seorang kaki pancing sejati!",
+    "Ikan ni ingat dia boleh lari, sekali kena libas joran terus terkulai layu!",
+    "Hebat betul firasat lubuk kau harini, baling mana-mana pun mesti sangkut ikan padu.",
+    "Senyuman terukir di wajah bila nampak sisik berkilau naik ke permukaan air!",
+    "Ikan mega berjaya ditewaskan! Penuh gaya pemancing elit dunia siber."
+  ],
+  FISHING_JUNK: [
+    "Aduhai... ingatkan ikan duyung menyentap, sekali naik kasut but getah reput!",
+    "Menangis tepi jeti tengok sampah sarap lekat kat mata kail. Cuba lagi nanti ya~",
+    "Joran melengkung sakan ingatkan jerung monster, rupanya tayar buruk berlumut adeh!",
+    "Kena prank dengan arus laut! Balik-balik sampah juga yang dinaikkan.",
+    "Umpan habis tapi yang naik cuma plastik sampah hanyut. Bersihkan laut kejap hehe~",
+    "Nasib badan, ikan ke mana umpan ke mana... buang balik sampah ni ke darat!",
+    "Fuhh penat bergusti tarik joran, tengok-tengok selipar jamban jambatan gantung!",
+    "Mata kail tersangkut dekat khazanah sampah dasar sungai. Jangan putus asa ya!",
+    "Reel menjerit kuat ingatkan paus, rupanya tin biskut karat zaman purba!",
+    "Laut bagi amaran suruh bersihkan alam sekitar nampaknya harini hehe~",
+    "Tergelak peraih jeti nampak barang yang kau naikkan tadi. Sabar ya warga cyber!",
+    "Bukan rezeki lagi kali ni, sampah sarap sungai berjaya dibersihkan secara percuma.",
+    "Ingatkan jackpot laut dalam, rupanya seluar jeans koyak hanyut dari hulu sungai!",
+    "Mata kail tersangkut ranting kayu reput. Kena asah balik teknik memancing tu!",
+    "Ikan lari sembunyi, yang tinggal cuma plastik mi segera terapung. Aduh!",
+    "Umpan sedap tapi ikan tak sudi, sampah juga yang setia melekat di joran.",
+    "Pancing punya pancing, dapat lesen pembersih jeti sukarela harini!",
+    "Aduh baling jauh-jauh tapi sauk sampah tepi tebing juga. Tabahkan hatimu!",
+    "Ikan muara sedang diet agaknya harini, cuma sampah sudi jamah kail.",
+    "Dugaan kaki pancing! Tarik nafas, buang sampah, dan pasang umpan baru."
+  ],
+  RACE_WIN: [
+    "Asap ekzos tinggal kat belakang, jentera meluncur laju macam peluru pandu!",
+    "Pecutan sempurna di garisan penamat! Lawan terus termenung hisap asap tayar!",
+    "Enjin ngaum sampai litar bergegar, trofi juara drag sah milik kau harini!",
+    "Talaan ECU mantap tak sia-sia, potong lawan masa gear 4 macam angin lalu!",
+    "Terkebil-kebil pihak lawan nampak lampu belakang jentera kau lesap di kejauhan!",
+    "Shift gear padu tanpa slip! Kemenangan mutlak di atas tar jalanan malam ini.",
+    "Pelesit litar malam sejati! Hadiah kemenangan penuh dimasukkan ke akaun tunai.",
+    "Meter kelajuan cecah tahap maksima, lawan terpaksa angkat bendera putih!",
+    "Deruman ekzos memecah hening malam, juara jalanan dinobatkan sekali lagi!",
+    "Gaya pemanduan agresif tapi terkawal, trofi dan duit taruhan selamat disapu bersih!",
+    "Jentera berdesing laju, tiada siapa mampu mengejar bayang-bayang kelajuan kau!",
+    "Pecutan padu dari garisan mula hingga tamat tanpa memberi ruang kepada musuh.",
+    "Litar malam ini kau yang punya! Sorakan peminat bergema rai kejuaraan drag.",
+    "Timing clutch memang tepat pada saat, jentera melompat ke hadapan dengan megah!",
+    "Lawan menangis di bucu tiang lampu tengok jentera kau tapau podium pertama!",
+    "Kelajuan supersonik darat membuktikan pelaburan modifikasi bengkel berbaloi gila!",
+    "Pintasan maut di selekoh terakhir mengunci kemenangan mutlak tanpa keraguan!",
+    "Asap tayar membakar aspal litar, nama kau terpahat sebagai raja lumba highway!",
+    "Dominasi penuh dari mula sampai tamat, bawa balik hadiah tunai dengan megah!",
+    "Kuda lumba berkuasa kuda tinggi! Tiada lawan yang mampu menandingi kelajuan ini."
+  ],
+  RACE_CRASH: [
+    "Adoi oversteer teruk dekat selekoh, jentera terus cium divider jalan raya!",
+    "Enjin panas mendidih sampai keluar asap putih, mekanik dah standby resit baiki!",
+    "Terlalu yakin masa tekan minyak, sekali tayar hilang grip terus spin 360 darjah!",
+    "Tergolek tepi longkang litar! Nasib baik nyawa selamat, cuma dompet kena bayar towing.",
+    "Niat nak memotong gaya hero filem, tapi tersagat dinding trek pula adeh!",
+    "Bonggol jalanraya menamatkan impian kejuaraan harini. Bersabar la kawan!",
+    "Kotak gear meragam masa tarik RPM tinggi, terpaksa tolak jentera ke tepi trek.",
+    "Brek lambat sangat sampai tayar lock, jentera meluncur langgar kon keselamatan!",
+    "Pecah radiator di tengah litar! Asap berkepul-kepul menutupi pandangan.",
+    "Kecundang di litar sendiri, kos bengkel harini confirm buat menangis tepi bucu.",
+    "Terlebih tekan NOS sampai enjin blow! Mekanik bengkel tersenyum dapat job besar.",
+    "Gagal kawal stereng pada kelajuan tinggi, jentera berpusing macam gasing moden!",
+    "Hilang kawalan di selekoh tajam akibat jalan licin, selamat mendarat di rumput.",
+    "Towing truck dah sampai untuk angkut jentera. Sediakan fulus untuk pomen!",
+    "Litar malam penuh ranjau, tayar bocor masa nak sprint ke garisan penamat.",
+    "Impian podium lebur sekelip mata bila jentera berpusing langgar tiang tayar!",
+    "Mekanik geleng kepala tengok bumper jentera bersepai di atas jalan raya.",
+    "Terlalu agresif mengejar musuh sampai terbabas ke bahu jalan litar!",
+    "Kerosakan mekanikal menamatkan perlumbaan lebih awal. Baiki dulu jentera tu!",
+    "Jentera merajuk minta rehat nampaknya, melayang duit poket bayar kos membaiki."
+  ],
+  CRIME_SUCCESS: [
+    "Langkah licik macam bayang-bayang malam, hasil rompakan berjaya disorok kemas!",
+    "Siren polis berbunyi jauh di belakang, kau dah santai minum kopi kira duit tebal!",
+    "Misi rompakan berjalan lancar ikut pelan tanpa tinggalkan walau satu cap jari pun!",
+    "CCTV berjaya digodam, barang bernilai lesap tanpa ada sesiapa yang perasan hehe~!",
+    "Pintu bilik kebal terbuka luas, duit berikat-ikat masuk dalam beg sandang!",
+    "Underworld mafia tabik spring tengok kepantasan kau sapu bersih hasil malam ni!",
+    "Gaya perompak elit kelas atasan, masuk senyap keluar bawak beg penuh tunai!",
+    "Polis peronda terpinga-pinga tengok tempat kejadian dah kosong tak tinggal habuk!",
+    "Operasi gelap selesai dengan jayanya, ranking wanted level makin naik bergaya!",
+    "Kelicikan luar biasa menewaskan semua sensor keselamatan moden siber!",
+    "Semua sistem penggera dimatikan tepat pada saat, beg duit penuh terisi!",
+    "Laluan tikus berjaya ditembusi, hasil rampasan selamat dicairkan ke pasaran gelap.",
+    "Pecah masuk paling kemas dalam sejarah underworld Airi's Corner!",
+    "Pengawal keselamatan masih berdengkur lena masa kau sauk semua barang bernilai.",
+    "Eksploitasi sistem berjaya 100%, wang tunai mengalir masuk ke poket peribadi.",
+    "Jejak digital dipadamkan serta-merta, pihak berkuasa kekal buntu cari suspek.",
+    "Loot berharga berjaya dibawa lari melepasi sekatan lorong gelap bandar!",
+    "Operasi heist bertaraf antarabangsa! Kingpin underworld tersenyum puas.",
+    "Kunci keselamatan dipintas tanpa bunyi, hasil rompak melimpah-ruah harini.",
+    "Berjaya lari dari zon merah sebelum unit khas polis sempat tiba di lokasi!"
+  ],
+  CRIME_BUSTED: [
+    "Baru nak pegang pemegang pintu, sekali lampu siren biru-merah suluh muka!",
+    "Kantoi basah di tempat kejadian! Tangan dah kena gari besi lokap balai.",
+    "Penggera keselamatan memekak satu blok, tak sempat lari terus kena kepung!",
+    "Polis peronda dah tunggu depan pintu keluar dengan senyuman sinis adeh!",
+    "Langkah sumbang membawa padah, meringkuk la dalam lokap sejukkan kepala!",
+    "Kamera litar tertutup rakam muka kau jelas sangat, terus kena cekup atas jalan!",
+    "Anjing pengesan polis hidu jejak kau, tiada jalan keluar selain serah diri!",
+    "Pihak berkuasa dah pasang perangkap awal-awal, kau terus masuk jerat!",
+    "Niat nak jadi perompak handal tapi tersilap potong wayar penggera balai!",
+    "Menangis dalam lokap bayar denda mahkamah. Jangan buat hal lagi lepas ni ya!",
+    "Ops Cantas Bukit Aman sambut kau depan pintu dengan gari berkilat!",
+    "Tergari kemas di belakang belakang van polis, impian jutawan gelap terkubur sekejap.",
+    "Sensor infra-merah berbunyi serta-merta, unit peronda kepung dari semua sudut!",
+    "Lari masuk lorong mati rupanya! Pihak polis terus acu gari besi keselamatan.",
+    "Rekod jenayah bertambah tebal, sediakan duit jamin kalau nak bebas awal.",
+    "Silap langkah kantoi di roadblock keselamatan, barang kes terus disita!",
+    "Pihak keselamatan bertindak pantas kilat menangkap suspek sebelum sempat lari.",
+    "Terperangkap dalam bilik kawalan tanpa jalan keluar, pasrah digari penguatkuasa.",
+    "Denda mahkamah melayang dari dompet, masuk lokap rehat sambil makan roti kering!",
+    "Pelan heist bocor ke pihak berkuasa, terus kena serbu di lokasi kejadian!"
+  ],
+  BANK_HACK_SUCCESS: [
+    "Firewall bank runtuh sekelip mata, baki akaun sasaran terus mengalir masuk poket!",
+    "Serangan siber zero-day berjaya! Sistem pangkalan data bank mangsa lompang habis.",
+    "Decrypter berfungsi sempurna, duit simpanan bank mangsa disedut tanpa belas kasihan!",
+    "Pintasan transaksi digital berjaya, duit kripto dan tunai selamat dipindahkan!",
+    "Kod bypass tepat sasaran! Akaun bank mangsa tinggal baki ciput menangis bucu katil.",
+    "Penggodam elit siber beraksi! Sistem perbankan mangsa lumpuh ditelan algoritma jahat.",
+    "Protokol keselamatan bank tembus semudah ABC, transaksi jutawan gelap berjaya!",
+    "Notifikasi SMS mangsa berbunyi panik tengok duit lesap dipindahkan ke akaun kau!",
+    "Payload eksploitasi meletup dalam server bank, sedutan wang tunai berjalan lancar.",
+    "Skrip terminal hijau berpusing laju, akaun mangsa berjaya dibersihkan sepenuhnya!",
+    "Firewall bank utama langsung tak mampu tahan serangan brute-force siber kau!",
+    "Kunci penyulitan berjaya dipecahkan, sejumlah dana mangsa masuk ke dompet gelap.",
+    "Sistem pangkalan data perbankan berjaya dimanipulasi tanpa meninggalkan log jejak!",
+    "Token transaksi disahkan secara palsu, sedutan wang tunai berlaku sepantas kilat.",
+    "Mangsa terkejut baki simpanan bank susut mendadak dikerjakan penggodam elit!",
+    "Akses root bank dikuasai, aliran dana disalurkan ke akaun proksi tanpa sekatan.",
+    "Pelayan keselamatan bank hang sekejap masa pemindahan dana haram dijalankan!",
+    "Injeksi kod SQL berjaya bypass authentication, baki akaun mangsa kering kontang.",
+    "Siber trojan berjaya tembusi peti besi digital perbankan mangsa dengan bergaya.",
+    "Kemenangan mutlak hacker underground, pundi-pundi akaun bertambah kaya-raya!"
+  ],
+  ROB_SUCCESS: [
+    "Acukan tepat sasaran, mangsa gigil serah semua tunai poket tanpa banyak soal!",
+    "Rembatan pantas di lorong gelap! Dompet mangsa licin disapu bersih tanpa sisa.",
+    "Mangsa tergamam tak sempat buat apa-apa, duit dalam poket selamat berpindah tuan!",
+    "Operasi samun siber terpantas harini! Bawa lari habuan lumayan sambil ketawa besar.",
+    "Kekasaran jalanan membuahkan hasil, mangsa pasrah dompet tebalnya dirampas!",
+    "Beg mangsa terbuka luas, tangan laju menyeluk sauk semua kepingan not wang!",
+    "Jeritan mangsa tenggelam dalam angin malam masa kau memecut lari bawa duit!",
+    "Bukan main tebal dompet mangsa harini, memang rezeki terpijak perompak jalanan!",
+    "Langkah menyelinap dari belakang berjaya, mangsa hanya mampu tengok duitnya lesap.",
+    "Samun berjaya tanpa sebarang pergelutan, poket sendiri kini kembung berisi wang!",
+    "Tangan pantas menyentap dompet mangsa sebelum sempat dia menjerit minta tolong!",
+    "Serangan hendap di lorong sunyi berjaya, semua duit poket mangsa disapu bersih.",
+    "Mangsa terus terdiam kelu bila sedar dompetnya dah bertukar tangan sepantas kilat.",
+    "Larian pecut selepas merembat duit mangsa langsung tak mampu dikejar sesiapa!",
+    "Loot rompakan PvP bertaraf lumayan, mangsa kena kerja balik isi poket tu hehe~",
+    "Gaya samun profesional tanpa tinggalkan kesan, duit mangsa selamat masuk poket!",
+    "Rezeki lorong gelap berpihak kepada si perompak licik, mangsa terduduk pasrah.",
+    "Dompet mangsa berjaya dipancing keluar dari poket belakang tanpa disedari!",
+    "Kejutan rompakan mengejutkan mangsa, wang tunai berkepuk bertukar pemilik baru.",
+    "Rompakan berani mati membuahkan hasil lumayan, senyum lebar kira duit curi!"
+  ],
+  ROB_FAIL_ROAST: [
+    "Niat nak merompak tapi tangan gigil sampai dompet sendiri jatuh tercicir depan mangsa!",
+    "Belum sempat acah hero, mangsa dah jerit panggil polis satu kampung kejar kau!",
+    "Terpijak kulit pisang masa nak samun, terus terlentang kena gelak dengan mangsa adeh!",
+    "Mangsa rupanya ada tali pinggang hitam taekwondo, kau kena lanyak sampai lebam!",
+    "Silap sasaran! Mangsa langsung takde duit, kau pula yang kena tangkap polis peronda.",
+    "Gaya perompak amatur sangat, mangsa acah sikit terus lari lintang-pukang masuk parit!",
+    "Tertinggal kad pengenalan sendiri masa nak merompak, polis terus cari kat rumah!",
+    "Mangsa buat muka tak bersalah sambil tunjuk poket kosong, merompak angin la kau harini!",
+    "Kantoi basah masa cuba seluk poket, terus kena jerkah sampai hilang semangat!",
+    "Merompak tak dapat, denda balai polis pula melayang RM500. Memang rugi teruk!",
+    "Mangsa hempas kau ke lantai guna teknik judo, terus meraung minta ampun tepi jalan!",
+    "Perompak paling kelakar abad ini! Niat nak samun tapi tersilap hulur duit sendiri.",
+    "Larian kau terlalu perlahan sampai orang ramai senang-senang kepung dan tangkap!",
+    "Mangsa jerit 'PENCURI!' kuat gila sampai gegar satu group WhatsApp, terus kantoi!",
+    "Tersalah pilih mangsa, rupanya inspektor polis yang menyamar berbaju biasa adeh!",
+    "Kaki terseliuh masa nak melarikan diri, padan muka kena seret masuk balai lokap.",
+    "Mangsa baling helmet tepat kena dahi kau, terus berpinar mata tersungkur di jalan.",
+    "Senjata mainan kau patah dua masa mengugut mangsa, terus kena bantai beramai-ramai!",
+    "Rompakan paling memalukan dalam sejarah, mangsa sempat rakam video buat TikTok viral!",
+    "Gagal total! Poket mangsa selamat, poket kau pula kena denda dan sumbat lokap."
+  ],
+  PET_DEFEND: [
+    "Pengawal haiwan melompat terkam perompak sampai koyak seluar lari lintang pukang!",
+    "Anjing pengawal menyalak garang dan gigit betis musuh sampai merayu minta nyawa!",
+    "Dron AI sentry memancarkan laser renjatan elektrik, perompak terus kejung atas tar!",
+    "Serigala siber menyambar pantas, mangsa selamat dan perompak kena denda ganti rugi!",
+    "Pengawal bionik bertindak pantas menepis serangan musuh dengan perisai titanium!",
+    "Cyborg panther mengaum garang, perompak terus terkencing dalam seluar cabut lari!",
+    "Naga kripto sembur gelombang plasma mikro, musuh hangus dompet terus lari!",
+    "Haiwan peliharaan setia melindungi tuannya, cubaan samun musuh gagal sepenuhnya!",
+    "Sentry pengimbas mengunci sasaran dan melepaskan renjatan voltan tinggi pada perompak!",
+    "Perompak tak sempat dekat, pengawal bionik dah terajang musuh masuk longkang!",
+    "Cengkaman kuku serigala siber membuktikan keselamatan tuannya tidak boleh dicabar!",
+    "Anjing pengawal setia menyalak membabi buta, perompak panik buang duit ganti rugi.",
+    "Dron sentry tembak peluru getah tepat kena dahi perompak, terus tersungkur layu!",
+    "Haiwan peliharaan tuannya bukan calang-calang, perompak lari macam nampak hantu!",
+    "Renjatan pertahanan automatik haiwan peliharaan membuatkan musuh kejang otot!",
+    "Perompak ingatkan mudah nak samun, sekali kena sergah dengan raksasa bionik!",
+    "Pengawal setia melompat menjadi benteng, menyelamatkan setiap sen duit poket tuannya.",
+    "Aura garang haiwan pengawal cukup untuk buat perompak menangis minta maaf!",
+    "Perisai bionik haiwan peliharaan memantulkan balik serangan musuh serta-merta.",
+    "Serbuan pantas pengawal siber menumbangkan musuh sebelum sempat menyentuh dompet!"
+  ],
+  LHDN_TAX: [
+    "Pegawai audit LHDN menyerbu premis dan menyita wang tunai tidak berisytihar!",
+    "Surat kuning LHDN sampai ke rumah, cukai pendapatan tertunggak dipotong terus!",
+    "Audit forensik kewangan membongkar simpanan tunai rahsia yang cuba disorok!",
+    "Pegawai cukai memeriksa akaun dan mengenakan penalti sitaan atas kekayaan melampau!",
+    "Siasatan audit mendapati aliran tunai meragukan, sitaan cukai dilakukan serta-merta!",
+    "Aliran tunai luar biasa dikesan radar kerajaan, cukai pendapatan terus dipotong!",
+    "Pegawai LHDN datang mengetuk pintu bersama notis taksiran cukai tambahan!",
+    "Aset tunai yang disimpan bawah bantal dikesan dan disita mengikut akta cukai negara!",
+    "Pemeriksaan mengejut sistem kewangan mendapati cukai keuntungan gagal dibayar!",
+    "Sitaan rasmi LHDN berjalan lancar, sebahagian tunai poket mangsa dipotong!",
+    "Akaun bank dan tunai diselidik rapi, penalti audit terus ditolak dari poket mangsa.",
+    "LHDN hantar surat saman taksiran cukai tahunan, duit tunai disedut masuk perbendaharaan!",
+    "Pegawai penguatkuasa sita wang tunai tidak berlesen semasa operasi audit mengejut!",
+    "Cubaan lari dari cukai gagal bila sistem AI LHDN mengesan rekod transaksi mangsa!",
+    "Operasi audit mega menyasarkan warga cyber berduit tebal, sitaan cukai dikenakan!",
+    "Notis merah audit sampai ke peti surat, denda kelewatan cukai dipotong serta-merta.",
+    "Siasatan mendapati perbelanjaan melebihi pendapatan rasmi, cukai sitaan dikuatkuasakan!",
+    "Pegawai audit sita sebahagian kekayaan untuk dana pembangunan infrastruktur negara!",
+    "Duit tunai poket mangsa diselidik dan dikenakan pemotongan cukai keuntungan modal!",
+    "Serbuan audit LHDN membuktikan tiada sesiapa mampu lari daripada bayar cukai!"
+  ],
+  RANSOMWARE_ATTACK: [
+    "Virus trojan menyulitkan fail sistem peranti, wang tebusan siber disedut paksa!",
+    "Skrin peranti terkunci merah dengan teks tebusan, duit poket lesap ditelan penggodam!",
+    "Serangan ransomware darkweb menembusi keselamatan peranti dan mengunci data peribadi!",
+    "Penggodam tanpa nama menuntut wang tebusan segera untuk menyahkunci fail peranti!",
+    "Sistem operasi peranti dijangkiti malware pemeras ugut, wang tunai lesap sekelip mata!",
+    "Kod perosak menyulitkan dompet digital peranti, bayaran tebusan dipotong paksa!",
+    "Peranti mangsa lumpuh sepenuhnya akibat klik pautan phishing yang mencurigakan!",
+    "Penggodam antarabangsa mengunci storan peranti dan menyedut pampasan tunai!",
+    "Serangan siber zero-day menyebarkan ransomware berbahaya ke dalam sistem peranti!",
+    "Fail penting peranti disandera oleh sindiket penggodam siber, wang tebusan melayang!",
+    "Skrin peranti bertukar hitam dengan kiraan masa tebusan, tunai poket lesap serta-merta!",
+    "Malware pemeras ugut menyedut baki tunai mangsa sebelum membuka semula kunci sistem.",
+    "Pintu belakang sistem diceroboh penggodam, data disulitkan dengan algoritma RSA-4096!",
+    "Serangan ransomware melumpuhkan komunikasi peranti, wang tebusan lesap ke darkweb.",
+    "Peranti mangsa terkunci rapat, terpaksa bayar wang tebusan siber untuk pulihkan data!",
+    "Penggodam bayangan mengeksploitasi kelemahan firewall dan menuntut wang tebusan!",
+    "Virus siber menyandera peranti pintar mangsa, pampasan tunai dipotong tanpa amaran.",
+    "Sistem keselamatan siber gagal membendung ransomware, wang mangsa melayang lesap!",
+    "Penggodam darkweb berjaya menyedut wang tebusan selepas mengunci fail mangsa.",
+    "Notis ransomware terpapar pada skrin, duit tunai lesap sebelum kunci sistem dipulihkan!"
+  ],
+  AES_SPEED_FINE: [
+    "Kamera AES lebuhraya merakam jentera memecut laju melebihi had laju kebangsaan!",
+    "Flash kamera perangkap kelajuan menyala terang di highway, saman terus masuk!",
+    "Jentera dipandu macam peluru di lebuhraya, surat saman AES sampai ke rumah!",
+    "Sensor had laju lebuhraya mengesan kelajuan melampau, denda saman dipotong automatik!",
+    "Terlalu asyik menekan pedal minyak di lebuhraya, kamera perangkap laju rakam plat nombor!",
+    "Saman AES kelajuan tinggi dikeluarkan oleh sistem kawalan trafik lebuhraya!",
+    "Kamera automatik merakam jentera memotong di lorong kecemasan pada kelajuan tinggi!",
+    "Operasi had laju kamera pintar mengenakan denda kompaun atas pemanduan berbahaya!",
+    "Flash kamera AES menyilaukan mata pemandu di lebuhraya, duit denda terus ditolak!",
+    "Pemanduan melebihi 110 km/h di zon perangkap laju membawa padah saman melayang!",
+    "Sistem AES pintar merakam bukti bergambar jentera memecut laju di lebuhraya!",
+    "Denda had laju automatik dipotong terus dari akaun pemandu jentera laju!",
+    "Kamera perangkap kelajuan highway merakam aksi rempit jentera tanpa belas kasihan.",
+    "Surat saman AES bergambar sampai ke peti surat, denda kelajuan wajib dibayar!",
+    "Sensor radar lebuhraya mengunci kelajuan jentera dan mengeluarkan saman serta-merta.",
+    "Terlebih tekan throttle di zon kamera AES, kompaun kelajuan melayang dari dompet!",
+    "Sistem pemantauan trafik lebuhraya merakam kesalahan memandu melebihi had laju.",
+    "Kamera kelajuan tinggi merakam jentera memecut tanpa sempat menekan brek kecemasan!",
+    "Denda perangkap kelajuan lebuhraya ditolak secara rasmi oleh pihak berkuasa trafik.",
+    "Aksi pecutan lebuhraya berakhir dengan notis saman AES yang mahal!"
+  ],
+  SAFE_CHOICE: [
+    "Memilih jalan selamat dan menerima wang tunai dijamin tanpa sebarang risiko!",
+    "Keputusan bijak dan berhemah, duit poket bertambah tanpa perlu pening kepala!",
+    "Pilihan konservatif yang menjamin keuntungan pasti ke dalam akaun peribadi!",
+    "Langkah berwaspada menyelamatkan dompet daripada risiko kerugian pasaran!",
+    "Wang tunai percuma dimasukkan terus ke poket dengan senyuman puas hati!",
+    "Lebih baik untung sedikit yang pasti daripada rugi besar yang menyakitkan!",
+    "Strategi kewangan berdisiplin, ganjaran selamat berjaya diraih tanpa bahaya!",
+    "Tawaran selamat diterima dengan tangan terbuka, baki tunai terus meningkat!",
+    "Mengelak perangkap spekulasi dan memilih ganjaran wang tunai dijamin!",
+    "Pilihan waras seorang pelabur pintar yang mengutamakan keselamatan modal!",
+    "Menerima wang tunai segera tanpa perlu berdebar menunggu nasib kontrak!",
+    "Langkah selamat membawa berkat, duit poket tebal tanpa risiko kemerosotan modal.",
+    "Keputusan tepat mengelakkan jerat kerugian pasaran yang sedang bergelora!",
+    "Duit tunai di tangan lebih bernilai daripada janji manis keuntungan palsu.",
+    "Ganjaran selamat berjaya dikreditkan, dompet bertambah kukuh tanpa sebarang beban!",
+    "Memilih ketenangan fikiran dengan mengambil wang tunai yang dijamin 100%!",
+    "Langkah bijaksana pelabur berpengalaman yang tahu bila masa patut main selamat.",
+    "Wang tunai rasmi masuk akaun, tiada risiko muflis atau kerugian besar!",
+    "Pilihan bijak yang menambah kekayaan secara stabil dan konsisten setiap masa.",
+    "Kekayaan bertambah langkah demi langkah dengan pilihan pelaburan selamat!"
+  ],
+  CRYPTO_GAMBLE: [
+    "Menang besar pasaran kontrak niaga hadapan kripto, keuntungan melonjak tinggi!",
+    "Nasib menyebelahi pelabur berani, graf lilin hijau pacak menembusi siling!",
+    "Strategi 'high risk high return' membuahkan hasil lumayan berlipat kali ganda!",
+    "Analisis teknikal tepat sasaran, posisi leverage tinggi meletupkan keuntungan mega!",
+    "Kemenangan epik dalam pasaran derivatif kripto, duit berkepuk masuk dompet!",
+    "Graf pasaran melonjak mendadak membakar semua posisi penjual singkat, untung padu!",
+    "Keberanian mengambil risiko membawa pulangan tunai yang sungguh luar biasa!",
+    "Paus kripto menyuntik modal besar, kontrak pelaburan kau untung maksimum!",
+    "Indikator RSI menunjukkan oversold sempurna, belian dasar membawa keuntungan emas!",
+    "Tuah pelabur kripto sejati, pulangan lumayan berjaya diraih dalam beberapa saat!",
+    "Pasaran berdarah teruk menenggelamkan posisi kontrak, kerugian besar dialami!",
+    "Graf lilin merah menjunam mendadak melikwidasikan semua modal pelaburan!",
+    "Jerangkap paus pasaran menelan modal mentah-mentah, dompet kering kontang!",
+    "Spekulasi melampau membawa padah kerugian besar dalam pasaran berisiko tinggi!",
+    "Posisi leverage terlalu tinggi menyebabkan kerugian teruk bila pasaran berbalik arah!",
+    "Panik jualan melanda pasaran, modal pelaburan lenyap ditelan penurunan drastik!",
+    "Kerugian modal yang menyakitkan akibat pergerakan harga luar jangkaan!",
+    "Analisis silap perhitungan, duit pelaburan lebur sekelip mata di medan tempur kripto!",
+    "Pasaran menolak posisi pelaburan secara ganas, meninggalkan baki tunai yang susut!",
+    "Pengajaran pahit dalam dunia kripto, risiko tinggi menuntut pengorbanan modal besar!"
+  ],
+  MYSTERY_BOX: [
+    "Peti misteri terbuka dan memancarkan kilauan emas permata bernilai tinggi!",
+    "Jackpot peti rahsia! Hadiah tunai melimpah ruah keluar membanjiri poket!",
+    "Tuah bergolek apabila membuka peti misteri bertuah bertaraf legendary!",
+    "Peti hitam mengandungi khazanah tersembunyi yang menambah kekayaan berganda!",
+    "Kunci emas memutarkan mekanisme peti dan mengeluarkan wang tunai mega!",
+    "Rezeki terpijak dari kotak misteri, keuntungan besar berjaya dibawa pulang!",
+    "Peti antik purba menyimpan wang tunai berkepuk untuk pemilik baharu!",
+    "Kemenangan mutlak membongkar rahsia peti bertuah tanpa sebarang jerangkap!",
+    "Kilauan berlian dan wang tunai menyilaukan mata bila penutup peti dibuka!",
+    "Tuah luar biasa menyebelahi si pembuka peti, ganjaran lumayan sah milik anda!",
+    "Peti misteri meletupkan asap perangkap kosong, wang tunai hangus terbakar!",
+    "Malang tidak berbau bila membuka peti beracun yang menyedut wang denda!",
+    "Peti kosong tanpa isi! Modal pembukaan peti lenyap begitu sahaja!",
+    "Terkena jerangkap samar dalam peti misteri, denda pembersihan terpaksa dibayar!",
+    "Perangkap mekanikal peti mencakar dompet dan mengurangkan baki wang tunai!",
+    "Niat mengintai harta karun bertukar musibah bila peti meletupkan perangkap!",
+    "Peti misteri dihuni hantu siber yang merompak sebahagian duit poket pembuka!",
+    "Harapan menggunung hancur berkecai bila peti cuma mengandungi notis denda!",
+    "Jerangkap spring peti misteri melantunkan kerugian ke atas baki wang tunai!",
+    "Nasib malang membuka peti berhantu, kerugian tunai terpaksa ditanggung pasrah!"
+  ],
+  AIRDROP_CLAIM: [
+    "Merampas peti airdrop sepantas kilat sebelum sempat pemain lain berkelip mata!",
+    "Kepantasan jari menaip kod akses mengunci peti kargo tunai ke dalam dompet!",
+    "Peti airdrop tengah padang disambar licik tanpa memberi peluang kepada musuh!",
+    "Penyelamat kargo udara bertindak pantas menuntut wang tunai hadiah airdrop!",
+    "Sorakan kemenangan rai kepantasan menyapu bersih isi peti airdrop kargo!",
+    "Tangan paling tangkas di Airi's Corner berjaya menebus kod kunci airdrop!",
+    "Peti bantuan udara mendarat tepat ke tangan pemenang terpantas hari ini!",
+    "Loot kargo udara selamat diserap masuk ke baki akaun tanpa berkurang sesen pun!",
+    "Reaksi refleks luar biasa menewaskan ratusan warga cyber dalam perebutan airdrop!",
+    "Gaya lincah menuntut peti kargo tunai membuktikan ketajaman fokus pemain!",
+    "Peti airdrop parasut dibuka sempurna dengan kod akses yang dimasukkan tepat!",
+    "Duit tunai dalam peti kargo udara terus dikreditkan ke akaun si pemenang pantas!",
+    "Kepantasan luar biasa mengungguli perebutan peti airdrop di tengah komuniti!",
+    "Pemain lain hanya mampu gigit jari tengok peti airdrop disapu bersih sepantas kilat!",
+    "Loot bernilai tinggi dalam peti airdrop kini sah menjadi hak milik mutlak juara!",
+    "Pendaratan kargo tunai disambut pantas oleh jari emas yang menaip kod betul!",
+    "Kemenangan pantas menuntut peti bantuan udara membuktikan kecekapan reaksi!",
+    "Kargo tunai dari langit selamat mendarat dalam akaun simpanan poket anda!",
+    "Perebutan sengit airdrop dimenangi oleh jaguh terpantas tanpa sebarang keraguan!",
+    "Peti airdrop terkunci rapat kini terbuka luas memuntahkan wang tunai ganjaran!"
+  ]
+};
+
+function getRandomNarrative(bankKey, fallback = "Aksi selesai.") {
+  const bank = NARRATIVE_BANKS[bankKey];
+  if (!bank || bank.length === 0) return fallback;
+  return bank[Math.floor(Math.random() * bank.length)];
+}
+
+// =========================================================================
+// 🌐 3. PELAYAN WEB RINGAN UNTUK PAPARAN QR DI RENDER
 // =========================================================================
 const PORT = process.env.PORT || 3000;
 const server = http.createServer((req, res) => {
@@ -172,7 +534,7 @@ server.listen(PORT, "0.0.0.0", () => {
 });
 
 // =========================================================================
-// 💾 3. SISTEM DATABASE JSON
+// 💾 4. SISTEM DATABASE JSON
 // =========================================================================
 const DB_FILE = "./database.json";
 function loadDB() {
@@ -285,7 +647,7 @@ function updateUser(userId, userData) {
 }
 
 // =========================================================================
-// 📈 4. UPDATE PASARAN EMAS & BITCOIN SETIAP 10 MINIT
+// 📈 5. UPDATE PASARAN EMAS & BITCOIN SETIAP 10 MINIT
 // =========================================================================
 setInterval(() => {
   const db = loadDB();
@@ -302,7 +664,7 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 // =========================================================================
-// 🌟 5. SISTEM 10 SEASON EVENTS
+// 🌟 6. SISTEM 10 SEASON EVENTS
 // =========================================================================
 const SEASON_EVENTS = {
   "CRIME_BOOM": { name: "🔥 Musim Jenayah Gila", desc: "Loot jenayah naik 2x ganda, tempoh lokap 2x lama!", rewardMult: 2.0, jailMult: 2.0, fineMult: 1.2, jobMult: 1.0, fishMult: 1.0, rentMult: 1.0 },
@@ -318,7 +680,7 @@ const SEASON_EVENTS = {
 };
 
 // =========================================================================
-// 🎣 6. KEDAI PERALATAN MEMANCING
+// 🎣 7. KEDAI PERALATAN MEMANCING
 // =========================================================================
 const FISHING_SHOP = {
   rods: [
@@ -351,7 +713,7 @@ const FISHING_SHOP = {
 };
 
 // =========================================================================
-// 🐟 7. PANGKALAN DATA IKAN
+// 🐟 8. PANGKALAN DATA IKAN
 // =========================================================================
 const FISH_DATABASE = [
   { id: "f1", name: "Kasut But Getah Koyak 🥾", price: 0, tier: "🗑️ [JUNK]", weight: 10, buff: "Tiada buff", isJunk: true },
@@ -396,7 +758,7 @@ function catchFishRandom(userRodObj) {
 }
 
 // =========================================================================
-// 📱 8. KEDAI TELEFON PINTAR (20 MODEL)
+// 📱 9. KEDAI TELEFON PINTAR (20 MODEL)
 // =========================================================================
 const PHONE_DEVICES = [
   { id: "nokia3310", name: "Nokia 3310 Sabun 🧱", price: 150, bonus: "Tahan baling anjing! Potong 15% denda polis", perk: "def", val: 0.15 },
@@ -422,7 +784,7 @@ const PHONE_DEVICES = [
 ];
 
 // =========================================================================
-// 💼 9. SEKTOR 50 KERJAYA HALAL LENGKAP
+// 💼 10. SEKTOR 50 KERJAYA HALAL LENGKAP
 // =========================================================================
 const JOBS = [
   { id: 1, name: "Pekerja Am Majlis", minPay: 80, maxPay: 120 }, { id: 2, name: "Pencuci Pinggan Kedai Tomyam", minPay: 90, maxPay: 130 },
@@ -453,7 +815,7 @@ const JOBS = [
 ];
 
 // =========================================================================
-// 🏎️ 10. SHOWROOM 60 KENDERAAN (30 MOTOR + 30 KERETA)
+// 🏎️ 11. SHOWROOM 60 KENDERAAN (30 MOTOR + 30 KERETA)
 // =========================================================================
 const VEHICLES = [
   // 30 MOTOSIKAL
@@ -522,7 +884,7 @@ const VEHICLES = [
 ];
 
 // =========================================================================
-// 🏢 11. SEKTOR 22 HARTANAH PASIF
+// 🏢 12. SEKTOR 22 HARTANAH PASIF
 // =========================================================================
 const PROPERTIES = [
   { id: 1, name: "Flat PPR Lembah Subang 🏢", price: 35000, rent: 350 },
@@ -550,7 +912,7 @@ const PROPERTIES = [
 ];
 
 // =========================================================================
-// 🐕 12. KEDAI HAIWAN PELIHARAAN & PENGAWAL SIBER
+// 🐕 13. KEDAI HAIWAN PELIHARAAN & PENGAWAL SIBER
 // =========================================================================
 const CYBER_PETS = [
   { id: "doberman", name: "Doberman Bionik Pengawal 🐕", price: 25000, buff: "Kebal 30% daripada rompakan PvP", perk: "anti_rob", val: 0.30 },
@@ -561,7 +923,7 @@ const CYBER_PETS = [
 ];
 
 // =========================================================================
-// 🔧 13. BENGKEL, BLACK MARKET & CRIMES
+// 🔧 14. BENGKEL, BLACK MARKET & CRIMES
 // =========================================================================
 const MOD_PARTS = {
   Motor: [
@@ -633,7 +995,7 @@ function getTitle(user) {
 }
 
 // =========================================================================
-// 🚀 14. ENGINE UTAMA BAILEYS
+// 🚀 15. ENGINE UTAMA BAILEYS
 // =========================================================================
 async function startBotEngine() {
   const { state, saveCreds } = await useMultiFileAuthState("auth_session");
@@ -715,8 +1077,8 @@ async function startBotEngine() {
           const tax = Math.floor(victim.cash * 0.15);
           victim.cash -= tax;
           saveDB(db);
-          const aiText = await generateNarrative("LHDN_TAX", { victim: victim.name, amount: tax }, `LHDN mengesan wang tunai tidak berisytihar.`);
-          await sock.sendMessage(gId, { text: `🏛️ *AUDIT LHDN MENGEJUT!*\n\n${aiText}\n\n💸 Sitaan: *-RM ${tax.toLocaleString()}* dari *${victim.name}*!` }).catch(() => {});
+          const narrative = getRandomNarrative("LHDN_TAX");
+          await sock.sendMessage(gId, { text: `🏛️ *AUDIT LHDN MENGEJUT!*\n\n${narrative}\n\n💸 Sitaan: *-RM ${tax.toLocaleString()}* dari *${victim.name}*!` }).catch(() => {});
         }
       }
 
@@ -727,8 +1089,8 @@ async function startBotEngine() {
         if (victim && victim.cash >= loss && !OWNER_NUMBERS.some(n => victimKey.includes(n))) {
           victim.cash -= loss;
           saveDB(db);
-          const aiText = await generateNarrative("RANSOMWARE_ATTACK", { victim: victim.name, loss }, `Penggodam menyulitkan fail peranti mangsa.`);
-          await sock.sendMessage(gId, { text: `☣️ *SERANGAN RANSOMWARE SIBER!*\n\n${aiText}\n\n💸 Wang Tebusan: *-RM ${loss.toLocaleString()}* lesap dari *${victim.name}*!` }).catch(() => {});
+          const narrative = getRandomNarrative("RANSOMWARE_ATTACK");
+          await sock.sendMessage(gId, { text: `☣️ *SERANGAN RANSOMWARE SIBER!*\n\n${narrative}\n\n💸 Wang Tebusan: *-RM ${loss.toLocaleString()}* lesap dari *${victim.name}*!` }).catch(() => {});
         }
       }
 
@@ -739,8 +1101,8 @@ async function startBotEngine() {
         if (victim && victim.cash >= fine && victim.vehicles && victim.vehicles.length >= 1 && !OWNER_NUMBERS.some(n => victimKey.includes(n))) {
           victim.cash -= fine;
           saveDB(db);
-          const aiText = await generateNarrative("AES_SPEED_FINE", { victim: victim.name, fine }, `Kamera lebuhraya merakam jentera melebihi had laju.`);
-          await sock.sendMessage(gId, { text: `📸 *SAMAN AES HIGHWAY!*\n\n${aiText}\n\n💸 Denda: *-RM ${fine.toLocaleString()}* dipotong dari akaun *${victim.name}*!` }).catch(() => {});
+          const narrative = getRandomNarrative("AES_SPEED_FINE");
+          await sock.sendMessage(gId, { text: `📸 *SAMAN AES HIGHWAY!*\n\n${narrative}\n\n💸 Denda: *-RM ${fine.toLocaleString()}* dipotong dari akaun *${victim.name}*!` }).catch(() => {});
         }
       }
 
@@ -780,7 +1142,7 @@ async function startBotEngine() {
   }, 20 * 60 * 1000);
 
   // =========================================================================
-  // ⚡ 15. PENGENDALI MESEJ & COMMAND RPG
+  // ⚡ 16. PENGENDALI MESEJ & COMMAND RPG
   // =========================================================================
   sock.ev.on("messages.upsert", async ({ messages }) => {
     const m = messages[0];
@@ -817,7 +1179,7 @@ async function startBotEngine() {
     }
 
     // =====================================================================
-    // 👑 16. ARAHAN KUASA VETO MUTLAK FOUNDER BOS AMAR
+    // 👑 17. ARAHAN KUASA VETO MUTLAK FOUNDER BOS AMAR
     // =====================================================================
     if (cmd === "set_season" && isOwner) {
       const sNum = parseInt(args[0]);
@@ -963,8 +1325,8 @@ async function startBotEngine() {
           updateUser(cleanSender, user);
           delete db.activeEvents[from];
           saveDB(db);
-          const aiText = await generateNarrative("SAFE_CHOICE", { user: user.name, reward: 5000 }, `Memilih jalan selamat dan menerima wang tunai.`);
-          return sock.sendMessage(from, { text: `✅ *${user.name}* ${aiText} (+RM 5,000)` });
+          const narrative = getRandomNarrative("SAFE_CHOICE");
+          return sock.sendMessage(from, { text: `✅ *${user.name}* ${narrative} (+RM 5,000)` });
         } else if (choice === "2") {
           const isWin = Math.random() < 0.45;
           const amt = isWin ? 25000 : -20000;
@@ -972,8 +1334,8 @@ async function startBotEngine() {
           updateUser(cleanSender, user);
           delete db.activeEvents[from];
           saveDB(db);
-          const aiText = await generateNarrative("CRYPTO_GAMBLE", { user: user.name, win: isWin, amount: amt }, isWin ? "Menang besar kontrak kripto!" : "Rugi teruk pasaran jatuh.");
-          return sock.sendMessage(from, { text: `${isWin ? "🎉" : "💀"} *${user.name}* ${aiText} (${isWin ? "+RM 25,000" : "-RM 20,000"})` });
+          const narrative = getRandomNarrative("CRYPTO_GAMBLE");
+          return sock.sendMessage(from, { text: `${isWin ? "🎉" : "💀"} *${user.name}* ${narrative} (${isWin ? "+RM 25,000" : "-RM 20,000"})` });
         }
       } else if (currentLiveEvent.type === "misteri") {
         if (choice === "1") {
@@ -981,7 +1343,8 @@ async function startBotEngine() {
           updateUser(cleanSender, user);
           delete db.activeEvents[from];
           saveDB(db);
-          return sock.sendMessage(from, { text: `✅ *${user.name}* mengambil ganjaran selamat *+RM 2,000*!` });
+          const narrative = getRandomNarrative("SAFE_CHOICE");
+          return sock.sendMessage(from, { text: `✅ *${user.name}* ${narrative} (+RM 2,000)` });
         } else if (choice === "2") {
           const isWin = Math.random() < 0.50;
           const amt = isWin ? 15000 : -12000;
@@ -989,8 +1352,8 @@ async function startBotEngine() {
           updateUser(cleanSender, user);
           delete db.activeEvents[from];
           saveDB(db);
-          const aiText = await generateNarrative("MYSTERY_BOX", { user: user.name, win: isWin, amount: amt }, isWin ? "Membuka peti emas bertuah!" : "Terkena perangkap peti kosong.");
-          return sock.sendMessage(from, { text: `${isWin ? "🎁" : "💥"} *${user.name}* ${aiText} (${isWin ? "+RM 15,000" : "-RM 12,000"})` });
+          const narrative = getRandomNarrative("MYSTERY_BOX");
+          return sock.sendMessage(from, { text: `${isWin ? "🎁" : "💥"} *${user.name}* ${narrative} (${isWin ? "+RM 15,000" : "-RM 12,000"})` });
         }
       }
     }
@@ -1002,8 +1365,8 @@ async function startBotEngine() {
         delete db.activeEvents[from];
         saveDB(db);
         updateUser(cleanSender, user);
-        const aiText = await generateNarrative("AIRDROP_CLAIM", { user: user.name, reward: currentLiveEvent.reward }, `Merampas peti airdrop terpantas!`);
-        return sock.sendMessage(from, { text: `🎉 *AIRDROP DISAPU!*\n\n${aiText}\n\n💰 Diterima: *+RM ${currentLiveEvent.reward.toLocaleString()}* tunai!` });
+        const narrative = getRandomNarrative("AIRDROP_CLAIM");
+        return sock.sendMessage(from, { text: `🎉 *AIRDROP DISAPU!*\n\n${narrative}\n\n💰 Diterima: *+RM ${currentLiveEvent.reward.toLocaleString()}* tunai!` });
       }
     }
 
@@ -1183,7 +1546,7 @@ async function startBotEngine() {
     }
 
     // =====================================================================
-    // 🎣 17. KEDAI PANCING & MEMANCING
+    // 🎣 18. KEDAI PANCING & MEMANCING
     // =====================================================================
     if (cmd === "kedai_pancing" || cmd === "tackleshop") {
       let ui = 
@@ -1281,12 +1644,12 @@ async function startBotEngine() {
       if (fPrice === 0) {
         delete db.pendingFish[cleanSender];
         saveDB(db);
-        const aiJunk = await generateNarrative("FISHING_JUNK", { user: user.name, junk: caught.name }, `Menaikkan barang sampah dari dasar sungai.`);
-        return sock.sendMessage(from, { text: `🎣 *${user.name}* ${aiJunk}\n(Nilai: RM 0 - Dibuang balik ke laut!)` });
+        const narrative = getRandomNarrative("FISHING_JUNK");
+        return sock.sendMessage(from, { text: `🎣 *${user.name}* ${narrative}\n(Nilai: RM 0 - Dibuang balik ke laut!)` });
       }
 
       const baitUsedText = userBait ? `\n🪱 Umpan: *${userBait.name}* (+${Math.round((userBait.priceMult - 1) * 100)}% Jual)` : "";
-      const aiCatch = await generateNarrative("FISHING_SUCCESS", { user: user.name, fish: caught.name, tier: caught.tier, price: fPrice }, `Menaikkan hasil tangkapan bernilai tinggi.`);
+      const narrative = getRandomNarrative("FISHING_SUCCESS");
 
       return sock.sendMessage(from, { 
         text: `╔═══════════════════════════════════╗
@@ -1295,7 +1658,7 @@ async function startBotEngine() {
 🐟 Mangsa: *${caught.name}*
 🏷️ Peringkat: *${caught.tier}*
 💰 Tawaran Peraih: *RM ${fPrice.toLocaleString()}*${baitUsedText}
-✨ Naratif Airi: _"${aiCatch}"_
+✨ Naratif: _"${narrative}"_
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👉 *PILIHAN ANDA:*
 1️⃣ Taip: *.jual_ikan* ➔ Ambil RM ${fPrice.toLocaleString()} tunai
@@ -1376,7 +1739,7 @@ async function startBotEngine() {
       user.cooldowns.work = now + cdDuration;
       updateUser(cleanSender, user);
 
-      const aiJobComment = await generateNarrative("WORK_SHIFT", { user: user.name, job: assignedJob.name, pay: payout }, `Selesai menjalankan tugas dengan cemerlang.`);
+      const narrative = getRandomNarrative("WORK_SHIFT");
 
       return sock.sendMessage(from, { 
         text: `╔═══════════════════════════╗
@@ -1386,7 +1749,7 @@ async function startBotEngine() {
 🏢 Tugasan: *${assignedJob.name}*
 💵 Upah: *+RM ${payout.toLocaleString()}*
 
-✨ _"${aiJobComment}"_` 
+✨ _"${narrative}"_` 
       });
     }
 
@@ -1494,14 +1857,14 @@ async function startBotEngine() {
         user.cash += reward;
         user.stats.racesWon = (user.stats.racesWon || 0) + 1;
         updateUser(cleanSender, user);
-        const aiRaceWin = await generateNarrative("RACE_WIN", { user: user.name, vehicle: vehicle.name, speed: totalSpeed }, `Memecut laju memintas lawan di garisan penamat.`);
-        return sock.sendMessage(from, { text: `🏁 *JUARA DRAG RACE!* 🏁\n\n${aiRaceWin}\n\n🏎️ Jentera: *${vehicle.name}* (${totalSpeed} km/h)\n💰 Hadiah: *+RM ${reward.toLocaleString()}*` });
+        const narrative = getRandomNarrative("RACE_WIN");
+        return sock.sendMessage(from, { text: `🏁 *JUARA DRAG RACE!* 🏁\n\n${narrative}\n\n🏎️ Jentera: *${vehicle.name}* (${totalSpeed} km/h)\n💰 Hadiah: *+RM ${reward.toLocaleString()}*` });
       } else {
         const repairCost = Math.floor(vehicle.price * 0.02);
         user.cash = Math.max(0, user.cash - repairCost);
         updateUser(cleanSender, user);
-        const aiRaceCrash = await generateNarrative("RACE_CRASH", { user: user.name, vehicle: vehicle.name }, `Terbabas di selekoh tajam litar.`);
-        return sock.sendMessage(from, { text: `💥 *TERBABAS DI LITAR!* 💥\n\n${aiRaceCrash}\n\n💸 Kos Baiki: *-RM ${repairCost.toLocaleString()}*` });
+        const narrative = getRandomNarrative("RACE_CRASH");
+        return sock.sendMessage(from, { text: `💥 *TERBABAS DI LITAR!* 💥\n\n${narrative}\n\n💸 Kos Baiki: *-RM ${repairCost.toLocaleString()}*` });
       }
     }
 
@@ -1568,8 +1931,8 @@ async function startBotEngine() {
         user.stats.crimes += 1;
         user.stars = Math.min(5, user.stars + c.stars);
         updateUser(cleanSender, user);
-        const aiCrimeSuccess = await generateNarrative("CRIME_SUCCESS", { user: user.name, crime: c.name, reward }, `Berjaya melarikan diri bersama hasil rompakan.`);
-        return sock.sendMessage(from, { text: `🦹 *MISI BERJAYA:* ${c.name}\n\n${aiCrimeSuccess}\n\n💵 Hasil: *+RM ${reward.toLocaleString()}*\n⭐ Wanted: ${"⭐".repeat(user.stars)}` });
+        const narrative = getRandomNarrative("CRIME_SUCCESS");
+        return sock.sendMessage(from, { text: `🦹 *MISI BERJAYA:* ${c.name}\n\n${narrative}\n\n💵 Hasil: *+RM ${reward.toLocaleString()}*\n⭐ Wanted: ${"⭐".repeat(user.stars)}` });
       } else {
         user.stars = Math.min(5, user.stars + 1);
         let jailTimeSec = Math.max(30, user.stars * 30);
@@ -1577,8 +1940,8 @@ async function startBotEngine() {
         user.cash = Math.max(0, user.cash - fine);
         user.cooldowns.jailUntil = now + (jailTimeSec * 1000);
         updateUser(cleanSender, user);
-        const aiCrimeFail = await generateNarrative("CRIME_BUSTED", { user: user.name, crime: c.name }, `Terkepung dan digari oleh pihak berkuasa.`);
-        return sock.sendMessage(from, { text: `🚨 *KANTOI POLIS!* 🚨\n\n${aiCrimeFail}\n\n💸 Denda: *-RM ${fine.toLocaleString()}* & lokap ${jailTimeSec}s! Taip *.upah_lawyer*` });
+        const narrative = getRandomNarrative("CRIME_BUSTED");
+        return sock.sendMessage(from, { text: `🚨 *KANTOI POLIS!* 🚨\n\n${narrative}\n\n💸 Denda: *-RM ${fine.toLocaleString()}* & lokap ${jailTimeSec}s! Taip *.upah_lawyer*` });
       }
     }
 
@@ -1603,11 +1966,7 @@ async function startBotEngine() {
       saveDB(db);
 
       return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗
-   ⚡ CYBER NEURAL HANDSHAKE ⚡
-╚═══════════════════════════╝
-🎯 Sasaran: *${targetUser.name}*
-🔑 *KOD EMOJI PIN DIPERLUKAN:* ${selectedPin.split("").join("  ")}
+        text: `╔═══════════════════════════╗\n   ⚡ CYBER NEURAL HANDSHAKE ⚡\n╚═══════════════════════════╝\n🎯 Sasaran: *${targetUser.name}*\n🔑 *KOD EMOJI PIN DIPERLUKAN:* ${selectedPin.split("").join("  ")}
 ⏳ Tempoh: 30 Saat!\n👉 Taip: *.bypass ${selectedPin}*` 
       });
     }
@@ -1630,8 +1989,8 @@ async function startBotEngine() {
         saveDB(db);
         updateUser(cleanSender, user);
         updateUser(activeHack.target, targetUser);
-        const aiHackWin = await generateNarrative("BANK_HACK_SUCCESS", { user: user.name, victim: targetUser.name, stolen }, `Berjaya memintas firewall bank dan menyedut dana.`);
-        return sock.sendMessage(from, { text: `🔓 *GODAM BERJAYA:* +RM ${stolen.toLocaleString()} disedut dari akaun bank mangsa!\n\n${aiHackWin}`, mentions: [activeHack.target] });
+        const narrative = getRandomNarrative("BANK_HACK_SUCCESS");
+        return sock.sendMessage(from, { text: `🔓 *GODAM BERJAYA:* +RM ${stolen.toLocaleString()} disedut dari akaun bank mangsa!\n\n${narrative}`, mentions: [activeHack.target] });
       } else {
         delete db.activeHacks[cleanSender];
         user.cash = Math.max(0, user.cash - 1500);
@@ -1783,8 +2142,8 @@ async function startBotEngine() {
         if (Math.random() < targetUser.pet.val) {
           user.cash = Math.max(0, user.cash - 1000);
           updateUser(cleanSender, user);
-          const aiPetDefend = await generateNarrative("PET_DEFEND", { robber: user.name, victim: targetUser.name, pet: targetUser.pet.name }, `Pengawal haiwan menyerang perompak hingga lari lintang-pukang.`);
-          return sock.sendMessage(from, { text: `🛡️ *DISERANG PENGAWAL!*\n\n${aiPetDefend}\n\n💸 Ganti Rugi: *-RM 1,000*` });
+          const narrative = getRandomNarrative("PET_DEFEND");
+          return sock.sendMessage(from, { text: `🛡️ *DISERANG PENGAWAL!*\n\n${narrative}\n\n💸 Ganti Rugi: *-RM 1,000*` });
         }
       }
 
@@ -1806,14 +2165,14 @@ async function startBotEngine() {
 
         updateUser(cleanSender, user);
         updateUser(cleanTarget, targetUser);
-        const aiRobSuccess = await generateNarrative("ROB_SUCCESS", { robber: user.name, victim: targetUser.name, amount: stolen }, `Berjaya merembat wang tunai dari poket mangsa.`);
-        return sock.sendMessage(from, { text: `🥷 *ROMPAKAN BERJAYA!*\n\n${aiRobSuccess}\n\n💵 Hasil: *+RM ${stolen.toLocaleString()}* dari *${targetUser.name}*!${bountyNotice}`, mentions: [cleanTarget] });
+        const narrative = getRandomNarrative("ROB_SUCCESS");
+        return sock.sendMessage(from, { text: `🥷 *ROMPAKAN BERJAYA!*\n\n${narrative}\n\n💵 Hasil: *+RM ${stolen.toLocaleString()}* dari *${targetUser.name}*!${bountyNotice}`, mentions: [cleanTarget] });
       } else {
         user.cash = Math.max(0, user.cash - 500);
         user.cooldowns.jailUntil = now + (60 * 1000);
         updateUser(cleanSender, user);
-        const aiRobFail = await generateNarrative("ROB_FAIL_ROAST", { robber: user.name, victim: targetUser.name }, `Gagal merompak dan ditangkap polis.`);
-        return sock.sendMessage(from, { text: `🚨 *KANTOI SAMUN SIBER!* 🚨\n\n${aiRobFail}\n\n💸 Denda: *-RM 500* & Lokap 60 saat!`, mentions: [cleanTarget] });
+        const narrative = getRandomNarrative("ROB_FAIL_ROAST");
+        return sock.sendMessage(from, { text: `🚨 *KANTOI SAMUN SIBER!* 🚨\n\n${narrative}\n\n💸 Denda: *-RM 500* & Lokap 60 saat!`, mentions: [cleanTarget] });
       }
     }
 
