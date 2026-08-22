@@ -14,7 +14,7 @@ import pino from "pino";
 import fs from "fs";
 import http from "http";
 import QRCode from "qrcode";
-import Groq from "groq-sdk";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -31,26 +31,20 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (AUTO FILTER <think> TAGS)
+// 🤖 1. ENJIN AI SHADOW AIRI (GOOGLE GEMINI 2.5 FLASH ENGINE)
 // =========================================================================
-const RAW_GROQ_KEY = (process.env.GROQ_API_KEY || "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").trim();
-const groq = new Groq({ apiKey: RAW_GROQ_KEY });
-
-const ACTIVE_CHAT_MODELS = [
-  "qwen/qwen3.6-27b",
-  "openai/gpt-oss-120b",
-  "openai/gpt-oss-20b",
-  "allam-2-7b"
-];
+const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || "AQ.Ab8RN6L93ijIy-kYAJuvFh0DoaG9rL0PBmGgmkt3-l7JLz4PGA").trim();
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 async function askAiriAI(promptText, userName = "Warga Cyber") {
-  const currentTimeMY = new Date().toLocaleString("ms-MY", { 
-    timeZone: "Asia/Kuala_Lumpur", 
-    dateStyle: "full", 
-    timeStyle: "medium" 
-  });
+  try {
+    const currentTimeMY = new Date().toLocaleString("ms-MY", { 
+      timeZone: "Asia/Kuala_Lumpur", 
+      dateStyle: "full", 
+      timeStyle: "medium" 
+    });
 
-  const systemPrompt = `
+    const systemPrompt = `
 Nama kau ialah Airi, maskot AI dan pembantu pintar rasmi bagi komuniti siber "Airi's Corner".
 Pengasas dan ketua mutlak kau ialah Bos Amar (Shadow Legacy).
 Waktu dan Tarikh Semasa di Malaysia (MYT): ${currentTimeMY}
@@ -60,37 +54,28 @@ Personaliti:
 - Bantu jawab soalan waktu/jam, teknologi, sains, koding, matematik, nasihat hidup, fakta am, kuiz, atau sembang santai dengan tepat.
 - Panggil pengguna dengan nama mereka (${userName}) atau "Awak/Korang".
 - Jawab secara padat, jelas dan tidak terlalu meleret (maksimum 2-3 perenggan).
-- JANGAN sesekali sertakan proses pemikiran, analisis atau tag <think>. Terus berikan jawapan akhir sahaja!
+- Terus berikan jawapan perbualan tanpa meletakkan sebarang nota proses berfikir.
 `;
 
-  for (const modelId of ACTIVE_CHAT_MODELS) {
-    try {
-      const completion = await groq.chat.completions.create({
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: promptText }
-        ],
-        model: modelId,
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: promptText,
+      config: {
+        systemInstruction: systemPrompt,
         temperature: 0.7,
-        max_tokens: 400
-      });
+        maxOutputTokens: 400
+      }
+    });
 
-      let reply = completion.choices[0]?.message?.content?.trim() || "";
-      
-      // ✂️ Tapis keluar semua tag dan teks <think>...</think>
-      reply = reply.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-
-      if (reply) return reply;
-    } catch (err) {
-      console.warn(`⚠️ Model [${modelId}] gagal: ${err?.message}`);
-    }
+    return response.text?.trim() || "Airi dengar! Tapi tak pasti nak jawab macam mana tadi hehe~ 💙";
+  } catch (err) {
+    console.error("⚠️ Ralat Gemini AI:", err?.message || err);
+    return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
   }
-
-  return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
 }
 
 // =========================================================================
-// 💬 2. BANK 20 VARIASI AYAT SETIAP SENARIO RPG (ZERO API TOKEN USAGE)
+// 💬 2. BANK 20 VARIASI AYAT SETIAP SENARIO RPG (ZERO TOKEN USAGE)
 // =========================================================================
 const NARRATIVE_BANKS = {
   WORK_SHIFT: [
@@ -507,7 +492,7 @@ const server = http.createServer((req, res) => {
     res.end(`
       <div style="text-align:center;margin-top:60px;font-family:'Segoe UI',sans-serif;background:#0f172a;color:#f8fafc;padding:30px;min-height:85vh;">
         <h1 style="color:#22c55e;font-size:2.5rem;">⚡ AIRI'S CORNER CYBER OS ONLINE! ⚡</h1>
-        <p style="color:#94a3b8;font-size:1.2rem;">Sistem WhatsApp RPG & Enjin Shadow Airi 24/7 aktif.</p>
+        <p style="color:#94a3b8;font-size:1.2rem;">Sistem WhatsApp RPG & Enjin Google Gemini 24/7 aktif.</p>
         <div style="display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;border-radius:8px;border:1px solid #334155;">
           👑 <b>Founder:</b> Bos Amar (Auto-Veto Active)
         </div>
@@ -1389,7 +1374,7 @@ async function startBotEngine() {
       updateUser(cleanSender, user);
 
       const reply = await askAiriAI(query, user.name);
-      return sock.sendMessage(from, { text: `╔═══════════════════════════╗\n   💠 AIRI CYBER RESPONSE 💠\n╚═══════════════════════════╝\n❓ *Soalan:* ${query}\n\n${reply}\n\n✨ _Dikuasakan oleh Enjin Shadow Airi_` });
+      return sock.sendMessage(from, { text: `╔═══════════════════════════╗\n   💠 AIRI CYBER RESPONSE 💠\n╚═══════════════════════════╝\n❓ *Soalan:* ${query}\n\n${reply}\n\n✨ _Dikuasakan oleh Enjin Shadow Airi (Gemini)_` });
     }
 
     // 🏆 RANKING & MUSIM
@@ -2376,7 +2361,7 @@ async function startBotEngine() {
 ${evStatus}
 
 🤖 *[1. SHADOW AIRI AI]*
-• *.airi [soalan]* ➔ Tanya & sembang AI
+• *.airi [soalan]* ➔ Tanya & sembang AI (Gemini Flash)
 
 🏆 *[2. SISTEM MUSIM & RANKING]*
 • *.ranking* ➔ Papan pendahulu nilai bersih Top 10
