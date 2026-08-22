@@ -31,21 +31,28 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN DYNAMIC NARRATIVE SHADOW AIRI (GROQ SDK)
+// 🤖 1. ENJIN AI SHADOW AIRI (GROQ SDK DENGAN LIVE TIMEZONE)
 // =========================================================================
 const groq = new Groq({ 
-  apiKey: process.env.GROQ_API_KEY || "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" 
+  apiKey: process.env.GROQ_API_KEY || "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" 
 });
 
 async function askAiriAI(promptText, userName = "Warga Cyber") {
   try {
+    const currentTimeMY = new Date().toLocaleString("ms-MY", { 
+      timeZone: "Asia/Kuala_Lumpur", 
+      dateStyle: "full", 
+      timeStyle: "medium" 
+    });
+
     const systemPrompt = `
 Nama kau ialah Airi, maskot AI dan pembantu pintar rasmi bagi komuniti siber "Airi's Corner".
 Pengasas dan ketua mutlak kau ialah Bos Amar (Shadow Legacy).
+Waktu dan Tarikh Semasa di Malaysia (MYT): ${currentTimeMY}
 
 Personaliti:
 - Sangat periang, ceria, comel, bertenaga, suka guna bahasa santai Melayu (contoh: "hehe~", "jap jap", "uwu", "fuhh", "jangan risau!").
-- Bantu jawab soalan teknologi, sains, koding, matematik, nasihat hidup, fakta am, kuiz, atau sembang santai dengan tepat dan bersahaja.
+- Bantu jawab soalan waktu/jam, teknologi, sains, koding, matematik, nasihat hidup, fakta am, kuiz, atau sembang santai dengan tepat.
 - Panggil pengguna dengan nama mereka (${userName}) atau "Awak/Korang".
 - Jawab secara padat, jelas dan tidak terlalu meleret (maksimum 2-3 perenggan).
 `;
@@ -62,7 +69,7 @@ Personaliti:
 
     return chatCompletion.choices[0]?.message?.content?.trim() || "Airi dengar! Tapi tak pasti nak jawab macam mana tadi hehe~ 💙";
   } catch (err) {
-    console.error("⚠️ Ralat Shadow Airi AI:", err.message);
+    console.error("⚠️ Ralat Shadow Airi AI:", err?.message || err);
     return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
   }
 }
@@ -1571,13 +1578,7 @@ async function startBotEngine() {
       saveDB(db);
 
       return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗
-   ⚡ CYBER NEURAL HANDSHAKE ⚡
-╚═══════════════════════════╝
-🎯 Sasaran: *${targetUser.name}*
-🔑 *KOD EMOJI PIN DIPERLUKAN:* ${selectedPin.split("").join("  ")}
-⏳ Tempoh: 30 Saat!
-👉 Taip: *.bypass ${selectedPin}*` 
+        text: `╔═══════════════════════════╗\n   ⚡ CYBER NEURAL HANDSHAKE ⚡\n╚═══════════════════════════╝\n🎯 Sasaran: *${targetUser.name}*\n🔑 *KOD EMOJI PIN DIPERLUKAN:* ${selectedPin.split("").join("  ")}\n⏳ Tempoh: 30 Saat!\n👉 Taip: *.bypass ${selectedPin}*` 
       });
     }
 
