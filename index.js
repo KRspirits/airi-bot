@@ -253,7 +253,7 @@ const NARRATIVE_BANKS = {
     "Token transaksi disahkan secara palsu, sedutan wang tunai berlaku sepantas kilat.",
     "Mangsa terkejut baki simpanan bank susut mendadak dikerjakan penggodam elit!",
     "Akses root bank dikuasai, aliran dana disalurkan ke akaun proksi tanpa sekatan.",
-    "Pelayan keselamatan bank hang sekejap masa pemindahan dana harim dijalankan!",
+    "Pelayan keselamatan bank hang sekejap masa pemindahan dana haram dijalankan!",
     "Injeksi kod SQL berjaya bypass authentication, baki akaun mangsa kering kontang.",
     "Siber trojan berjaya tembusi peti besi digital perbankan mangsa dengan bergaya.",
     "Kemenangan mutlak hacker underground, pundi-pundi akaun bertambah kaya-raya!"
@@ -357,7 +357,7 @@ const NARRATIVE_BANKS = {
     "Penggodam antarabangsa mengunci storan peranti dan menyedut pampasan tunai!",
     "Serangan siber zero-day menyebarkan ransomware berbahaya ke dalam sistem peranti!",
     "Fail penting peranti disandera oleh sindiket penggodam siber, wang tebusan melayang!",
-    "Skrin peranti bertukar hitam dengan kiraan masa tebusan, tunai poket lesap serta-merta!",
+    "Skrin peranti bertukar hitam dengan kiraan masa tebusan, duit poket lesap serta-merta!",
     "Malware pemeras ugut menyedut baki tunai mangsa sebelum membuka semula kunci sistem.",
     "Pintu belakang sistem diceroboh penggodam, data disulitkan dengan algoritma RSA-4096!",
     "Serangan ransomware melumpuhkan komunikasi peranti, wang tebusan lesap ke darkweb.",
@@ -812,7 +812,6 @@ const JOBS = [
 // 🏎️ 11. SHOWROOM 60 KENDERAAN (30 MOTOR + 30 KERETA)
 // =========================================================================
 const VEHICLES = [
-  // 30 MOTOSIKAL
   { id: "ex5", name: "Honda EX5 High Power 🛵", price: 3000, type: "Motor", speed: 50, desc: "Lagenda sejati, minyak jimat" },
   { id: "wave125", name: "Honda Wave 125i Ultimo 🛵", price: 5500, type: "Motor", speed: 55, desc: "Selesa harian" },
   { id: "lagenda", name: "Yamaha Lagenda 115Z 🛵", price: 6000, type: "Motor", speed: 58, desc: "Handle ringan selit jem" },
@@ -843,8 +842,6 @@ const VEHICLES = [
   { id: "eCosse_spirit", name: "Ecosse ES1 Superbike Titanium 👑", price: 35000000, type: "Motor", speed: 290, desc: "Kejuruteraan F1 dengan aerodinamik ekstrem" },
   { id: "harley_cosmic", name: "Cosmic Starship Jack Armstrong 🎨", price: 75000000, type: "Motor", speed: 160, desc: "Lukisan seni bernilai jutaan dolar atas dua roda" },
   { id: "neiman_marcus", name: "Neiman Marcus Limited Fighter 👑", price: 150000000, type: "Motor", speed: 260, desc: "Motosikal termahal dalam sejarah manusia" },
-
-  // 30 KERETA
   { id: "kancil", name: "Perodua Kancil 660 Manual 🚗", price: 5000, type: "Kereta", speed: 45, desc: "Kereta kompak rakyat" },
   { id: "iswara", name: "Proton Iswara Aeroback 1.3 🚗", price: 8000, type: "Kereta", speed: 50, desc: "Kereta kebal aircond beku" },
   { id: "saga", name: "Proton Saga BLM 1.3 CamPro 🚗", price: 12000, type: "Kereta", speed: 55, desc: "Sedan harian keluarga" },
@@ -878,7 +875,7 @@ const VEHICLES = [
 ];
 
 // =========================================================================
-// 🏢 12. SEKTOR 22 HARTANAH PASIF
+// 🏢 12. SEKTOR 22 HARTANAH PASIF LENGKAP
 // =========================================================================
 const PROPERTIES = [
   { id: 1, name: "Flat PPR Lembah Subang 🏢", price: 35000, rent: 350 },
@@ -905,20 +902,6 @@ const PROPERTIES = [
   { id: 22, name: "Stesen Angkasa Mega Orbital Airi Prime 🌌", price: 250000000000, rent: 2800000000 }
 ];
 
-// =========================================================================
-// 🐕 13. KEDAI HAIWAN PELIHARAAN & PENGAWAL SIBER
-// =========================================================================
-const CYBER_PETS = [
-  { id: "doberman", name: "Doberman Bionik Pengawal 🐕", price: 25000, buff: "Kebal 30% daripada rompakan PvP", perk: "anti_rob", val: 0.30 },
-  { id: "drone_guard", name: "AI Sentry Dron Pengimbas 🛸", price: 60000, buff: "Kebal 40% daripada godam bank (.hackbank)", perk: "anti_hack", val: 0.40 },
-  { id: "cyber_wolf", name: "Serigala Siber Alpha 🐺", price: 150000, buff: "Kebal 50% Rompak & Bantu serang lawan +10% cash", perk: "wolf_buff", val: 0.50 },
-  { id: "cyborg_panther", name: "Cyborg Shadow Panther 🐆", price: 450000, buff: "Kebal 60% Rompak & Kebal 60% Godam Bank", perk: "dual_def", val: 0.60 },
-  { id: "kripto_dragon", name: "Naga Kripto Orbital Mythic 🐉", price: 2500000, buff: "Kebal 90% Semua Serangan & Gaji Kerja +25%", perk: "dragon_god", val: 0.90 }
-];
-
-// =========================================================================
-// 🔧 14. BENGKEL, BLACK MARKET & CRIMES
-// =========================================================================
 const MOD_PARTS = {
   Motor: [
     { id: 46, name: "Talaan ECU Remap Stage 1 💻", price: 2500, boostSpeed: 12, desc: "+12 km/h top speed & respon throttle segera" },
@@ -930,11 +913,11 @@ const MOD_PARTS = {
   ],
   Kereta: [
     { id: 46, name: "Remap Dyno Stage 2 + Pops & Bang 💻", price: 3500, boostSpeed: 15, desc: "+15 km/h & letupan ekzos berapi" },
-    { id: 48, name: "Tayar Semi-Slick Toyo R888R 🏁", price: 2400, boostSpeed: 10, desc: "+10 km/h & cengkaman litar profesional" },
-    { id: 49, name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
-    { id: 51, name: "Suspensi Boleh Laras Adjustable 🟡", price: 4200, boostSpeed: 12, desc: "+12 km/h & badan kereta direndahkan aerodinamik" },
-    { id: 52, name: "Sistem Turbo Garrett Ball-Bearing 🐌", price: 7500, boostSpeed: 30, desc: "+30 km/h top speed boost siput berdesing" },
-    { id: 53, name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elak risiko terbabas lumba" }
+    { id: "48", name: "Tayar Semi-Slick Toyo R888R 🏁", price: 2400, boostSpeed: 10, desc: "+10 km/h & cengkaman litar profesional" },
+    { id: "49", name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
+    { id: "51", name: "Suspensi Boleh Laras Adjustable 🟡", price: 4200, boostSpeed: 12, desc: "+12 km/h & badan kereta direndahkan aerodinamik" },
+    { id: "52", name: "Sistem Turbo Garrett Ball-Bearing 🐌", price: 7500, boostSpeed: 30, desc: "+30 km/h top speed boost siput berdesing" },
+    { id: "53", name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elak risiko terbabas lumba" }
   ]
 };
 
@@ -950,24 +933,6 @@ const BLACKMARKET_ITEMS = [
   { id: 9, name: "Bot Pancung 4 Enjin Yamaha 🚤", price: 45000, desc: "Logistik laut meredah laluan tikus perairan" },
   { id: 10, name: "Dron Kargo Penglihatan Malam 🛸", price: 28000, desc: "Hantar bungkusan kontraban pintas pagar sempadan" },
   { id: 11, name: "Cyber Bypass Dongle 🖲️", price: 18000, desc: "Kunci perkakasan bajet untuk lancarkan eksploitasi godam bank" }
-];
-
-const CRIMES = [
-  { id: 1, name: "Ragut Beg Tepi Jalan 👜", rewardMin: 1500, rewardMax: 3500, fine: 1000, stars: 1 },
-  { id: 2, name: "Rompak Kedai Runcit Acheh 🏪", rewardMin: 3500, rewardMax: 7000, fine: 2500, stars: 1 },
-  { id: 3, name: "Kopek Mangga Motor Parkir 🏍️", rewardMin: 6000, rewardMax: 12000, fine: 4000, stars: 2 },
-  { id: 4, name: "Pecah Masuk Kedai Emas 💍", rewardMin: 15000, rewardMax: 30000, fine: 8000, stars: 2 },
-  { id: 5, name: "Rompak Banglo Orang Kaya 🏡", rewardMin: 30000, rewardMax: 60000, fine: 15000, stars: 3 },
-  { id: 6, name: "Skimming Mesin ATM 🏧", rewardMin: 60000, rewardMax: 120000, reqItem: 1, fine: 25000, stars: 3 },
-  { id: 7, name: "Seludup Rokok & Vape Kontraban 🚬", rewardMin: 75000, rewardMax: 140000, reqItem: 8, fine: 30000, stars: 3 },
-  { id: 8, name: "Seludup Minuman Keras Bebas Cukai 🍾", rewardMin: 90000, rewardMax: 180000, reqItem: 9, fine: 35000, stars: 3 },
-  { id: 9, name: "Godam Sistem Bank Pusat 💻", rewardMin: 150000, rewardMax: 300000, reqItem: 2, fine: 50000, stars: 4 },
-  { id: 10, name: "Seludup Cip AI & Kad Grafik GPU 🧠", rewardMin: 180000, rewardMax: 350000, reqItem: 10, fine: 60000, stars: 4 },
-  { id: 11, name: "Penyeludupan Kontraban Port Klang 🚢", rewardMin: 250000, rewardMax: 500000, reqItem: 3, fine: 80000, stars: 4 },
-  { id: 12, name: "Heist Bilik Kebal Kasino Genting 🎰", rewardMin: 450000, rewardMax: 900000, reqItem: 4, fine: 120000, stars: 5 },
-  { id: 13, name: "Seludup Supercar Tanpa AP 🏎️", rewardMin: 600000, rewardMax: 1200000, reqItem: 9, fine: 150000, stars: 5 },
-  { id: 14, name: "Eksploitasi Darkweb Zero-Day 🌐", rewardMin: 1000000, rewardMax: 2500000, reqItem: 5, fine: 200000, stars: 5 },
-  { id: 15, name: "Godam Induk Penguatkuasa Padam Rekod 🏛️", rewardMin: 2000000, rewardMax: 5000000, reqItem: 5, fine: 350000, stars: 5 }
 ];
 
 const FOOD_ITEMS = [
@@ -1136,7 +1101,7 @@ async function startBotEngine() {
   }, 20 * 60 * 1000);
 
   // =========================================================================
-  // ⚡ 16. PENGENDALI MESEJ & COMMAND RPG
+  // ⚡ 16. PENGENDALI MESEJ & COMMAND RPG MEGA LENGKAP
   // =========================================================================
   sock.ev.on("messages.upsert", async ({ messages }) => {
     const m = messages[0];
@@ -1173,7 +1138,7 @@ async function startBotEngine() {
     }
 
     // =====================================================================
-    // 👑 17. ARAHAN KUASA VETO MUTLAK FOUNDER BOS AMAR
+    // 👑 17. ARAHAN KUASA VETO MUTLAK FOUNDER (DISEMBUNYIKAN DARI MENU)
     // =====================================================================
     if (cmd === "set_season" && isOwner) {
       const sNum = parseInt(args[0]);
@@ -1540,37 +1505,58 @@ async function startBotEngine() {
     }
 
     // =====================================================================
-    // 🎣 18. KEDAI PANCING & MEMANCING
+    // 🎣 18. KEDAI PANCING & MEMANCING (KATEGORI BERKUMPULAN & NOMBOR)
     // =====================================================================
     if (cmd === "kedai_pancing" || cmd === "tackleshop") {
-      let ui = 
+      const subCategory = args[0];
+
+      if (!subCategory) {
+        let menu = 
 `╔═════════════════════════════════════╗
    🎣 KEDAI PERALATAN PANCING AIRI 🎣
 ╚═════════════════════════════════════╝
+Sila pilih kategori kedai dengan nombor:
 
-🎋 *[1. KATEGORI JORAN (ROD)]* - Buff Gred Ikan:
-`;
-      FISHING_SHOP.rods.forEach(r => {
-        ui += `• *[${r.id}]* ${r.name}\n  💰 RM ${r.price.toLocaleString()} | _${r.desc}_\n`;
-      });
+1️⃣ Joran (Rod)
+2️⃣ Kekili (Reel)
+3️⃣ Umpan (Bait)
+4️⃣ Akuarium (Tank)
 
-      ui += `\n⚙️ *[2. KATEGORI KEKILI (REEL)]* - Potong Cooldown (Base: 60s):\n`;
-      FISHING_SHOP.reels.forEach(re => {
-        ui += `• *[${re.id}]* ${re.name}\n  💰 RM ${re.price.toLocaleString()} | _${re.desc}_\n`;
-      });
+👉 Contoh guna: *.kedai_pancing 1*`;
+        return sock.sendMessage(from, { text: menu });
+      }
 
-      ui += `\n🪱 *[3. KATEGORI UMPAN (BAIT)]* - Pengganda Nilai Jualan:\n`;
-      FISHING_SHOP.baits.forEach(b => {
-        ui += `• *[${b.id}]* ${b.name}\n  💰 RM ${b.price.toLocaleString()} | _${b.desc}_\n`;
-      });
-
-      ui += `\n🫙 *[4. KATEGORI AKUARIUM (TANK)]* - Kapasiti Simpanan:\n`;
-      FISHING_SHOP.tanks.forEach(t => {
-        ui += `• *[${t.id}]* ${t.name}\n  💰 RM ${t.price.toLocaleString()} | _${t.desc}_\n`;
-      });
-
-      ui += `\n💡 Taip *.beli_pancing [id_barang]* untuk melengkapkan joran anda!`;
-      return sock.sendMessage(from, { text: ui });
+      if (subCategory === "1") {
+        let ui = `╔═════════════════════════════════════╗\n   🎋 KEDAI KATEGORI: JORAN (ROD)\n╚═════════════════════════════════════╝\n`;
+        FISHING_SHOP.rods.forEach(r => {
+          ui += `• *[${r.id}]* ${r.name}\n  💰 RM ${r.price.toLocaleString()} | _${r.desc}_\n\n`;
+        });
+        ui += `👉 Beli: *.beli_pancing [id]*`;
+        return sock.sendMessage(from, { text: ui });
+      } else if (subCategory === "2") {
+        let ui = `╔═════════════════════════════════════╗\n   ⚙️ KEDAI KATEGORI: KEKILI (REEL)\n╚═════════════════════════════════════╝\n`;
+        FISHING_SHOP.reels.forEach(re => {
+          ui += `• *[${re.id}]* ${re.name}\n  💰 RM ${re.price.toLocaleString()} | _${re.desc}_\n\n`;
+        });
+        ui += `👉 Beli: *.beli_pancing [id]*`;
+        return sock.sendMessage(from, { text: ui });
+      } else if (subCategory === "3") {
+        let ui = `╔═════════════════════════════════════╗\n   🪱 KEDAI KATEGORI: UMPAN (BAIT)\n╚═════════════════════════════════════╝\n`;
+        FISHING_SHOP.baits.forEach(b => {
+          ui += `• *[${b.id}]* ${b.name}\n  💰 RM ${b.price.toLocaleString()} | _${b.desc}_\n\n`;
+        });
+        ui += `👉 Beli: *.beli_pancing [id]*`;
+        return sock.sendMessage(from, { text: ui });
+      } else if (subCategory === "4") {
+        let ui = `╔═════════════════════════════════════╗\n   🫙 KEDAI KATEGORI: AKUARIUM (TANK)\n╚═════════════════════════════════════╝\n`;
+        FISHING_SHOP.tanks.forEach(t => {
+          ui += `• *[${t.id}]* ${t.name}\n  💰 RM ${t.price.toLocaleString()} | _${t.desc}_\n\n`;
+        });
+        ui += `👉 Beli: *.beli_pancing [id]*`;
+        return sock.sendMessage(from, { text: ui });
+      } else {
+        return sock.sendMessage(from, { text: `❌ Pilihan tidak sah! Sila pilih nombor 1 hingga 4. Contoh: *.kedai_pancing 1*` });
+      }
     }
 
     if (cmd === "beli_pancing") {
@@ -1712,10 +1698,10 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: ui });
     }
 
-    // 💼 KERJA HALAL
+    // 💼 KERJA HALAL (CD TEPAT 30 SAAT)
     if (cmd === "kerja" || cmd === "work") {
-      let cdDuration = 60 * 1000;
-      if (activePhoneObj?.perk === "cd") cdDuration = Math.max(20000, cdDuration - activePhoneObj.val);
+      let cdDuration = 30 * 1000; // Cooldown tepat 30 saat
+      if (activePhoneObj?.perk === "cd") cdDuration = Math.max(10000, cdDuration - 5000);
 
       if (now < user.cooldowns.work && !isOwner) {
         const rem = Math.ceil((user.cooldowns.work - now) / 1000);
@@ -2358,7 +2344,7 @@ async function startBotEngine() {
 • *.season_info* ➔ Status musim & acara aktif
 
 💼 *[3. KERJAYA & PASARAN]*
-• *.kerja* (CD: 60s), *.daily*, *.pasaran*
+• *.kerja* (CD: 30s), *.daily*, *.pasaran*
 • *.beli_emas*, *.jual_emas*, *.beli_btc*, *.jual_btc*
 
 🐕 *[4. PENGAWAL & BOUNTY]*
@@ -2380,11 +2366,7 @@ async function startBotEngine() {
 • *.coinflip*, *.slot*, *.hutang_ahlong*, *.bayar_ahlong*
 
 🏦 *[8. BANK & IDENTITI]*
-• *.deposit*, *.withdraw*, *.transfer*, *.shop*, *.beli_makanan*, *.makan*, *.myid*, *.profile*, *.top*
-
-👑 *[9. FOUNDER VETO CONTROL]*
-• *.set_season [no]*, *.start_event [event] [hari]*, *.stop_event*, *.reset_season*
-• *.give_cash*, *.give_gold*, *.give_btc*, *.set_market*, *.jail_user*, *.free_user*, *.reset_user*` 
+• *.deposit*, *.withdraw*, *.transfer*, *.shop*, *.beli_makanan*, *.makan*, *.myid*, *.profile*, *.top*` 
       });
     }
 
