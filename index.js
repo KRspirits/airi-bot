@@ -14,7 +14,7 @@ import pino from "pino";
 import fs from "fs";
 import http from "http";
 import QRCode from "qrcode";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -31,10 +31,10 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (GOOGLE GEMINI 2.5 FLASH ENGINE)
+// 🤖 1. ENJIN AI SHADOW AIRI (GOOGLE GEMINI 1.5 FLASH)
 // =========================================================================
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || "AQ.Ab8RN6L93ijIy-kYAJuvFh0DoaG9rL0PBmGgmkt3-l7JLz4PGA").trim();
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 async function askAiriAI(promptText, userName = "Warga Cyber") {
   try {
@@ -44,7 +44,7 @@ async function askAiriAI(promptText, userName = "Warga Cyber") {
       timeStyle: "medium" 
     });
 
-    const systemPrompt = `
+    const systemInstruction = `
 Nama kau ialah Airi, maskot AI dan pembantu pintar rasmi bagi komuniti siber "Airi's Corner".
 Pengasas dan ketua mutlak kau ialah Bos Amar (Shadow Legacy).
 Waktu dan Tarikh Semasa di Malaysia (MYT): ${currentTimeMY}
@@ -57,17 +57,21 @@ Personaliti:
 - Terus berikan jawapan perbualan tanpa meletakkan sebarang nota proses berfikir.
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: promptText,
-      config: {
-        systemInstruction: systemPrompt,
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: systemInstruction
+    });
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: promptText }] }],
+      generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 400
       }
     });
 
-    return response.text?.trim() || "Airi dengar! Tapi tak pasti nak jawab macam mana tadi hehe~ 💙";
+    const response = await result.response;
+    return response.text()?.trim() || "Airi dengar! Tapi tak pasti nak jawab macam mana tadi hehe~ 💙";
   } catch (err) {
     console.error("⚠️ Ralat Gemini AI:", err?.message || err);
     return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
@@ -75,7 +79,7 @@ Personaliti:
 }
 
 // =========================================================================
-// 💬 2. BANK 20 VARIASI AYAT SETIAP SENARIO RPG (ZERO TOKEN USAGE)
+// 💬 2. BANK 20 VARIASI AYAT SETIAP SENARIO RPG (ZERO API TOKEN USAGE)
 // =========================================================================
 const NARRATIVE_BANKS = {
   WORK_SHIFT: [
@@ -920,14 +924,14 @@ const MOD_PARTS = {
     { id: 46, name: "Talaan ECU Remap Stage 1 💻", price: 2500, boostSpeed: 12, desc: "+12 km/h top speed & respon throttle segera" },
     { id: 47, name: "Ekzos Titanium Paip On 🔊", price: 1800, boostSpeed: 8, desc: "+8% peluang menang drag & jeritan padu" },
     { id: 48, name: "Set Tayar Slick Drag Corsa 🏁", price: 1200, boostSpeed: 5, desc: "+5 km/h & cengkaman maksimum di litar lurus" },
-    { id: 49, name: "Botol NOS Nitrous 50hp 🧪", price: 800, boostSpeed: 25, oneTime: true, desc: "Pecutan kilat satu kali guna dalam lumba drag" },
+    { id: "49", name: "Botol NOS Nitrous 50hp 🧪", price: 800, boostSpeed: 25, oneTime: true, desc: "Pecutan kilat satu kali guna dalam lumba drag" },
     { id: 50, name: "Head & Block 65mm Superhead ⚙️", price: 3500, boostSpeed: 20, desc: "+20 km/h top speed jentera highway" },
     { id: 51, name: "Monoshock Ohlins Racing 🟡", price: 2200, boostSpeed: 6, desc: "+6 km/h & kestabilan membrek selekoh maut" }
   ],
   Kereta: [
     { id: 46, name: "Remap Dyno Stage 2 + Pops & Bang 💻", price: 3500, boostSpeed: 15, desc: "+15 km/h & letupan ekzos berapi" },
     { id: 48, name: "Tayar Semi-Slick Toyo R888R 🏁", price: 2400, boostSpeed: 10, desc: "+10 km/h & cengkaman litar profesional" },
-    { id: 49, name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
+    { id: "49", name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
     { id: 51, name: "Suspensi Boleh Laras Adjustable 🟡", price: 4200, boostSpeed: 12, desc: "+12 km/h & badan kereta direndahkan aerodinamik" },
     { id: 52, name: "Sistem Turbo Garrett Ball-Bearing 🐌", price: 7500, boostSpeed: 30, desc: "+30 km/h top speed boost siput berdesing" },
     { id: 53, name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elak risiko terbabas lumba" }
@@ -2304,19 +2308,7 @@ async function startBotEngine() {
       const userTank = FISHING_SHOP.tanks.find(t => t.id === user.fishingGear?.tank) || FISHING_SHOP.tanks[0];
 
       return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗
-   🪪 CYBER IDENTITY CARD (S${db.season || 1})
-╚═══════════════════════════╝
-👤 Nama: *${user.name}*
-🎖️ Gelaran: ${title}
-📱 Peranti: ${user.phoneName}
-🐕 Pengawal: ${user.pet ? user.pet.name : "Tiada"}
-💵 Tunai: RM ${user.cash.toLocaleString()} | 🏦 Bank: RM ${user.bank.toLocaleString()}
-🪙 Emas: ${(user.goldGrams || 0).toFixed(2)}g | ₿ BTC: ${(user.btcUnits || 0).toFixed(4)}
-💎 Nilai Harta: RM ${totalWealth.toLocaleString()}
-🏎️ Jentera: ${user.vehicles.length} | 🏢 Hartanah: ${user.properties.length}
-🎣 Set Pancing: ${userRod.name} | ${userReel.name}
-🫙 Akuarium: ${userTank.name} (${user.aquarium.length}/${userTank.capacity})` 
+        text: `╔═══════════════════════════╗\n   🪪 CYBER IDENTITY CARD (S${db.season || 1})\n╚═══════════════════════════╝\n👤 Nama: *${user.name}*\n🎖️ Gelaran: ${title}\n📱 Peranti: ${user.phoneName}\n🐕 Pengawal: ${user.pet ? user.pet.name : "Tiada"}\n💵 Tunai: RM ${user.cash.toLocaleString()} | 🏦 Bank: RM ${user.bank.toLocaleString()}。\n🪙 Emas: ${(user.goldGrams || 0).toFixed(2)}g | ₿ BTC: ${(user.btcUnits || 0).toFixed(4)}\n💎 Nilai Harta: RM ${totalWealth.toLocaleString()}\n🏎️ Jentera: ${user.vehicles.length} | 🏢 Hartanah: ${user.properties.length}\n🎣 Set Pancing: ${userRod.name} | ${userReel.name}\n🫙 Akuarium: ${userTank.name} (${user.aquarium.length}/${userTank.capacity})` 
       });
     }
 
@@ -2355,10 +2347,7 @@ async function startBotEngine() {
     if (cmd === "menu" || cmd === "help") {
       const evStatus = currentSeasonEvent ? `🔥 *[EVENT]:* ${currentSeasonEvent.name}` : "🌱 *[EVENT]:* Tiada event aktif";
       return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗
-   🖥️ AIRI'S CORNER CYBER OS (S${db.season || 1})
-╚═══════════════════════════╝
-${evStatus}
+        text: `╔═══════════════════════════╗\n   🖥️ AIRI'S CORNER CYBER OS (S${db.season || 1})\n╚═══════════════════════════╝\n${evStatus}
 
 🤖 *[1. SHADOW AIRI AI]*
 • *.airi [soalan]* ➔ Tanya & sembang AI (Gemini Flash)
