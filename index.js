@@ -31,7 +31,7 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (MODEL DISAHKAN DARI LOG AKAUN GROQ)
+// 🤖 1. ENJIN AI SHADOW AIRI (AUTO FILTER <think> TAGS)
 // =========================================================================
 const RAW_GROQ_KEY = (process.env.GROQ_API_KEY || "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").trim();
 const groq = new Groq({ apiKey: RAW_GROQ_KEY });
@@ -60,6 +60,7 @@ Personaliti:
 - Bantu jawab soalan waktu/jam, teknologi, sains, koding, matematik, nasihat hidup, fakta am, kuiz, atau sembang santai dengan tepat.
 - Panggil pengguna dengan nama mereka (${userName}) atau "Awak/Korang".
 - Jawab secara padat, jelas dan tidak terlalu meleret (maksimum 2-3 perenggan).
+- JANGAN sesekali sertakan proses pemikiran, analisis atau tag <think>. Terus berikan jawapan akhir sahaja!
 `;
 
   for (const modelId of ACTIVE_CHAT_MODELS) {
@@ -74,7 +75,11 @@ Personaliti:
         max_tokens: 400
       });
 
-      const reply = completion.choices[0]?.message?.content?.trim();
+      let reply = completion.choices[0]?.message?.content?.trim() || "";
+      
+      // ✂️ Tapis keluar semua tag dan teks <think>...</think>
+      reply = reply.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+
       if (reply) return reply;
     } catch (err) {
       console.warn(`⚠️ Model [${modelId}] gagal: ${err?.message}`);
@@ -139,7 +144,7 @@ const NARRATIVE_BANKS = {
     "Kena prank dengan arus laut! Balik-balik sampah juga yang dinaikkan.",
     "Umpan habis tapi yang naik cuma plastik sampah hanyut. Bersihkan laut kejap hehe~",
     "Nasib badan, ikan ke mana umpan ke mana... buang balik sampah ni ke darat!",
-    "Fuhh penat bergusti tarik joran, tengok-tengok selipar jamban jambatan gantung!",
+    "Fuhh penat bergusti tarik joran, tengok-tengok selipar jamban terapung!",
     "Mata kail tersangkut dekat khazanah sampah dasar sungai. Jangan putus asa ya!",
     "Reel menjerit kuat ingatkan paus, rupanya tin biskut karat zaman purba!",
     "Laut bagi amaran suruh bersihkan alam sekitar nampaknya harini hehe~",
@@ -232,7 +237,7 @@ const NARRATIVE_BANKS = {
     "Niat nak jadi perompak handal tapi tersilap potong wayar penggera balai!",
     "Menangis dalam lokap bayar denda mahkamah. Jangan buat hal lagi lepas ni ya!",
     "Ops Cantas Bukit Aman sambut kau depan pintu dengan gari berkilat!",
-    "Tergari kemas di belakang belakang van polis, impian jutawan gelap terkubur sekejap.",
+    "Tergari kemas di belakang van polis, impian jutawan gelap terkubur sekejap.",
     "Sensor infra-merah berbunyi serta-merta, unit peronda kepung dari semua sudut!",
     "Lari masuk lorong mati rupanya! Pihak polis terus acu gari besi keselamatan.",
     "Rekod jenayah bertambah tebal, sediakan duit jamin kalau nak bebas awal.",
