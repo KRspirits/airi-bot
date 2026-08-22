@@ -31,21 +31,19 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (GROQ SDK DENGAN LIVE TIMEZONE)
+// 🤖 1. ENJIN AI SHADOW AIRI (GROQ SDK - MODEL SAH & VERIFIED)
 // =========================================================================
-const groq = new Groq({ 
-  apiKey: process.env.GROQ_API_KEY || "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" 
-});
+const RAW_GROQ_KEY = (process.env.GROQ_API_KEY || "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").trim();
+const groq = new Groq({ apiKey: RAW_GROQ_KEY });
 
 async function askAiriAI(promptText, userName = "Warga Cyber") {
-  try {
-    const currentTimeMY = new Date().toLocaleString("ms-MY", { 
-      timeZone: "Asia/Kuala_Lumpur", 
-      dateStyle: "full", 
-      timeStyle: "medium" 
-    });
+  const currentTimeMY = new Date().toLocaleString("ms-MY", { 
+    timeZone: "Asia/Kuala_Lumpur", 
+    dateStyle: "full", 
+    timeStyle: "medium" 
+  });
 
-    const systemPrompt = `
+  const systemPrompt = `
 Nama kau ialah Airi, maskot AI dan pembantu pintar rasmi bagi komuniti siber "Airi's Corner".
 Pengasas dan ketua mutlak kau ialah Bos Amar (Shadow Legacy).
 Waktu dan Tarikh Semasa di Malaysia (MYT): ${currentTimeMY}
@@ -57,20 +55,37 @@ Personaliti:
 - Jawab secara padat, jelas dan tidak terlalu meleret (maksimum 2-3 perenggan).
 `;
 
+  try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: promptText }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-70b-versatile",
       temperature: 0.7,
       max_tokens: 400
     });
 
     return chatCompletion.choices[0]?.message?.content?.trim() || "Airi dengar! Tapi tak pasti nak jawab macam mana tadi hehe~ 💙";
-  } catch (err) {
-    console.error("⚠️ Ralat Shadow Airi AI:", err?.message || err);
-    return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
+  } catch (err1) {
+    console.error("⚠️ Ralat Model Utama Groq (70B):", err1?.message || err1);
+
+    try {
+      const fallbackCompletion = await groq.chat.completions.create({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: promptText }
+        ],
+        model: "llama-3.1-8b-instant",
+        temperature: 0.7,
+        max_tokens: 400
+      });
+
+      return fallbackCompletion.choices[0]?.message?.content?.trim() || "Airi dengar! 💙";
+    } catch (err2) {
+      console.error("⚠️ Ralat Fatal Groq Fallback (8B):", err2?.message || err2);
+      return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
+    }
   }
 }
 
@@ -94,7 +109,7 @@ Syarat:
         { role: "system", content: "Kau ialah pencerita naratif aksi RPG yang sangat santai, ceria dan berbisa." },
         { role: "user", content: prompt }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       temperature: 0.85,
       max_tokens: 120
     });
@@ -1578,7 +1593,12 @@ async function startBotEngine() {
       saveDB(db);
 
       return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗\n   ⚡ CYBER NEURAL HANDSHAKE ⚡\n╚═══════════════════════════╝\n🎯 Sasaran: *${targetUser.name}*\n🔑 *KOD EMOJI PIN DIPERLUKAN:* ${selectedPin.split("").join("  ")}\n⏳ Tempoh: 30 Saat!\n👉 Taip: *.bypass ${selectedPin}*` 
+        text: `╔═══════════════════════════╗
+   ⚡ CYBER NEURAL HANDSHAKE ⚡
+╚═══════════════════════════╝
+🎯 Sasaran: *${targetUser.name}*
+🔑 *KOD EMOJI PIN DIPERLUKAN:* ${selectedPin.split("").join("  ")}
+⏳ Tempoh: 30 Saat!\n👉 Taip: *.bypass ${selectedPin}*` 
       });
     }
 
