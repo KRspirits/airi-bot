@@ -31,7 +31,7 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI
+// 🤖 1. ENJIN AI SHADOW AIRI (GOOGLE GEMINI 2.5 FLASH)
 // =========================================================================
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || "AQ.Ab8RN6L93ijIy-kYAJuvFh0DoaG9rL0PBmGgmkt3-l7JLz4PGA").trim();
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -73,74 +73,410 @@ Personaliti:
     const response = await result.response;
     return response.text()?.trim() || "Airi dengar! Tapi tak pasti nak jawab macam mana tadi hehe~ 💙";
   } catch (err) {
-    console.error("⚠️ Ralat AI:", err?.message || err);
+    console.error("⚠️ Ralat Gemini AI:", err?.message || err);
     return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
   }
 }
 
 // =========================================================================
-// 💬 2. BANK VARIASI AYAT NARRATIVE RPG (HANYA UNTUK JENAYAH & LUMBA)
+// 💬 2. BANK 20 VARIASI AYAT SETIAP SENARIO RPG (ZERO API TOKEN USAGE)
 // =========================================================================
 const NARRATIVE_BANKS = {
+  WORK_SHIFT: [
+    "Fuhh berpeluh ketiak buat kerja tadi, tapi bila nampak duit masuk terus hilang penat hehe~!",
+    "Bagus betul disiplin kerja hari ni! Bos tengok pun senyum lebar sampai telinga.",
+    "Shift harini memang brutal, nasib baik sempat tapau upah sebelum balik rumah!",
+    "Siap pun tugasan! Jangan lupa simpan separuh dalam bank, jangan boros sangat tau~",
+    "Gaya kerja dah macam profesional cyberpunk, upah masuk poket terus tersenyum manis!",
+    "Alhamdulillah selesai satu shift halal. Rezeki jangan ditolak, musuh jangan dicari!",
+    "Penat-penat buat kerja pun berbaloi, dompet dah mula kembung balik uwu~",
+    "Tenaga kerja berkaliber! Majikan siap puji cara kau selesaikan tugasan sepantas kilat.",
+    "Bekerja bersungguh-sungguh demi sesuap nasi lemak dan segelas teh tarik kaw!",
+    "Tugasan mencabar berjaya diselesaikan tanpa sebarang kecacatan sistem. Mantap!",
+    "Hasil titik peluh hari ini sungguh manis, boleh la buat belanja member lepak kedai mamak!",
+    "Kerja santai tapi masyuk! Teruskan usaha tangga kejayaan dalam dunia Airi's Corner.",
+    "Shift penuh produktiviti! Dompet yang kempis kini kembali bertenaga.",
+    "Bos bagi bonus senyuman sebab kau buat kerja laju gila macam enjin V12!",
+    "Selesai tugas dengan penuh dedikasi. Jangan lupa bayar zakat dan belanja Airi ya hehe~",
+    "Kerja keras demi mengejar impian menjadi taikun terulung di Airi's Corner!",
+    "Minyak pelincir ekonomi berjalan lancar, upah berbaloi dengan usaha yang dicurahkan.",
+    "Fuhh selesai satu lagi misi kerja halal, boleh balik rumah rehat dengan tenang!",
+    "Prestasi kerja cemerlang! Gaji masuk terus rasa nak pergi showroom usha jentera baru.",
+    "Keringat hari ini penentu masa depan jutawan esok. Terbaik pekerja teladan!"
+  ],
+  FISHING_SUCCESS: [
+    "Perghh joran melengkung tajam macam nak patah, sekali tarik ikan padu naik darat!",
+    "Mantap tarikan reel kau harini! Peraih ikan jeti terus buka dompet tebal.",
+    "Bukan biasa-biasa ilmu memancing kau ni, ikan monster pun tunduk pasrah!",
+    "Ikan ni punya la melawan arus, nasib baik tali pancing tak putus tengah laut!",
+    "Rezeki tak pernah salah alamat! Sekali sentap terus dapat hasil tangkapan lumayan.",
+    "Tergolek ikan atas jeti! Bau hanyir tolak tepi, yang penting fulus berkepuk!",
+    "Fuhh pertarungan sengit 10 minit akhirnya dimenangi oleh pemancing handal kita!",
+    "Umpan mantap hasil pun padu! Ikan besar ni kalau jual terus kaya mendadak.",
+    "Peraih jeti senyum sampai telinga nampak hasil tangkapan rare macam ni hehe~",
+    "Kail berumpan di laut dalam, ikan terpikat masuk ke balang!",
+    "Umpan bau peram memang menjadi rahsia tangkapan monster harini. Padu bos!",
+    "Air tenang jangan disangka tiada buaya, sekali tarik ikan mahal lekat di mata kail!",
+    "Skill memancing bertaraf pro! Reel berpusing ligat menahan asakan mangsa.",
+    "Hasil tangkapan segar dari muara, terus jadi rebutan restoran lima bintang!",
+    "Rezeki joran bergoyang! Hari ni makan besar warga Airi's Corner.",
+    "Tangkapan emas hari ini membuktikan kesabaran seorang kaki pancing sejati!",
+    "Ikan ni ingat dia boleh lari, sekali kena libas joran terus terkulai layu!",
+    "Hebat betul firasat lubuk kau harini, baling mana-mana pun mesti sangkut ikan padu.",
+    "Senyuman terukir di wajah bila nampak sisik berkilau naik ke permukaan air!",
+    "Ikan mega berjaya ditewaskan! Penuh gaya pemancing elit dunia siber."
+  ],
+  FISHING_JUNK: [
+    "Aduhai... ingatkan ikan duyung menyentap, sekali naik kasut but getah reput!",
+    "Menangis tepi jeti tengok sampah sarap lekat kat mata kail. Cuba lagi nanti ya~",
+    "Joran melengkung sakan ingatkan jerung monster, rupanya tayar buruk berlumut adeh!",
+    "Kena prank dengan arus laut! Balik-balik sampah juga yang dinaikkan.",
+    "Umpan habis tapi yang naik cuma plastik sampah hanyut. Bersihkan laut kejap hehe~",
+    "Nasib badan, ikan ke mana umpan ke mana... buang balik sampah ni ke darat!",
+    "Fuhh penat bergusti tarik joran, tengok-tengok selipar jamban terapung!",
+    "Mata kail tersangkut dekat khazanah sampah dasar sungai. Jangan putus asa ya!",
+    "Reel menjerit kuat ingatkan paus, rupanya tin biskut karat zaman purba!",
+    "Laut bagi amaran suruh bersihkan alam sekitar nampaknya harini hehe~",
+    "Tergelak peraih jeti nampak barang yang kau naikkan tadi. Sabar ya warga cyber!",
+    "Bukan rezeki lagi kali ni, sampah sarap sungai berjaya dibersihkan secara percuma.",
+    "Ingatkan jackpot laut dalam, rupanya seluar jeans koyak hanyut dari hulu sungai!",
+    "Mata kail tersangkut ranting kayu reput. Kena asah balik teknik memancing tu!",
+    "Ikan lari sembunyi, yang tinggal cuma plastik mi segera terapung. Aduh!",
+    "Umpan sedap tapi ikan tak sudi, sampah juga yang setia melekat di joran.",
+    "Pancing punya pancing, dapat lesen pembersih jeti sukarela harini!",
+    "Aduh baling jauh-jauh tapi sauk sampah tepi tebing juga. Tabahkan hatimu!",
+    "Ikan muara sedang diet agaknya harini, cuma sampah sudi jamah kail.",
+    "Dugaan kaki pancing! Tarik nafas, buang sampah, dan pasang umpan baru."
+  ],
   RACE_WIN: [
     "Asap ekzos tinggal kat belakang, jentera meluncur laju macam peluru pandu!",
     "Pecutan sempurna di garisan penamat! Lawan terus termenung hisap asap tayar!",
     "Enjin ngaum sampai litar bergegar, trofi juara drag sah milik kau harini!",
-    "Talaan ECU mantap tak sia-sia, potong lawan masa gear 4 macam angin lalu!"
+    "Talaan ECU mantap tak sia-sia, potong lawan masa gear 4 macam angin lalu!",
+    "Terkebil-kebil pihak lawan nampak lampu belakang jentera kau lesap di kejauhan!",
+    "Shift gear padu tanpa slip! Kemenangan mutlak di atas tar jalanan malam ini.",
+    "Pelesit litar malam sejati! Hadiah kemenangan penuh dimasukkan ke akaun tunai.",
+    "Meter kelajuan cecah tahap maksima, lawan terpaksa angkat bendera putih!",
+    "Deruman ekzos memecah hening malam, juara jalanan dinobatkan sekali lagi!",
+    "Gaya pemanduan agresif tapi terkawal, trofi dan duit taruhan selamat disapu bersih!",
+    "Jentera berdesing laju, tiada siapa mampu mengejar bayang-bayang kelajuan kau!",
+    "Pecutan padu dari garisan mula hingga tamat tanpa memberi ruang kepada musuh.",
+    "Litar malam ini kau yang punya! Sorakan peminat bergema rai kejuaraan drag.",
+    "Timing clutch memang tepat pada saat, jentera melompat ke hadapan dengan megah!",
+    "Lawan menangis di bucu tiang lampu tengok jentera kau tapau podium pertama!",
+    "Kelajuan supersonik darat membuktikan pelaburan modifikasi bengkel berbaloi gila!",
+    "Pintasan maut di selekoh terakhir mengunci kemenangan mutlak tanpa keraguan!",
+    "Asap tayar membakar aspal litar, nama kau terpahat sebagai raja lumba highway!",
+    "Dominasi penuh dari mula sampai tamat, bawa balik hadiah tunai dengan megah!",
+    "Kuda lumba berkuasa kuda tinggi! Tiada lawan yang mampu menandingi kelajuan ini."
   ],
   RACE_CRASH: [
     "Adoi oversteer teruk dekat selekoh, jentera terus cium divider jalan raya!",
     "Enjin panas mendidih sampai keluar asap putih, mekanik dah standby resit baiki!",
     "Terlalu yakin masa tekan minyak, sekali tayar hilang grip terus spin 360 darjah!",
-    "Tergolek tepi longkang litar! Nasib baik nyawa selamat, cuma dompet kena bayar towing."
+    "Tergolek tepi longkang litar! Nasib baik nyawa selamat, cuma dompet kena bayar towing.",
+    "Niat nak memotong gaya hero filem, tapi tersagat dinding trek pula adeh!",
+    "Bonggol jalanraya menamatkan impian kejuaraan harini. Bersabar la kawan!",
+    "Kotak gear meragam masa tarik RPM tinggi, terpaksa tolak jentera ke tepi trek.",
+    "Brek lambat sangat sampai tayar lock, jentera meluncur langgar kon keselamatan!",
+    "Pecah radiator di tengah litar! Asap berkepul-kepul menutupi pandangan.",
+    "Kecundang di litar sendiri, kos bengkel harini confirm buat menangis tepi bucu.",
+    "Terlebih tekan NOS sampai enjin blow! Mekanik bengkel tersenyum dapat job besar.",
+    "Gagal kawal stereng pada kelajuan tinggi, jentera berpusing macam gasing moden!",
+    "Hilang kawalan di selekoh tajam akibat jalan licin, selamat mendarat di rumput.",
+    "Towing truck dah sampai untuk angkut jentera. Sediakan fulus untuk pomen!",
+    "Litar malam penuh ranjau, tayar bocor masa nak sprint ke garisan penamat.",
+    "Impian podium lebur sekelip mata bila jentera berpusing langgar tiang tayar!",
+    "Mekanik geleng kepala tengok bumper jentera bersepai di atas jalan raya.",
+    "Terlalu agresif mengejar musuh sampai terbabas ke bahu jalan litar!",
+    "Kerosakan mekanikal menamatkan perlumbaan lebih awal. Baiki dulu jentera tu!",
+    "Jentera merajuk minta rehat nampaknya, melayang duit poket bayar kos membaiki."
   ],
   CRIME_SUCCESS: [
     "Langkah licik macam bayang-bayang malam, hasil rompakan berjaya disorok kemas!",
     "Siren polis berbunyi jauh di belakang, kau dah santai minum kopi kira duit tebal!",
     "Misi rompakan berjalan lancar ikut pelan tanpa tinggalkan walau satu cap jari pun!",
-    "CCTV berjaya digodam, barang bernilai lesap tanpa ada sesiapa yang perasan hehe~!"
+    "CCTV berjaya digodam, barang bernilai lesap tanpa ada sesiapa yang perasan hehe~!",
+    "Pintu bilik kebal terbuka luas, duit berikat-ikat masuk dalam beg sandang!",
+    "Underworld mafia tabik spring tengok kepantasan kau sapu bersih hasil malam ni!",
+    "Gaya perompak elit kelas atasan, masuk senyap keluar bawak beg penuh tunai!",
+    "Polis peronda terpinga-pinga tengok tempat kejadian dah kosong tak tinggal habuk!",
+    "Operasi gelap selesai dengan jayanya, ranking wanted level makin naik bergaya!",
+    "Kelicikan luar biasa menewaskan semua sensor keselamatan moden siber!",
+    "Semua sistem penggera dimatikan tepat pada saat, beg duit penuh terisi!",
+    "Laluan tikus berjaya ditembusi, hasil rampasan selamat dicairkan ke pasaran gelap.",
+    "Pecah masuk paling kemas dalam sejarah underworld Airi's Corner!",
+    "Pengawal keselamatan masih berdengkur lena masa kau sauk semua barang bernilai.",
+    "Eksploitasi sistem berjaya 100%, wang tunai mengalir masuk ke poket peribadi.",
+    "Jejak digital dipadamkan serta-merta, pihak berkuasa kekal buntu cari suspek.",
+    "Loot berharga berjaya dibawa lari melepasi sekatan lorong gelap bandar!",
+    "Operasi heist bertaraf antarabangsa! Kingpin underworld tersenyum puas.",
+    "Kunci keselamatan dipintas tanpa bunyi, hasil rompak melimpah-ruah harini.",
+    "Berjaya lari dari zon merah sebelum unit khas polis sempat tiba di lokasi!"
   ],
   CRIME_BUSTED: [
     "Baru nak pegang pemegang pintu, sekali lampu siren biru-merah suluh muka!",
     "Kantoi basah di tempat kejadian! Tangan dah kena gari besi lokap balai.",
     "Penggera keselamatan memekak satu blok, tak sempat lari terus kena kepung!",
-    "Polis peronda dah tunggu depan pintu keluar dengan senyuman sinis adeh!"
+    "Polis peronda dah tunggu depan pintu keluar dengan senyuman sinis adeh!",
+    "Langkah sumbang membawa padah, meringkuk la dalam lokap sejukkan kepala!",
+    "Kamera litar tertutup rakam muka kau jelas sangat, terus kena cekup atas jalan!",
+    "Anjing pengesan polis hidu jejak kau, tiada jalan keluar selain serah diri!",
+    "Pihak berkuasa dah pasang perangkap awal-awal, kau terus masuk jerat!",
+    "Niat nak jadi perompak handal tapi tersilap potong wayar penggera balai!",
+    "Menangis dalam lokap bayar denda mahkamah. Jangan buat hal lagi lepas ni ya!",
+    "Ops Cantas Bukit Aman sambut kau depan pintu dengan gari berkilat!",
+    "Tergari kemas di belakang van polis, impian jutawan gelap terkubur sekejap.",
+    "Sensor infra-merah berbunyi serta-merta, unit peronda kepung dari semua sudut!",
+    "Lari masuk lorong mati rupanya! Pihak polis terus acu gari besi keselamatan.",
+    "Rekod jenayah bertambah tebal, sediakan duit jamin kalau nak bebas awal.",
+    "Silap langkah kantoi di roadblock keselamatan, barang kes terus disita!",
+    "Pihak keselamatan bertindak pantas kilat menangkap suspek sebelum sempat lari.",
+    "Terperangkap dalam bilik kawalan tanpa jalan keluar, pasrah digari penguatkuasa.",
+    "Denda mahkamah melayang dari dompet, masuk lokap rehat sambil makan roti kering!",
+    "Pelan heist bocor ke pihak berkuasa, terus kena serbu di lokasi kejadian!"
   ],
   BANK_HACK_SUCCESS: [
     "Firewall bank runtuh sekelip mata, baki akaun sasaran terus mengalir masuk poket!",
     "Serangan siber zero-day berjaya! Sistem pangkalan data bank mangsa lompang habis.",
-    "Decrypter berfungsi sempurna, duit simpanan bank mangsa disedut tanpa belas kasihan!"
+    "Decrypter berfungsi sempurna, duit simpanan bank mangsa disedut tanpa belas kasihan!",
+    "Pintasan transaksi digital berjaya, duit kripto dan tunai selamat dipindahkan!",
+    "Kod bypass tepat sasaran! Akaun bank mangsa tinggal baki ciput menangis bucu katil.",
+    "Penggodam elit siber beraksi! Sistem perbankan mangsa lumpuh ditelan algoritma jahat.",
+    "Protokol keselamatan bank tembus semudah ABC, transaksi jutawan gelap berjaya!",
+    "Notifikasi SMS mangsa berbunyi panik tengok duit lesap dipindahkan ke akaun kau!",
+    "Payload eksploitasi meletup dalam server bank, sedutan wang tunai berjalan lancar.",
+    "Skrip terminal hijau berpusing laju, akaun mangsa berjaya dibersihkan sepenuhnya!",
+    "Firewall bank utama langsung tak mampu tahan serangan brute-force siber kau!",
+    "Kunci penyulitan berjaya dipecahkan, sejumlah dana mangsa masuk ke dompet gelap.",
+    "Sistem pangkalan data perbankan berjaya dimanipulasi tanpa meninggalkan log jejak!",
+    "Token transaksi disahkan secara palsu, sedutan wang tunai berlaku sepantas kilat.",
+    "Mangsa terkejut baki simpanan bank susut mendadak dikerjakan penggodam elit!",
+    "Akses root bank dikuasai, aliran dana disalurkan ke akaun proksi tanpa sekatan.",
+    "Pelayan keselamatan bank hang sekejap masa pemindahan dana haram dijalankan!",
+    "Injeksi kod SQL berjaya bypass authentication, baki akaun mangsa kering kontang.",
+    "Siber trojan berjaya tembusi peti besi digital perbankan mangsa dengan bergaya.",
+    "Kemenangan mutlak hacker underground, pundi-pundi akaun bertambah kaya-raya!"
   ],
   ROB_SUCCESS: [
     "Acukan tepat sasaran, mangsa gigil serah semua tunai poket tanpa banyak soal!",
     "Rembatan pantas di lorong gelap! Dompet mangsa licin disapu bersih tanpa sisa.",
-    "Mangsa tergamam tak sempat buat apa-apa, duit dalam poket selamat berpindah tuan!"
+    "Mangsa tergamam tak sempat buat apa-apa, duit dalam poket selamat berpindah tuan!",
+    "Operasi samun siber terpantas harini! Bawa lari habuan lumayan sambil ketawa besar.",
+    "Kekasaran jalanan membuahkan hasil, mangsa pasrah dompet tebalnya dirampas!",
+    "Beg mangsa terbuka luas, tangan laju menyeluk sauk semua kepingan not wang!",
+    "Jeritan mangsa tenggelam dalam angin malam masa kau memecut lari bawa duit!",
+    "Bukan main tebal dompet mangsa harini, memang rezeki terpijak perompak jalanan!",
+    "Langkah menyelinap dari belakang berjaya, mangsa hanya mampu tengok duitnya lesap.",
+    "Samun berjaya tanpa sebarang pergelutan, poket sendiri kini kembung berisi wang!",
+    "Tangan pantas menyentap dompet mangsa sebelum sempat dia menjerit minta tolong!",
+    "Serangan hendap di lorong sunyi berjaya, semua duit poket mangsa disapu bersih.",
+    "Mangsa terus terdiam kelu bila sedar dompetnya dah bertukar tangan sepantas kilat.",
+    "Larian pecut selepas merembat duit mangsa langsung tak mampu dikejar sesiapa!",
+    "Loot rompakan PvP bertaraf lumayan, mangsa kena kerja balik isi poket tu hehe~",
+    "Gaya samun profesional tanpa tinggalkan kesan, duit mangsa selamat masuk poket!",
+    "Rezeki lorong gelap berpihak kepada si perompak licik, mangsa terduduk pasrah.",
+    "Dompet mangsa berjaya dipancing keluar dari poket belakang tanpa disedari!",
+    "Kejutan rompakan mengejutkan mangsa, wang tunai berkepuk bertukar pemilik baru.",
+    "Rompakan berani mati membuahkan hasil lumayan, senyum lebar kira duit curi!"
   ],
   ROB_FAIL_ROAST: [
     "Niat nak merompak tapi tangan gigil sampai dompet sendiri jatuh tercicir depan mangsa!",
     "Belum sempat acah hero, mangsa dah jerit panggil polis satu kampung kejar kau!",
-    "Terpijak kulit pisang masa nak samun, terus terlentang kena gelak dengan mangsa adeh!"
+    "Terpijak kulit pisang masa nak samun, terus terlentang kena gelak dengan mangsa adeh!",
+    "Mangsa rupanya ada tali pinggang hitam taekwondo, kau kena lanyak sampai lebam!",
+    "Silap sasaran! Mangsa langsung takde duit, kau pula yang kena tangkap polis peronda.",
+    "Gaya perompak amatur sangat, mangsa acah sikit terus lari lintang-pukang masuk parit!",
+    "Tertinggal kad pengenalan sendiri masa nak merompak, polis terus cari kat rumah!",
+    "Mangsa buat muka tak bersalah sambil tunjuk poket kosong, merompak angin la kau harini!",
+    "Kantoi basah masa cuba seluk poket, terus kena jerkah sampai hilang semangat!",
+    "Merompak tak dapat, denda balai polis pula melayang RM500. Memang rugi teruk!",
+    "Mangsa hempas kau ke lantai guna teknik judo, terus meraung minta ampun tepi jalan!",
+    "Perompak paling kelakar abad ini! Niat nak samun tapi tersilap hulur duit sendiri.",
+    "Larian kau terlalu perlahan sampai orang ramai senang-senang kepung dan tangkap!",
+    "Mangsa jerit 'PENCURI!' kuat gila sampai gegar satu group WhatsApp, terus kantoi!",
+    "Tersalah pilih mangsa, rupanya inspektor polis yang menyamar berbaju biasa adeh!",
+    "Kaki terseliuh masa nak melarikan diri, padan muka kena seret masuk balai lokap.",
+    "Mangsa baling helmet tepat kena dahi kau, terus berpinar mata tersungkur di jalan.",
+    "Senjata mainan kau patah dua masa mengugut mangsa, terus kena bantai beramai-ramai!",
+    "Rompakan paling memalukan dalam sejarah, mangsa sempat rakam video buat TikTok viral!",
+    "Gagal total! Poket mangsa selamat, poket kau pula kena denda dan sumbat lokap."
   ],
   PET_DEFEND: [
     "Pengawal haiwan melompat terkam perompak sampai koyak seluar lari lintang pukang!",
     "Anjing pengawal menyalak garang dan gigit betis musuh sampai merayu minta nyawa!",
-    "Dron AI sentry memancarkan laser renjatan elektrik, perompak terus kejung atas tar!"
+    "Dron AI sentry memancarkan laser renjatan elektrik, perompak terus kejung atas tar!",
+    "Serigala siber menyambar pantas, mangsa selamat dan perompak kena denda ganti rugi!",
+    "Pengawal bionik bertindak pantas menepis serangan musuh dengan perisai titanium!",
+    "Cyborg panther mengaum garang, perompak terus terkencing dalam seluar cabut lari!",
+    "Naga kripto sembur gelombang plasma mikro, musuh hangus dompet terus lari!",
+    "Haiwan peliharaan setia melindungi tuannya, cubaan samun musuh gagal sepenuhnya!",
+    "Sentry pengimbas mengunci sasaran dan melepaskan renjatan voltan tinggi pada perompak!",
+    "Perompak tak sempat dekat, pengawal bionik dah terajang musuh masuk longkang!",
+    "Cengkaman kuku serigala siber membuktikan keselamatan tuannya tidak boleh dicabar!",
+    "Anjing pengawal setia menyalak membabi buta, perompak panik buang duit ganti rugi.",
+    "Dron sentry tembak peluru getah tepat kena dahi perompak, terus tersungkur layu!",
+    "Haiwan peliharaan tuannya bukan calang-calang, perompak lari macam nampak hantu!",
+    "Renjatan pertahanan automatik haiwan peliharaan membuatkan musuh kejang otot!",
+    "Perompak ingatkan mudah nak samun, sekali kena sergah dengan raksasa bionik!",
+    "Pengawal setia melompat menjadi benteng, menyelamatkan setiap sen duit poket tuannya.",
+    "Aura garang haiwan pengawal cukup untuk buat perompak menangis minta maaf!",
+    "Perisai bionik haiwan peliharaan memantulkan balik serangan musuh serta-merta.",
+    "Serbuan pantas pengawal siber menumbangkan musuh sebelum sempat menyentuh dompet!"
   ],
   LHDN_TAX: [
     "Pegawai audit LHDN menyerbu premis dan menyita wang tunai tidak berisytihar!",
-    "Surat kuning LHDN sampai ke rumah, cukai pendapatan tertunggak dipotong terus!"
+    "Surat kuning LHDN sampai ke rumah, cukai pendapatan tertunggak dipotong terus!",
+    "Audit forensik kewangan membongkar simpanan tunai rahsia yang cuba disorok!",
+    "Pegawai cukai memeriksa akaun dan mengenakan penalti sitaan atas kekayaan melampau!",
+    "Siasatan audit mendapati aliran tunai meragukan, sitaan cukai dilakukan serta-merta!",
+    "Aliran tunai luar biasa dikesan radar kerajaan, cukai pendapatan terus dipotong!",
+    "Pegawai LHDN datang mengetuk pintu bersama notis taksiran cukai tambahan!",
+    "Aset tunai yang disimpan bawah bantal dikesan dan disita mengikut akta cukai negara!",
+    "Pemeriksaan mengejut sistem kewangan mendapati cukai keuntungan gagal dibayar!",
+    "Sitaan rasmi LHDN berjalan lancar, sebahagian tunai poket mangsa dipotong!",
+    "Akaun bank dan tunai diselidik rapi, penalti audit terus ditolak dari poket mangsa.",
+    "LHDN hantar surat saman taksiran cukai tahunan, duit tunai disedut masuk perbendaharaan!",
+    "Pegawai penguatkuasa sita wang tunai tidak berlesen semasa operasi audit mengejut!",
+    "Cubaan lari dari cukai gagal bila sistem AI LHDN mengesan rekod transaksi mangsa!",
+    "Operasi audit mega menyasarkan warga cyber berduit tebal, sitaan cukai dikenakan!",
+    "Notis merah audit sampai ke peti surat, denda kelewatan cukai dipotong serta-merta.",
+    "Siasatan mendapati perbelanjaan melebihi pendapatan rasmi, cukai sitaan dikuatkuasakan!",
+    "Pegawai audit sita sebahagian kekayaan untuk dana pembangunan infrastruktur negara!",
+    "Duit tunai poket mangsa diselidik dan dikenakan pemotongan cukai keuntungan modal!",
+    "Serbuan audit LHDN membuktikan tiada sesiapa mampu lari daripada bayar cukai!"
   ],
   RANSOMWARE_ATTACK: [
     "Virus trojan menyulitkan fail sistem peranti, wang tebusan siber disedut paksa!",
-    "Skrin peranti terkunci merah dengan teks tebusan, duit poket lesap ditelan penggodam!"
+    "Skrin peranti terkunci merah dengan teks tebusan, duit poket lesap ditelan penggodam!",
+    "Serangan ransomware darkweb menembusi keselamatan peranti dan mengunci data peribadi!",
+    "Penggodam tanpa nama menuntut wang tebusan segera untuk menyahkunci fail peranti!",
+    "Sistem operasi peranti dijangkiti malware pemeras ugut, wang tunai lesap sekelip mata!",
+    "Kod perosak menyulitkan dompet digital peranti, bayaran tebusan dipotong paksa!",
+    "Peranti mangsa lumpuh sepenuhnya akibat klik pautan phishing yang mencurigakan!",
+    "Penggodam antarabangsa mengunci storan peranti dan menyedut pampasan tunai!",
+    "Serangan siber zero-day menyebarkan ransomware berbahaya ke dalam sistem peranti!",
+    "Fail penting peranti disandera oleh sindiket penggodam siber, wang tebusan melayang!",
+    "Skrin peranti bertukar hitam dengan kiraan masa tebusan, duit poket lesap serta-merta!",
+    "Malware pemeras ugut menyedut baki tunai mangsa sebelum membuka semula kunci sistem.",
+    "Pintu belakang sistem diceroboh penggodam, data disulitkan dengan algoritma RSA-4096!",
+    "Serangan ransomware melumpuhkan komunikasi peranti, wang tebusan lesap ke darkweb.",
+    "Peranti mangsa terkunci rapat, terpaksa bayar wang tebusan siber untuk pulihkan data!",
+    "Penggodam bayangan mengeksploitasi kelemahan firewall dan menuntut wang tebusan!",
+    "Virus siber menyandera peranti pintar mangsa, pampasan tunai dipotong tanpa amaran.",
+    "Sistem keselamatan siber gagal membendung ransomware, wang mangsa melayang lesap!",
+    "Penggodam darkweb berjaya menyedut wang tebusan selepas mengunci fail mangsa.",
+    "Notis ransomware terpapar pada skrin, duit tunai lesap sebelum kunci sistem dipulihkan!"
   ],
   AES_SPEED_FINE: [
     "Kamera AES lebuhraya merakam jentera memecut laju melebihi had laju kebangsaan!",
-    "Flash kamera perangkap kelajuan menyala terang di highway, saman terus masuk!"
+    "Flash kamera perangkap kelajuan menyala terang di highway, saman terus masuk!",
+    "Jentera dipandu macam peluru di lebuhraya, surat saman AES sampai ke rumah!",
+    "Sensor had laju lebuhraya mengesan kelajuan melampau, denda saman dipotong automatik!",
+    "Terlalu asyik menekan pedal minyak di lebuhraya, kamera perangkap laju rakam plat nombor!",
+    "Saman AES kelajuan tinggi dikeluarkan oleh sistem kawalan trafik lebuhraya!",
+    "Kamera automatik merakam jentera memotong di lorong kecemasan pada kelajuan tinggi!",
+    "Operasi had laju kamera pintar mengenakan denda kompaun atas pemanduan berbahaya!",
+    "Flash kamera AES menyilaukan mata pemandu di lebuhraya, duit denda terus ditolak!",
+    "Pemanduan melebihi 110 km/h di zon perangkap laju membawa padah saman melayang!",
+    "Sistem AES pintar merakam bukti bergambar jentera memecut laju di lebuhraya!",
+    "Denda had laju automatik dipotong terus dari akaun pemandu jentera laju!",
+    "Kamera perangkap kelajuan highway merakam aksi rempit jentera tanpa belas kasihan.",
+    "Surat saman AES bergambar sampai ke peti surat, denda kelajuan wajib dibayar!",
+    "Sensor radar lebuhraya mengunci kelajuan jentera dan mengeluarkan saman serta-merta.",
+    "Terlebih tekan throttle di zon kamera AES, kompaun kelajuan melayang dari dompet!",
+    "Sistem pemantauan trafik lebuhraya merakam kesalahan memandu melebihi had laju.",
+    "Kamera kelajuan tinggi merakam jentera memecut tanpa sempat menekan brek kecemasan!",
+    "Denda perangkap kelajuan lebuhraya ditolak secara rasmi oleh pihak berkuasa trafik.",
+    "Aksi pecutan lebuhraya berakhir dengan notis saman AES yang mahal!"
+  ],
+  SAFE_CHOICE: [
+    "Memilih jalan selamat dan menerima wang tunai dijamin tanpa sebarang risiko!",
+    "Keputusan bijak dan berhemah, duit poket bertambah tanpa perlu pening kepala!",
+    "Pilihan konservatif yang menjamin keuntungan pasti ke dalam akaun peribadi!",
+    "Langkah berwaspada menyelamatkan dompet daripada risiko kerugian pasaran!",
+    "Wang tunai percuma dimasukkan terus ke poket dengan senyuman puas hati!",
+    "Lebih baik untung sedikit yang pasti daripada rugi besar yang menyakitkan!",
+    "Strategi kewangan berdisiplin, ganjaran selamat berjaya diraih tanpa bahaya!",
+    "Tawaran selamat diterima dengan tangan terbuka, baki tunai terus meningkat!",
+    "Mengelak perangkap spekulasi dan memilih ganjaran wang tunai dijamin!",
+    "Pilihan waras seorang pelabur pintar yang mengutamakan keselamatan modal!",
+    "Menerima wang tunai segera tanpa perlu berdebar menunggu nasib kontrak!",
+    "Langkah selamat membawa berkat, duit poket tebal tanpa risiko kemerosotan modal.",
+    "Keputusan tepat mengelakkan jerat kerugian pasaran yang sedang bergelora!",
+    "Duit tunai di tangan lebih bernilai daripada janji manis keuntungan palsu.",
+    "Ganjaran selamat berjaya dikreditkan, dompet bertambah kukuh tanpa sebarang beban!",
+    "Memilih ketenangan fikiran dengan mengambil wang tunai yang dijamin 100%!",
+    "Langkah bijaksana pelabur berpengalaman yang tahu bila masa patut main selamat.",
+    "Wang tunai rasmi masuk akaun, tiada risiko muflis atau kerugian besar!",
+    "Pilihan bijak yang menambah kekayaan secara stabil dan konsisten setiap masa.",
+    "Kekayaan bertambah langkah demi langkah dengan pilihan pelaburan selamat!"
+  ],
+  CRYPTO_GAMBLE: [
+    "Menang besar pasaran kontrak niaga hadapan kripto, keuntungan melonjak tinggi!",
+    "Nasib menyebelahi pelabur berani, graf lilin hijau pacak menembusi siling!",
+    "Strategi 'high risk high return' membuahkan hasil lumayan berlipat kali ganda!",
+    "Analisis teknikal tepat sasaran, posisi leverage tinggi meletupkan keuntungan mega!",
+    "Kemenangan epik dalam pasaran derivatif kripto, duit berkepuk masuk dompet!",
+    "Graf pasaran melonjak mendadak membakar semua posisi penjual singkat, untung padu!",
+    "Keberanian mengambil risiko membawa pulangan tunai yang sungguh luar biasa!",
+    "Paus kripto menyuntik modal besar, kontrak pelaburan kau untung maksimum!",
+    "Indikator RSI menunjukkan oversold sempurna, belian dasar membawa keuntungan emas!",
+    "Tuah pelabur kripto sejati, pulangan lumayan berjaya diraih dalam beberapa saat!",
+    "Pasaran berdarah teruk menenggelamkan posisi kontrak, kerugian besar dialami!",
+    "Graf lilin merah menjunam mendadak melikwidasikan semua modal pelaburan!",
+    "Jerangkap paus pasaran menelan modal mentah-mentah, dompet kering kontang!",
+    "Spekulasi melampau membawa padah kerugian besar dalam pasaran berisiko tinggi!",
+    "Posisi leverage terlalu tinggi menyebabkan kerugian teruk bila pasaran berbalik arah!",
+    "Panik jualan melanda pasaran, modal pelaburan lenyap ditelan penurunan drastik!",
+    "Kerugian modal yang menyakitkan akibat pergerakan harga luar jangkaan!",
+    "Analisis silap perhitungan, duit pelaburan lebur sekelip mata di medan tempur kripto!",
+    "Pasaran menolak posisi pelaburan secara ganas, meninggalkan baki tunai yang susut!",
+    "Pengajaran pahit dalam dunia kripto, risiko tinggi menuntut pengorbanan modal besar!"
+  ],
+  MYSTERY_BOX: [
+    "Peti misteri terbuka dan memancarkan kilauan emas permata bernilai tinggi!",
+    "Jackpot peti rahsia! Hadiah tunai melimpah ruah keluar membanjiri poket!",
+    "Tuah bergolek apabila membuka peti misteri bertuah bertaraf legendary!",
+    "Peti hitam mengandungi khazanah tersembunyi yang menambah kekayaan berganda!",
+    "Kunci emas memutarkan mekanisme peti dan mengeluarkan wang tunai mega!",
+    "Rezeki terpijak dari kotak misteri, keuntungan besar berjaya dibawa pulang!",
+    "Peti antik purba menyimpan wang tunai berkepuk untuk pemilik baharu!",
+    "Kemenangan mutlak membongkar rahsia peti bertuah tanpa sebarang jerangkap!",
+    "Kilauan berlian dan wang tunai menyilaukan mata bila penutup peti dibuka!",
+    "Tuah luar biasa menyebelahi si pembuka peti, ganjaran lumayan sah milik anda!",
+    "Peti misteri meletupkan asap perangkap kosong, wang tunai hangus terbakar!",
+    "Malang tidak berbau bila membuka peti beracun yang menyedut wang denda!",
+    "Peti kosong tanpa isi! Modal pembukaan peti lenyap begitu sahaja!",
+    "Terkena jerangkap samar dalam peti misteri, denda pembersihan terpaksa dibayar!",
+    "Perangkap mekanikal peti mencakar dompet dan mengurangkan baki wang tunai!",
+    "Niat mengintai harta karun bertukar musibah bila peti meletupkan perangkap!",
+    "Peti misteri dihuni hantu siber yang merompak sebahagian duit poket pembuka!",
+    "Harapan menggunung hancur berkecai bila peti cuma mengandungi notis denda!",
+    "Jerangkap spring peti misteri melantunkan kerugian ke atas baki wang tunai!",
+    "Nasib malang membuka peti berhantu, kerugian tunai terpaksa ditanggung pasrah!"
   ],
   AIRDROP_CLAIM: [
     "Merampas peti airdrop sepantas kilat sebelum sempat pemain lain berkelip mata!",
-    "Kepantasan jari menaip kod akses mengunci peti kargo tunai ke dalam dompet!"
+    "Kepantasan jari menaip kod akses mengunci peti kargo tunai ke dalam dompet!",
+    "Peti airdrop tengah padang disambar licik tanpa memberi peluang kepada musuh!",
+    "Penyelamat kargo udara bertindak pantas menuntut wang tunai hadiah airdrop!",
+    "Sorakan kemenangan rai kepantasan menyapu bersih isi peti airdrop kargo!",
+    "Tangan paling tangkas di Airi's Corner berjaya menebus kod kunci airdrop!",
+    "Peti bantuan udara mendarat tepat ke tangan pemenang terpantas hari ini!",
+    "Loot kargo udara selamat diserap masuk ke baki akaun tanpa berkurang sesen pun!",
+    "Reaksi refleks luar biasa menewaskan ratusan warga cyber dalam perebutan airdrop!",
+    "Gaya lincah menuntut peti kargo tunai membuktikan ketajaman fokus pemain!",
+    "Peti airdrop parasut dibuka sempurna dengan kod akses yang dimasukkan tepat!",
+    "Duit tunai dalam peti kargo udara terus dikreditkan ke akaun si pemenang pantas!",
+    "Kepantasan luar biasa mengungguli perebutan peti airdrop di tengah komuniti!",
+    "Pemain lain hanya mampu gigit jari tengok peti airdrop disapu bersih sepantas kilat!",
+    "Loot bernilai tinggi dalam peti airdrop kini sah menjadi hak milik mutlak juara!",
+    "Pendaratan kargo tunai disambut pantas oleh jari emas yang menaip kod betul!",
+    "Kemenangan pantas menuntut peti bantuan udara membuktikan kecekapan reaksi!",
+    "Kargo tunai dari langit selamat mendarat dalam akaun simpanan poket anda!",
+    "Perebutan sengit airdrop dimenangi oleh jaguh terpantas tanpa sebarang keraguan!",
+    "Peti airdrop terkunci rapat kini terbuka luas memuntahkan wang tunai ganjaran!"
   ]
 };
 
@@ -294,10 +630,13 @@ function updateUser(userId, userData) {
 setInterval(() => {
   const db = loadDB();
   if (!db.market) db.market = { gold: 350, btc: 280000, lastUpdate: Date.now() };
+
   const goldChange = (Math.random() * 0.12) - 0.05;
   db.market.gold = Math.max(150, Math.floor(db.market.gold * (1 + goldChange)));
+
   const btcChange = (Math.random() * 0.27) - 0.12;
   db.market.btc = Math.max(80000, Math.floor(db.market.btc * (1 + btcChange)));
+
   db.market.lastUpdate = Date.now();
   saveDB(db);
 }, 10 * 60 * 1000);
@@ -352,37 +691,37 @@ const FISHING_SHOP = {
 };
 
 // =========================================================================
-// 🐟 8. PANGKALAN DATA IKAN (DIKEMAS KINI DENGAN BERAT KG & BUFF)
+// 🐟 8. PANGKALAN DATA IKAN (FIXED: DROP RATE & BERAT KG ASING - NERFED)
 // =========================================================================
 const FISH_DATABASE = [
-  { id: "f1", name: "Kasut But Getah Koyak 🥾", basePrice: 0, tier: "🗑️ [JUNK]", weightKg: 1.2, baseBuff: "Tiada buff", isJunk: true },
-  { id: "f2", name: "Tayar Kereta Buruk Berlumut 🛞", basePrice: 0, tier: "🗑️ [JUNK]", weightKg: 8.5, baseBuff: "Tiada buff", isJunk: true },
-  { id: "f3", name: "Ikan Kembung Segar Pasar 🐟", basePrice: 200, tier: "🌱 [COMMON]", weightKg: 0.4, baseBuff: "Gaji kerja +2%" },
-  { id: "f4", name: "Ikan Gelama Muara 🐟", basePrice: 350, tier: "🌱 [COMMON]", weightKg: 0.6, baseBuff: "Gaji kerja +3%" },
-  { id: "f5", name: "Ikan Keli Afrika Bersaiz L 🐡", basePrice: 550, tier: "🌱 [COMMON]", weightKg: 2.1, baseBuff: "Potong 5s cooldown kerja" },
-  { id: "f6", name: "Udang Galah Sungai Bernilai 🦐", basePrice: 1200, tier: "🌿 [UNCOMMON]", weightKg: 0.8, baseBuff: "Gaji kerja +5%" },
-  { id: "f7", name: "Sotong Kurita Mini 🐙", basePrice: 2200, tier: "🌿 [UNCOMMON]", weightKg: 1.5, baseBuff: "Menang Drag Race +3%" },
-  { id: "f8", name: "Ketam Bunga Segar 🦀", basePrice: 2800, tier: "🌿 [UNCOMMON]", weightKg: 0.9, baseBuff: "Potong 8s cooldown kerja" },
-  { id: "f9", name: "Ikan Siakap Muara Padu 🐠", basePrice: 5000, tier: "⭐ [RARE]", weightKg: 3.8, baseBuff: "Gaji kerja +8%" },
-  { id: "f10", name: "Ikan Jenahak Merah Laut Dalam 🐡", basePrice: 7500, tier: "⭐ [RARE]", weightKg: 5.2, baseBuff: "Diskaun denda lokap 10%" },
-  { id: "f11", name: "Pari Gergasi Layang-Layang 🦈", basePrice: 11000, tier: "⭐ [RARE]", weightKg: 14.5, baseBuff: "Menang Drag Race +6%" },
-  { id: "f12", name: "Ikan Kerapu Bara Monster 🦈", basePrice: 22000, tier: "💼 [EPIC]", weightKg: 18.0, baseBuff: "Gaji kerja +12%" },
-  { id: "f13", name: "Tuna Sirip Kuning Gred A 🐟", basePrice: 35000, tier: "💼 [EPIC]", weightKg: 35.4, baseBuff: "Hasil kutipan sewa +10%" },
-  { id: "f14", name: "Ketam Raja Alaska King Crab 🦀", basePrice: 48000, tier: "💼 [EPIC]", weightKg: 8.2, baseBuff: "Menang Coinflip/Slot +5%" },
-  { id: "f15", name: "Jerung Tukul Pesisir Pantai 🦈", basePrice: 95000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 65.0, baseBuff: "Loot rompakan PvP +15%" },
-  { id: "f16", name: "Sotong Gergasi Kraken Rahsia 🐙", basePrice: 180000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 110.0, baseBuff: "Kebal 20% daripada godaman bank" },
-  { id: "f17", name: "Raja Ikan Temoleh Sungai Perak 👑", basePrice: 300000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 42.5, baseBuff: "Hasil kutipan sewa +20%" },
-  { id: "f18", name: "Ikan Purba Coelacanth Emas 🌟", basePrice: 800000, tier: "👑 [MYTHIC]", weightKg: 78.0, baseBuff: "+15% Semua Gaji & Menang Lumba +15%" },
-  { id: "f19", name: "Naga Laut Megalodon Siber 🐉", basePrice: 2000000, tier: "👑 [MYTHIC]", weightKg: 450.0, baseBuff: "Dewa Laut! +25% Semua Gaji, Sewa & Lumba!" }
+  { id: "f1", name: "Kasut But Getah Koyak 🥾", basePrice: 0, tier: "🗑️ [JUNK]", weightKg: 1.2, dropRate: 15.0, baseBuff: "Tiada buff", isJunk: true },
+  { id: "f2", name: "Tayar Kereta Buruk Berlumut 🛞", basePrice: 0, tier: "🗑️ [JUNK]", weightKg: 8.5, dropRate: 10.0, baseBuff: "Tiada buff", isJunk: true },
+  { id: "f3", name: "Ikan Kembung Segar Pasar 🐟", basePrice: 25, tier: "🌱 [COMMON]", weightKg: 0.4, dropRate: 20.0, baseBuff: "Gaji kerja +2%" },
+  { id: "f4", name: "Ikan Gelama Muara 🐟", basePrice: 40, tier: "🌱 [COMMON]", weightKg: 0.6, dropRate: 18.0, baseBuff: "Gaji kerja +3%" },
+  { id: "f5", name: "Ikan Keli Afrika Bersaiz L 🐡", basePrice: 65, tier: "🌱 [COMMON]", weightKg: 2.1, dropRate: 15.0, baseBuff: "Potong 5s cooldown kerja" },
+  { id: "f6", name: "Udang Galah Sungai Bernilai 🦐", basePrice: 120, tier: "🌿 [UNCOMMON]", weightKg: 0.8, dropRate: 12.0, baseBuff: "Gaji kerja +5%" },
+  { id: "f7", name: "Sotong Kurita Mini 🐙", basePrice: 250, tier: "🌿 [UNCOMMON]", weightKg: 1.5, dropRate: 10.0, baseBuff: "Menang Drag Race +3%" },
+  { id: "f8", name: "Ketam Bunga Segar 🦀", basePrice: 350, tier: "🌿 [UNCOMMON]", weightKg: 0.9, dropRate: 9.0, baseBuff: "Potong 8s cooldown kerja" },
+  { id: "f9", name: "Ikan Siakap Muara Padu 🐠", basePrice: 600, tier: "⭐ [RARE]", weightKg: 3.8, dropRate: 6.0, baseBuff: "Gaji kerja +8%" },
+  { id: "f10", name: "Ikan Jenahak Merah Laut Dalam 🐡", basePrice: 900, tier: "⭐ [RARE]", weightKg: 5.2, dropRate: 5.0, baseBuff: "Diskaun denda lokap 10%" },
+  { id: "f11", name: "Pari Gergasi Layang-Layang 🦈", basePrice: 1200, tier: "⭐ [RARE]", weightKg: 14.5, dropRate: 4.0, baseBuff: "Menang Drag Race +6%" },
+  { id: "f12", name: "Ikan Kerapu Bara Monster 🦈", basePrice: 2500, tier: "💼 [EPIC]", weightKg: 18.0, dropRate: 2.5, baseBuff: "Gaji kerja +12%" },
+  { id: "f13", name: "Tuna Sirip Kuning Gred A 🐟", basePrice: 4000, tier: "💼 [EPIC]", weightKg: 35.4, dropRate: 2.0, baseBuff: "Hasil kutipan sewa +10%" },
+  { id: "f14", name: "Ketam Raja Alaska King Crab 🦀", basePrice: 5500, tier: "💼 [EPIC]", weightKg: 8.2, dropRate: 1.5, baseBuff: "Menang Coinflip/Slot +5%" },
+  { id: "f15", name: "Jerung Tukul Pesisir Pantai 🦈", basePrice: 12000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 65.0, dropRate: 0.8, baseBuff: "Loot rompakan PvP +15%" },
+  { id: "f16", name: "Sotong Gergasi Kraken Rahsia 🐙", basePrice: 25000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 110.0, dropRate: 0.5, baseBuff: "Kebal 20% daripada godaman bank" },
+  { id: "f17", name: "Raja Ikan Temoleh Sungai Perak 👑", basePrice: 40000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 42.5, dropRate: 0.3, baseBuff: "Hasil kutipan sewa +20%" },
+  { id: "f18", name: "Ikan Purba Coelacanth Emas 🌟", basePrice: 80000, tier: "👑 [MYTHIC]", weightKg: 78.0, dropRate: 0.1, baseBuff: "+15% Semua Gaji & Menang Lumba" },
+  { id: "f19", name: "Naga Laut Megalodon Siber 🐉", basePrice: 150000, tier: "👑 [MYTHIC]", weightKg: 450.0, dropRate: 0.05, baseBuff: "Dewa Laut! +25% Semua Gaji & Sewa" }
 ];
 
 function generateFishInstance(userRodObj) {
   const luck = userRodObj?.luckBonus || 1.0;
   let pool = FISH_DATABASE.map(f => {
-    let w = f.weightKg || 5;
+    let w = f.dropRate; 
     if (f.isJunk && luck > 1.5) w = Math.max(0.5, w / luck);
     if (!f.isJunk && ["⭐ [RARE]", "💼 [EPIC]", "🏴‍☠️ [LEGENDARY]", "👑 [MYTHIC]"].includes(f.tier)) {
-      w = w * luck;
+      w = w * luck; 
     }
     return { ...f, dynamicWeight: w };
   });
@@ -445,34 +784,34 @@ const PHONE_DEVICES = [
 ];
 
 // =========================================================================
-// 💼 10. SEKTOR 50 KERJAYA HALAL LENGKAP
+// 💼 10. SEKTOR 50 KERJAYA HALAL LENGKAP (NERFED BALANCE)
 // =========================================================================
 const JOBS = [
-  { id: 1, name: "Pekerja Am Majlis", minPay: 80, maxPay: 120 }, { id: 2, name: "Pencuci Pinggan Kedai Tomyam", minPay: 90, maxPay: 130 },
-  { id: 3, name: "Rider GrabFood Berhujan", minPay: 120, maxPay: 180 }, { id: 4, name: "Runner Foodpanda Pink", minPay: 120, maxPay: 180 },
-  { id: 5, name: "Pemandu Van Jenazah/Kargo", minPay: 140, maxPay: 200 }, { id: 6, name: "Kerani Kaunter Pejabat", minPay: 150, maxPay: 220 },
-  { id: 7, name: "Juruteknik Aircond & Wiring", minPay: 160, maxPay: 240 }, { id: 8, name: "Operator Kilang Shift Malam", minPay: 170, maxPay: 250 },
-  { id: 9, name: "Penebar Burger Ramly Special", minPay: 180, maxPay: 260 }, { id: 10, name: "Barista Kopi Hipster", minPay: 180, maxPay: 260 },
-  { id: 11, name: "Jurujual Coway / Cuckoo", minPay: 190, maxPay: 270 }, { id: 12, name: "Tukang Masak Katering Kenduri", minPay: 200, maxPay: 280 },
-  { id: 13, name: "Graphic Designer Canva Pro", minPay: 210, maxPay: 290 }, { id: 14, name: "Video Editor TikTok Viral", minPay: 220, maxPay: 300 },
-  { id: 15, name: "Social Media Admin Group", minPay: 220, maxPay: 300 }, { id: 16, name: "Ejen Hartanah Rumah Lelong", minPay: 240, maxPay: 320 },
-  { id: 17, name: "Tukang Paip Rumah Bocor", minPay: 240, maxPay: 320 }, { id: 18, name: "Juruelektrik Tiga Fasa", minPay: 250, maxPay: 340 },
-  { id: 19, name: "Mekanik Motor Modenas/Yamaha", minPay: 260, maxPay: 350 }, { id: 20, name: "Foreman Bengkel Kereta", minPay: 270, maxPay: 360 },
-  { id: 21, name: "Cikgu Tuisyen SPM Matematik", minPay: 260, maxPay: 350 }, { id: 22, name: "Jurutera Tapak Bina JKR", minPay: 280, maxPay: 380 },
-  { id: 23, name: "Akauntan Audit LHDN", minPay: 290, maxPay: 390 }, { id: 24, name: "Pengurus Projek MRT3", minPay: 300, maxPay: 400 },
-  { id: 25, name: "Peguam Mahkamah Majistret", minPay: 310, maxPay: 410 }, { id: 26, name: "Doktor Pakar Klinik Kesihatan", minPay: 320, maxPay: 420 },
-  { id: 27, name: "Software Engineer Fullstack", minPay: 330, maxPay: 430 }, { id: 28, name: "Data Scientist Machine Learning", minPay: 340, maxPay: 440 },
-  { id: 29, name: "Pilot AirAsia / MAS", minPay: 350, maxPay: 450 }, { id: 30, name: "Kapten Kapal Dagang Antarabangsa", minPay: 350, maxPay: 450 },
-  { id: 31, name: "Arkitek Bangunan Pencakar Langit", minPay: 340, maxPay: 440 }, { id: 32, name: "Pakar Bedah Jantung", minPay: 360, maxPay: 460 },
-  { id: 33, name: "Trader Forex Pacak Signal", minPay: 200, maxPay: 350 }, { id: 34, name: "Pelombong Bitcoin / Kripto", minPay: 220, maxPay: 360 },
-  { id: 35, name: "Content Creator YouTube", minPay: 240, maxPay: 370 }, { id: 36, name: "Streamer Mobile Legends", minPay: 250, maxPay: 380 },
-  { id: 37, name: "Tukang Jahit Baju Melayu", minPay: 180, maxPay: 260 }, { id: 38, name: "Web Developer Freelance", minPay: 300, maxPay: 420 },
-  { id: 39, name: "Ejen Insurans Takaful", minPay: 210, maxPay: 300 }, { id: 40, name: "Pengurus Cawangan Bank", minPay: 320, maxPay: 430 },
-  { id: 41, name: "Cef Eksekutif Hotel 5 Bintang", minPay: 330, maxPay: 440 }, { id: 42, name: "Jurugambar Acara Perkahwinan", minPay: 230, maxPay: 320 },
-  { id: 43, name: "Juruaudit Forensik SPRM", minPay: 300, maxPay: 410 }, { id: 44, name: "Kontraktor Bina Banglo", minPay: 320, maxPay: 430 },
-  { id: 45, name: "Ahli Farmasi Berdaftar", minPay: 310, maxPay: 420 }, { id: 46, name: "Pakar Psikologi Kaunseling", minPay: 300, maxPay: 410 },
-  { id: 47, name: "Penganalisis Keselamatan Siber", minPay: 340, maxPay: 450 }, { id: 48, name: "Pakar Ekonomi Negara", minPay: 350, maxPay: 460 },
-  { id: 49, name: "Pelabur Saham Bursa Malaysia", minPay: 360, maxPay: 480 }, { id: 50, name: "CEO Konglomerat Korporat", minPay: 380, maxPay: 500 }
+  { id: 1, name: "Pekerja Am Majlis", minPay: 15, maxPay: 30 }, { id: 2, name: "Pencuci Pinggan Kedai Tomyam", minPay: 18, maxPay: 35 },
+  { id: 3, name: "Rider GrabFood Berhujan", minPay: 20, maxPay: 45 }, { id: 4, name: "Runner Foodpanda Pink", minPay: 20, maxPay: 45 },
+  { id: 5, name: "Pemandu Van Jenazah/Kargo", minPay: 25, maxPay: 50 }, { id: 6, name: "Kerani Kaunter Pejabat", minPay: 28, maxPay: 55 },
+  { id: 7, name: "Juruteknik Aircond & Wiring", minPay: 30, maxPay: 60 }, { id: 8, name: "Operator Kilang Shift Malam", minPay: 32, maxPay: 65 },
+  { id: 9, name: "Penebar Burger Ramly Special", minPay: 35, maxPay: 70 }, { id: 10, name: "Barista Kopi Hipster", minPay: 35, maxPay: 70 },
+  { id: 11, name: "Jurujual Coway / Cuckoo", minPay: 38, maxPay: 75 }, { id: 12, name: "Tukang Masak Katering Kenduri", minPay: 40, maxPay: 80 },
+  { id: 13, name: "Graphic Designer Canva Pro", minPay: 45, maxPay: 85 }, { id: 14, name: "Video Editor TikTok Viral", minPay: 48, maxPay: 90 },
+  { id: 15, name: "Social Media Admin Group", minPay: 48, maxPay: 90 }, { id: 16, name: "Ejen Hartanah Rumah Lelong", minPay: 50, maxPay: 95 },
+  { id: 17, name: "Tukang Paip Rumah Bocor", minPay: 50, maxPay: 95 }, { id: 18, name: "Juruelektrik Tiga Fasa", minPay: 55, maxPay: 100 },
+  { id: 19, name: "Mekanik Motor Modenas/Yamaha", minPay: 60, maxPay: 105 }, { id: 20, name: "Foreman Bengkel Kereta", minPay: 65, maxPay: 110 },
+  { id: 21, name: "Cikgu Tuisyen SPM Matematik", minPay: 60, maxPay: 105 }, { id: 22, name: "Jurutera Tapak Bina JKR", minPay: 70, maxPay: 115 },
+  { id: 23, name: "Akauntan Audit LHDN", minPay: 75, maxPay: 120 }, { id: 24, name: "Pengurus Projek MRT3", minPay: 80, maxPay: 125 },
+  { id: 25, name: "Peguam Mahkamah Majistret", minPay: 85, maxPay: 130 }, { id: 26, name: "Doktor Pakar Klinik Kesihatan", minPay: 90, maxPay: 135 },
+  { id: 27, name: "Software Engineer Fullstack", minPay: 95, maxPay: 140 }, { id: 28, name: "Data Scientist Machine Learning", minPay: 100, maxPay: 145 },
+  { id: 29, name: "Pilot AirAsia / MAS", minPay: 110, maxPay: 150 }, { id: 30, name: "Kapten Kapal Dagang Antarabangsa", minPay: 110, maxPay: 150 },
+  { id: 31, name: "Arkitek Bangunan Pencakar Langit", minPay: 105, maxPay: 145 }, { id: 32, name: "Pakar Bedah Jantung", minPay: 120, maxPay: 160 },
+  { id: 33, name: "Trader Forex Pacak Signal", minPay: 60, maxPay: 150 }, { id: 34, name: "Pelombong Bitcoin / Kripto", minPay: 70, maxPay: 160 },
+  { id: 35, name: "Content Creator YouTube", minPay: 80, maxPay: 155 }, { id: 36, name: "Streamer Mobile Legends", minPay: 85, maxPay: 165 },
+  { id: 37, name: "Tukang Jahit Baju Melayu", minPay: 55, maxPay: 95 }, { id: 38, name: "Web Developer Freelance", minPay: 90, maxPay: 145 },
+  { id: 39, name: "Ejen Insurans Takaful", minPay: 65, maxPay: 100 }, { id: 40, name: "Pengurus Cawangan Bank", minPay: 115, maxPay: 155 },
+  { id: 41, name: "Cef Eksekutif Hotel 5 Bintang", minPay: 120, maxPay: 165 }, { id: 42, name: "Jurugambar Acara Perkahwinan", minPay: 75, maxPay: 110 },
+  { id: 43, name: "Juruaudit Forensik SPRM", minPay: 100, maxPay: 145 }, { id: 44, name: "Kontraktor Bina Banglo", minPay: 110, maxPay: 150 },
+  { id: 45, name: "Ahli Farmasi Berdaftar", minPay: 105, maxPay: 145 }, { id: 46, name: "Pakar Psikologi Kaunseling", minPay: 100, maxPay: 140 },
+  { id: 47, name: "Penganalisis Keselamatan Siber", minPay: 115, maxPay: 155 }, { id: 48, name: "Pakar Ekonomi Negara", minPay: 125, maxPay: 170 },
+  { id: 49, name: "Pelabur Saham Bursa Malaysia", minPay: 130, maxPay: 180 }, { id: 50, name: "CEO Konglomerat Korporat", minPay: 150, maxPay: 250 }
 ];
 
 // =========================================================================
@@ -580,20 +919,20 @@ const MOD_PARTS = {
   ],
   Kereta: [
     { id: 46, name: "Remap Dyno Stage 2 + Pops & Bang 💻", price: 3500, boostSpeed: 15, desc: "+15 km/h & letupan ekzos berapi" },
-    { id: "48", name: "Tayar Semi-Slick Toyo R888R 🏁", price: 2400, boostSpeed: 10, desc: "+10 km/h & cengkaman litar profesional" },
-    { id: "49", name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
-    { id: "51", name: "Suspensi Boleh Laras Adjustable 🟡", price: 4200, boostSpeed: 12, desc: "+12 km/h & badan kereta direndahkan aerodinamik" },
-    { id: "52", name: "Sistem Turbo Garrett Ball-Bearing 🐌", price: 7500, boostSpeed: 30, desc: "+30 km/h top speed boost siput berdesing" },
-    { id: "53", name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elak risiko terbabas lumba" }
+    { id: 48, name: "Tayar Semi-Slick Toyo R888R 🏁", price: 2400, boostSpeed: 10, desc: "+10 km/h & cengkaman litar profesional" },
+    { id: 49, name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
+    { id: 51, name: "Suspensi Boleh Laras Adjustable 🟡", price: 4200, boostSpeed: 12, desc: "+12 km/h & badan kereta direndahkan aerodinamik" },
+    { id: 52, name: "Sistem Turbo Garrett Ball-Bearing 🐌", price: 7500, boostSpeed: 30, desc: "+30 km/h top speed boost siput berdesing" },
+    { id: 53, name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elak risiko terbabas lumba" }
   ]
 };
 
 const BLACKMARKET_ITEMS = [
-  { id: 1, name: "Alat Skimming Mesin ATM 📟", price: 20000, desc: "Gajet godam kad ATM lorong gelap" },
-  { id: 2, name: "Flash-Drive Decrypter Bank 💾", price: 50000, desc: "Pintas firewall keselamatan & godam akaun bank sasaran" },
-  { id: 3, name: "EMP Radio Jammer Polis 📡", price: 100000, desc: "Kacau frekuensi radio peronda polis pelabuhan" },
-  { id: 4, name: "Kad Akses VIP Kasino 💳", price: 250000, desc: "Buka pintu bilik kebal kasino underground" },
-  { id: 5, name: "Flipper Zero Modded Cyber 🐬", price: 500000, desc: "Alat godam induk infrastruktur pangkalan data & bank target" },
+  { id: 1, name: "Alat Skimming Mesin ATM 📟", price: 5000, desc: "Gajet godam kad ATM lorong gelap" },
+  { id: 2, name: "Flash-Drive Decrypter Bank 💾", price: 12000, desc: "Pintas firewall keselamatan & godam akaun bank sasaran" },
+  { id: 3, name: "EMP Radio Jammer Polis 📡", price: 25000, desc: "Kacau frekuensi radio peronda polis pelabuhan" },
+  { id: 4, name: "Kad Akses VIP Kasino 💳", price: 50000, desc: "Buka pintu bilik kebal kasino underground" },
+  { id: 5, name: "Flipper Zero Modded Cyber 🐬", price: 150000, desc: "Alat godam induk infrastruktur pangkalan data & bank target" },
   { id: 6, name: "Radar Detector Penguatkuasa 🛰️", price: 15000, desc: "Gajet amaran awal potong 20% risiko ditangkap polis" },
   { id: 7, name: "Dokumen Pelepasan Kastam Palsu 📄", price: 12000, desc: "Pelepasan segera sekatan roadblock pelabuhan" },
   { id: 8, name: "Van Panel Dinding Berlapis 🚐", price: 35000, desc: "Logistik darat kalis imbasan x-ray sekatan jalan" },
@@ -602,22 +941,25 @@ const BLACKMARKET_ITEMS = [
   { id: 11, name: "Cyber Bypass Dongle 🖲️", price: 18000, desc: "Kunci perkakasan bajet untuk lancarkan eksploitasi godam bank" }
 ];
 
+// =========================================================================
+// 💀 NERF: HASIL JENAYAH DIKURANGKAN AGAR LEBIH MENCABAR
+// =========================================================================
 const CRIMES = [
-  { id: 1, name: "Ragut Beg Tepi Jalan 👜", rewardMin: 1500, rewardMax: 3500, fine: 1000, stars: 1 },
-  { id: 2, name: "Rompak Kedai Runcit Acheh 🏪", rewardMin: 3500, rewardMax: 7000, fine: 2500, stars: 1 },
-  { id: 3, name: "Kopek Mangga Motor Parkir 🏍️", rewardMin: 6000, rewardMax: 12000, fine: 4000, stars: 2 },
-  { id: 4, name: "Pecah Masuk Kedai Emas 💍", rewardMin: 15000, rewardMax: 30000, fine: 8000, stars: 2 },
-  { id: 5, name: "Rompak Banglo Orang Kaya 🏡", rewardMin: 30000, rewardMax: 60000, fine: 15000, stars: 3 },
-  { id: 6, name: "Skimming Mesin ATM 🏧", rewardMin: 60000, rewardMax: 120000, reqItem: 1, fine: 25000, stars: 3 },
-  { id: 7, name: "Seludup Rokok & Vape Kontraban 🚬", rewardMin: 75000, rewardMax: 140000, reqItem: 8, fine: 30000, stars: 3 },
-  { id: 8, name: "Seludup Minuman Keras Bebas Cukai 🍾", rewardMin: 90000, rewardMax: 180000, reqItem: 9, fine: 35000, stars: 3 },
-  { id: 9, name: "Godam Sistem Bank Pusat 💻", rewardMin: 150000, rewardMax: 300000, reqItem: 2, fine: 50000, stars: 4 },
-  { id: 10, name: "Seludup Cip AI & Kad Grafik GPU 🧠", rewardMin: 180000, rewardMax: 350000, reqItem: 10, fine: 60000, stars: 4 },
-  { id: 11, name: "Penyeludupan Kontraban Port Klang 🚢", rewardMin: 250000, rewardMax: 500000, reqItem: 3, fine: 80000, stars: 4 },
-  { id: 12, name: "Heist Bilik Kebal Kasino Genting 🎰", rewardMin: 450000, rewardMax: 900000, reqItem: 4, fine: 120000, stars: 5 },
-  { id: 13, name: "Seludup Supercar Tanpa AP 🏎️", rewardMin: 600000, rewardMax: 1200000, reqItem: 9, fine: 150000, stars: 5 },
-  { id: 14, name: "Eksploitasi Darkweb Zero-Day 🌐", rewardMin: 1000000, rewardMax: 2500000, reqItem: 5, fine: 200000, stars: 5 },
-  { id: 15, name: "Godam Induk Penguatkuasa Padam Rekod 🏛️", rewardMin: 2000000, rewardMax: 5000000, reqItem: 5, fine: 350000, stars: 5 }
+  { id: 1, name: "Ragut Beg Tepi Jalan 👜", rewardMin: 150, rewardMax: 350, fine: 200, stars: 1 },
+  { id: 2, name: "Rompak Kedai Runcit Acheh 🏪", rewardMin: 350, rewardMax: 700, fine: 400, stars: 1 },
+  { id: 3, name: "Kopek Mangga Motor Parkir 🏍️", rewardMin: 600, rewardMax: 1200, fine: 800, stars: 2 },
+  { id: 4, name: "Pecah Masuk Kedai Emas 💍", rewardMin: 1500, rewardMax: 3000, fine: 2000, stars: 2 },
+  { id: 5, name: "Rompak Banglo Orang Kaya 🏡", rewardMin: 3000, rewardMax: 6000, fine: 4000, stars: 3 },
+  { id: 6, name: "Skimming Mesin ATM 🏧", rewardMin: 6000, rewardMax: 12000, reqItem: 1, fine: 8000, stars: 3 },
+  { id: 7, name: "Seludup Rokok & Vape Kontraban 🚬", rewardMin: 7500, rewardMax: 14000, reqItem: 8, fine: 10000, stars: 3 },
+  { id: 8, name: "Seludup Minuman Keras Bebas Cukai 🍾", rewardMin: 9000, rewardMax: 18000, reqItem: 9, fine: 12000, stars: 3 },
+  { id: 9, name: "Godam Sistem Bank Pusat 💻", rewardMin: 15000, rewardMax: 30000, reqItem: 2, fine: 20000, stars: 4 },
+  { id: 10, name: "Seludup Cip AI & Kad Grafik GPU 🧠", rewardMin: 18000, rewardMax: 35000, reqItem: 10, fine: 25000, stars: 4 },
+  { id: 11, name: "Penyeludupan Kontraban Port Klang 🚢", rewardMin: 25000, rewardMax: 50000, reqItem: 3, fine: 35000, stars: 4 },
+  { id: 12, name: "Heist Bilik Kebal Kasino Genting 🎰", rewardMin: 45000, rewardMax: 90000, reqItem: 4, fine: 60000, stars: 5 },
+  { id: 13, name: "Seludup Supercar Tanpa AP 🏎️", rewardMin: 60000, rewardMax: 120000, reqItem: 9, fine: 80000, stars: 5 },
+  { id: 14, name: "Eksploitasi Darkweb Zero-Day 🌐", rewardMin: 100000, rewardMax: 250000, reqItem: 5, fine: 150000, stars: 5 },
+  { id: 15, name: "Godam Induk Penguatkuasa Padam Rekod 🏛️", rewardMin: 200000, rewardMax: 500000, reqItem: 5, fine: 300000, stars: 5 }
 ];
 
 const CYBER_PETS = [
@@ -629,8 +971,8 @@ const CYBER_PETS = [
 ];
 
 const FOOD_ITEMS = [
-  { id: "tehtarik", name: "Teh Tarik Kaw Buih 🧋", price: 4, desc: "Potong 20s cooldown kerja" },
-  { id: "roticanai", name: "Roti Canai Banjir Dhal 🥞", price: 7, desc: "Potong 40s cooldown kerja" },
+  { id: "tehtarik", name: "Teh Tarik Kaw Buih 🧋", price: 4, desc: "Potong 10s cooldown kerja" },
+  { id: "roticanai", name: "Roti Canai Banjir Dhal 🥞", price: 7, desc: "Potong 20s cooldown kerja" },
   { id: "nasilemak", name: "Nasi Lemak Sotong Padu 🍛", price: 12, desc: "Reset serta-merta semua cooldown kerja!" },
   { id: "burger", name: "Burger Ramly Special Cheese 🍔", price: 15, desc: "Kenyang padu, kurangkan denda balai 10%" }
 ];
@@ -653,6 +995,7 @@ const VETO_CEO_LIST = `
 ╔═════════════════════════════════════╗
    👑 SENARAI ARAHAN KHAS CEO (VETO) 👑
 ╚═════════════════════════════════════╝
+• *.list_event* ➔ Papar kod acara musim (Baru!)
 • *.set_season [no]* ➔ Tetapkan nombor musim aktif
 • *.start_event [nama] [hari]* ➔ Lancarkan event khas musim
 • *.stop_event* ➔ Hentikan event aktif
@@ -755,10 +1098,18 @@ async function startBotEngine() {
     }
 
     // =====================================================================
-    // 👑 16. ARAHAN VETO CEO & `.veto`
+    // 👑 16. ARAHAN VETO CEO
     // =====================================================================
     if (cmd === "veto" && isOwner) {
       return sock.sendMessage(from, { text: VETO_CEO_LIST });
+    }
+
+    if (cmd === "list_event" && isOwner) {
+      let ui = `╔═══════════════════════════╗\n   📜 SENARAI KOD EVENT MUSIM\n╚═══════════════════════════╝\n`;
+      for (let key in SEASON_EVENTS) {
+        ui += `• *${key}*\n  _${SEASON_EVENTS[key].name}_\n  _${SEASON_EVENTS[key].desc}_\n\n`;
+      }
+      return sock.sendMessage(from, { text: ui });
     }
 
     if (cmd === "set_season" && isOwner) {
@@ -772,7 +1123,7 @@ async function startBotEngine() {
     if (cmd === "start_event" && isOwner) {
       const evType = args[0]?.toUpperCase();
       const days = parseInt(args[1]) || 3;
-      if (!SEASON_EVENTS[evType]) return sock.sendMessage(from, { text: `❌ Event tidak sah.` });
+      if (!SEASON_EVENTS[evType]) return sock.sendMessage(from, { text: `❌ Event tidak sah. Taip *.list_event* untuk senarai.` });
       db.active_event_data = { type: evType, end: now + (days * 24 * 3600 * 1000) };
       saveDB(db);
       return sock.sendMessage(from, { text: `👑 Veto: Acara ${evType} diaktifkan!` });
@@ -880,7 +1231,7 @@ async function startBotEngine() {
     }
 
     // =====================================================================
-    // 🎣 KEDAI PANCING & MEMANCING (KATEGORI NOMBOR & KG & BUFF)
+    // 🎣 KEDAI PANCING & MEMANCING (KATEGORI NOMBOR)
     // =====================================================================
     if (cmd === "kedai_pancing" || cmd === "tackleshop") {
       const subCategory = args[0];
@@ -972,37 +1323,36 @@ Sila pilih kategori kedai dengan nombor:
       const userBait = FISHING_SHOP.baits.find(b => b.id === user.fishingGear?.bait);
 
       user.cooldowns.fish = now + actualCd;
-      const caught = generateFishInstance(userRod);
+      const caughtInstance = generateFishInstance(userRod);
       
-      let fPrice = caught.price;
+      let fPrice = caughtInstance.price;
       if (userBait && fPrice > 0) {
         fPrice = Math.floor(fPrice * userBait.priceMult);
         user.fishingGear.bait = null;
       }
-      if (currentSeasonEvent?.fishMult) fPrice = Math.floor(fPrice * currentSeasonEvent.fishMult);
 
       if (!db.pendingFish) db.pendingFish = {};
-      db.pendingFish[cleanSender] = { fish: caught, finalPrice: fPrice };
+      db.pendingFish[cleanSender] = { fish: caughtInstance, finalPrice: fPrice };
       saveDB(db);
       updateUser(cleanSender, user);
 
       if (fPrice === 0) {
         delete db.pendingFish[cleanSender];
         saveDB(db);
-        return sock.sendMessage(from, { text: `🎣 *${user.name}* menaikkan ${caught.name} (${caught.weightKg} kg).\n(Sampah - Dibuang semula ke laut!)` });
+        return sock.sendMessage(from, { text: `🎣 *${user.name}* menaikkan ${caughtInstance.name} (${caughtInstance.weightKg} kg).\n(Sampah - Dibuang semula ke laut!)` });
       }
 
-      const baitUsedText = userBait ? `\n🪱 Umpan: *${userBait.name}* (+${Math.round((userBait.priceMult - 1) * 100)}% Jual)` : "";
+      const baitUsedText = userBait ? `\n🪱 Umpan: *${userBait.name}*` : "";
 
       return sock.sendMessage(from, { 
         text: `╔═══════════════════════════════════╗
-   🎣 TANGKAPAN JETI BERJAYA!
+   🎣 TANGKAPAN IKAN BERJAYA!
 ╚═══════════════════════════════════╝
-🐟 Hasil: *${caught.name}*
-⚖️ Berat: *${caught.weightKg} kg*
-🏷️ Peringkat: *${caught.tier}*
+🐟 Hasil: *${caughtInstance.name}*
+⚖️ Berat: *${caughtInstance.weightKg} kg*
+🏷️ Peringkat: *${caughtInstance.tier}*
 💰 Nilai Jual: *RM ${fPrice.toLocaleString()}*${baitUsedText}
-✨ *Buff Pasif:* _${caught.buff}_
+✨ *Buff Pasif:* _${caughtInstance.buff}_
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👉 *TINDAKAN ANDA:*
 1️⃣ Taip: *.jual_ikan* ➔ Ambil RM ${fPrice.toLocaleString()} tunai
@@ -1012,56 +1362,34 @@ Sila pilih kategori kedai dengan nombor:
 
     if (cmd === "jual_ikan") {
       const pData = db.pendingFish?.[cleanSender];
-      if (!pData) return sock.sendMessage(from, { text: `❌ Tiada ikan sedang menunggu keputusan! Taip *.mancing* dahulu.` });
-      user.cash += pData.finalPrice;
-      user.stats.fishes = (user.stats.fishes || 0) + 1;
-      delete db.pendingFish[cleanSender];
-      saveDB(db);
-      updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `💵 *IKAN DIJUAL:* +RM ${pData.finalPrice.toLocaleString()} tunai diterima!` });
+      if (!pData) return sock.sendMessage(from, { text: `❌ Tiada ikan menunggu keputusan!` });
+      user.cash += pData.finalPrice; delete db.pendingFish[cleanSender]; saveDB(db); updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `💵 Ikan dijual! +RM ${pData.finalPrice.toLocaleString()} diterima.` });
     }
 
     if (cmd === "bela_ikan") {
       const pData = db.pendingFish?.[cleanSender];
-      if (!pData) return sock.sendMessage(from, { text: `❌ Tiada ikan sedang menunggu keputusan! Taip *.mancing* dahulu.` });
-      
+      if (!pData) return sock.sendMessage(from, { text: `❌ Tiada ikan menunggu keputusan!` });
       const currentTank = FISHING_SHOP.tanks.find(t => t.id === user.fishingGear?.tank) || FISHING_SHOP.tanks[0];
       if (!user.aquarium) user.aquarium = [];
-
-      if (user.aquarium.length >= currentTank.capacity) {
-        return sock.sendMessage(from, { 
-          text: `❌ *AKUARIUM PENUH!* ${currentTank.name} anda hanya memuatkan ${currentTank.capacity} ekor ikan.\n\n💡 Beli akuarium lebih besar di *.kedai_pancing* atau jual ikan ini dengan *.jual_ikan*!` 
-        });
-      }
-
-      user.aquarium.push(pData.fish);
-      user.stats.fishes = (user.stats.fishes || 0) + 1;
-      delete db.pendingFish[cleanSender];
-      saveDB(db);
-      updateUser(cleanSender, user);
-      return sock.sendMessage(from, { 
-        text: `🐠 *IKAN DIBELA:* *${pData.fish.name}* dimasukkan ke ${currentTank.name}! (${user.aquarium.length}/${currentTank.capacity})\n✨ Buff Aktif: _${pData.fish.buff}_` 
-      });
+      if (user.aquarium.length >= currentTank.capacity) return sock.sendMessage(from, { text: `❌ Akuarium penuh!` });
+      user.aquarium.push(pData.fish); delete db.pendingFish[cleanSender]; saveDB(db); updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `🐠 Berjaya bela *${pData.fish.name}* (${pData.fish.weightKg} kg)!\n✨ Buff Aktif: _${pData.fish.buff}_` });
     }
 
     if (cmd === "akuarium") {
       const currentTank = FISHING_SHOP.tanks.find(t => t.id === user.fishingGear?.tank) || FISHING_SHOP.tanks[0];
-      if (!user.aquarium || user.aquarium.length === 0) {
-        return sock.sendMessage(from, { text: `🐠 Akuarium (${currentTank.name}) anda masih kosong! (0/${currentTank.capacity})\nPancing dan pilih *.bela_ikan*.` });
-      }
-
-      let ui = `╔═══════════════════════════════════╗\n   🐠 KOLEKSI AKUARIUM (${currentTank.name})\n   [ Kapasiti: ${user.aquarium.length}/${currentTank.capacity} Ekor ]\n╚═══════════════════════════════════╝\n`;
-      user.aquarium.forEach((f, idx) => { 
-        ui += `${idx + 1}. *${f.name}* (${f.weightKg}kg) (${f.tier})\n   ✨ _${f.buff}_\n\n`; 
-      });
+      if (!user.aquarium || user.aquarium.length === 0) return sock.sendMessage(from, { text: `🐠 Akuarium kosong!` });
+      let ui = `🐠 *AKUARIUM (${user.aquarium.length}/${currentTank.capacity})*\n`;
+      user.aquarium.forEach((f, idx) => { ui += `${idx + 1}. *${f.name}* (${f.weightKg}kg) - _${f.buff}_\n`; });
       return sock.sendMessage(from, { text: ui });
     }
 
     // =====================================================================
-    // 💼 KERJA HALAL (CD TEPAT 30 SAAT)
+    // 💼 KERJA HALAL (NERFED BALANCE & 30s COOLDOWN)
     // =====================================================================
     if (cmd === "kerja" || cmd === "work") {
-      let cdDuration = 30 * 1000; // Cooldown tepat 30 saat
+      let cdDuration = 30 * 1000; // Tepat 30 saat
 
       if (now < user.cooldowns.work && !isOwner) {
         const rem = Math.ceil((user.cooldowns.work - now) / 1000);
@@ -1084,167 +1412,15 @@ Sila pilih kategori kedai dengan nombor:
       });
     }
 
-    // 🏆 RANKING & MUSIM
-    if (cmd === "ranking" || cmd === "top_season" || cmd === "leaderboard") {
-      const goldP = db.market?.gold || 350;
-      const btcP = db.market?.btc || 280000;
-
-      const ranked = Object.entries(db.users || {})
-        .map(([id, u]) => {
-          let propValue = 0;
-          (u.properties || []).forEach(pId => {
-            const pr = PROPERTIES.find(x => x.id === pId);
-            if (pr) propValue += pr.price;
-          });
-
-          const totalNetWorth = (u.cash || 0) + (u.bank || 0) + 
-                                Math.floor((u.goldGrams || 0) * goldP) + 
-                                Math.floor((u.btcUnits || 0) * btcP) + 
-                                propValue;
-
-          return { id, name: u.name || id.split("@")[0], netWorth: totalNetWorth };
-        })
-        .sort((a, b) => b.netWorth - a.netWorth)
-        .slice(0, 10);
-
-      let ui = `╔═══════════════════════════════════╗\n   🏆 PAPAN KEDUDUKAN MUSIM KE-${db.season || 1} 🏆\n╚═══════════════════════════════════╝\n`;
-      const medals = ["👑 1st", "🥈 2nd", "🥉 3rd", "🔹 4th", "🔹 5th", "🔹 6th", "🔹 7th", "🔹 8th", "🔹 9th", "🔹 10th"];
-
-      ranked.forEach((r, idx) => {
-        ui += `${medals[idx]} *${r.name}*\n   💰 Nilai Bersih: *RM ${r.netWorth.toLocaleString()}*\n\n`;
-      });
-
-      ui += `💡 Juara Top 3 bila musim tamat akan diabadikan di *.halloffame*!`;
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "halloffame" || cmd === "hof") {
-      if (!db.hallOfFame || db.hallOfFame.length === 0) {
-        return sock.sendMessage(from, { text: `🏛️ Dewan Kemegahan masih kosong! Bersaing di Musim Ke-${db.season || 1} untuk mencipta sejarah.` });
-      }
-
-      let ui = `╔═══════════════════════════════════╗\n   🏛️ AIRI'S DEWAN KEMEGAHAN (HALL OF FAME)\n╚═══════════════════════════════════╝\n\n`;
-      db.hallOfFame.forEach(h => {
-        ui += `🌟 *MUSIM KE-${h.season}*\n`;
-        ui += `🥇 Juara: *${h.first.name}* (RM ${h.first.netWorth.toLocaleString()})\n`;
-        if (h.second) ui += `🥈 Naib Juara: *${h.second.name}* (RM ${h.second.netWorth.toLocaleString()})\n`;
-        if (h.third) ui += `🥉 Tempat Ke-3: *${h.third.name}* (RM ${h.third.netWorth.toLocaleString()})\n`;
-        ui += `━━━━━━━━━━━━━━━━━━━━\n`;
-      });
-
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "season_info" || cmd === "musim") {
-      const ev = db.active_event_data ? SEASON_EVENTS[db.active_event_data.type] : null;
-      let evText = "Tiada event khas aktif.";
-      if (ev && db.active_event_data) {
-        const remH = Math.max(1, Math.ceil((db.active_event_data.end - now) / 3600000));
-        evText = `*${ev.name}*\n• Kesan: _${ev.desc}_\n• Baki Masa: *${remH} Jam*`;
-      }
-
-      const ui = `╔═══════════════════════════╗\n   🌐 STATUS MUSIM AIRI'S CORNER\n╚═══════════════════════════╝\n📅 *Musim Semasa:* Musim Ke-${db.season || 1}\n🔥 *Acara Musim:* ${evText}\n\n💡 Bersaing untuk Top 3 dengan menambah tunai, emas, btc & hartanah!`;
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    // 🪙 TRADING EMAS & BITCOIN
-    if (cmd === "pasaran" || cmd === "crypto" || cmd === "gold") {
-      const goldPrice = db.market?.gold || 350;
-      const btcPrice = db.market?.btc || 280000;
-      return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗\n   📈 BURSA SIBER & KOMODITI\n╚═══════════════════════════╝\n🪙 *EMAS 999 FIZIKAL:*\n• Harga Semasa: *RM ${goldPrice.toLocaleString()} / g*\n• Simpanan Anda: *${(user.goldGrams || 0).toFixed(2)} g*\n\n₿ *BITCOIN (BTC/MYR):*\n• Harga Semasa: *RM ${btcPrice.toLocaleString()} / BTC*\n• Simpanan Anda: *${(user.btcUnits || 0).toFixed(4)} BTC*\n\n💡 *.beli_emas*, *.jual_emas*, *.beli_btc*, *.jual_btc*` 
-      });
-    }
-
-    if (cmd === "beli_emas") {
-      const grams = parseFloat(args[0]);
-      if (isNaN(grams) || grams <= 0) return sock.sendMessage(from, { text: `❌ Format: *.beli_emas [gram]*` });
-      const cost = Math.floor(grams * (db.market?.gold || 350));
-      if (user.cash < cost) return sock.sendMessage(from, { text: `❌ Duit tunai tidak cukup (Perlu RM ${cost.toLocaleString()})!` });
-      user.cash -= cost;
-      user.goldGrams = (user.goldGrams || 0) + grams;
+    if (cmd === "daily") {
+      if (now < user.cooldowns.daily && !isOwner) return sock.sendMessage(from, { text: `⏳ Elaun harian dah dituntut! Datang esok ya.` });
+      let bonusAmt = currentSeasonEvent?.type === "INFLATION_SPIKE" ? 300 : 100; // Nerfed Daily
+      user.cash += bonusAmt;
+      user.cooldowns.daily = now + (24 * 3600 * 1000);
       updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🪙 *BELI EMAS:* +${grams}g Emas 999 disimpan!` });
+      return sock.sendMessage(from, { text: `🎁 *BANTUAN HARIAN:* +RM ${bonusAmt.toLocaleString()} tunai dikreditkan!` });
     }
 
-    if (cmd === "jual_emas") {
-      const grams = parseFloat(args[0]);
-      if (isNaN(grams) || grams <= 0 || (user.goldGrams || 0) < grams) return sock.sendMessage(from, { text: `❌ Baki emas tidak cukup!` });
-      const payout = Math.floor(grams * (db.market?.gold || 350));
-      user.goldGrams -= grams;
-      user.cash += payout;
-      updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🪙 *JUAL EMAS:* +RM ${payout.toLocaleString()} tunai dikreditkan!` });
-    }
-
-    if (cmd === "beli_btc") {
-      const units = parseFloat(args[0]);
-      if (isNaN(units) || units <= 0) return sock.sendMessage(from, { text: `❌ Format: *.beli_btc [unit]*` });
-      const cost = Math.floor(units * (db.market?.btc || 280000));
-      if (user.cash < cost) return sock.sendMessage(from, { text: `❌ Duit tunai tidak cukup (Perlu RM ${cost.toLocaleString()})!` });
-      user.cash -= cost;
-      user.btcUnits = (user.btcUnits || 0) + units;
-      updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `₿ *BELI BITCOIN:* +${units} BTC disimpan!` });
-    }
-
-    if (cmd === "jual_btc") {
-      const units = parseFloat(args[0]);
-      if (isNaN(units) || units <= 0 || (user.btcUnits || 0) < units) return sock.sendMessage(from, { text: `❌ Baki BTC tidak cukup!` });
-      const payout = Math.floor(units * (db.market?.btc || 280000));
-      user.btcUnits -= units;
-      user.cash += payout;
-      updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `₿ *JUAL BITCOIN:* +RM ${payout.toLocaleString()} tunai dicairkan!` });
-    }
-
-    // 🎯 BOUNTY
-    if (cmd === "bounty") {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-      const amt = parseInt(args[1]);
-      if (!targetTag || isNaN(amt) || amt < 5000) return sock.sendMessage(from, { text: `❌ Format: *.bounty @user [jumlah]* (Min RM 5,000)!` });
-      if (user.cash < amt) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi!` });
-      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-      if (cleanTarget === cleanSender) return sock.sendMessage(from, { text: `❌ Takkan nak letak bounty atas kepala sendiri!` });
-
-      user.cash -= amt;
-      if (!db.bounties) db.bounties = {};
-      db.bounties[cleanTarget] = (db.bounties[cleanTarget] || 0) + amt;
-      saveDB(db);
-      updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🎯 *BOUNTY DIBUKA:* Kepala @${cleanTarget.split("@")[0]} kini bernilai RM ${db.bounties[cleanTarget].toLocaleString()}!`, mentions: [cleanTarget] });
-    }
-
-    if (cmd === "list_bounty") {
-      if (!db.bounties || Object.keys(db.bounties).length === 0) return sock.sendMessage(from, { text: `📜 Tiada buronan aktif.` });
-      let ui = `╔═══════════════════════════╗\n   🎯 PAPAN BURONAN SIBER\n╚═══════════════════════════╝\n`;
-      for (const tId in db.bounties) {
-        ui += `• *${getUser(tId).name}* ➔ 💰 RM ${db.bounties[tId].toLocaleString()}\n`;
-      }
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    // 🐕 KEDAI PET & PENGAWAL
-    if (cmd === "kedai_pet" || cmd === "petshop") {
-      let ui = `╔═══════════════════════════╗\n   🐕 KEDAI PENGAWAL SIBER\n╚═══════════════════════════╝\n`;
-      CYBER_PETS.forEach(p => { ui += `• *[${p.id}]* ${p.name}\n  💰 RM ${p.price.toLocaleString()} | _${p.buff}_\n\n`; });
-      ui += `💡 Taip *.beli_pet [id]*`;
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "beli_pet") {
-      const petObj = CYBER_PETS.find(p => p.id === args[0]?.toLowerCase());
-      if (!petObj) return sock.sendMessage(from, { text: `❌ Kod pet tidak sah!` });
-      if (user.cash < petObj.price) return sock.sendMessage(from, { text: `❌ Duit tunai tidak cukup!` });
-      user.cash -= petObj.price;
-      user.pet = petObj;
-      updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🎉 Anda kini dilindungi oleh *${petObj.name}*!` });
-    }
-
-    // =====================================================================
-    // 🚗 SHOWROOM & BENGKEL MODIFIKASI
-    // =====================================================================
     if (cmd === "showroom") {
       const page = parseInt(args[0]) || 1;
       const start = (page - 1) * 20;
@@ -1335,19 +1511,17 @@ Sila pilih kategori kedai dengan nombor:
       const isWon = Math.random() < winChance || isOwner;
 
       if (isWon) {
-        let reward = Math.floor((vehicle.price * 0.12) + 1000);
+        let reward = Math.floor((vehicle.price * 0.05) + 500); // Nerfed win reward
         if (currentSeasonEvent?.raceMult) reward = Math.floor(reward * currentSeasonEvent.raceMult);
         user.cash += reward;
         user.stats.racesWon = (user.stats.racesWon || 0) + 1;
         updateUser(cleanSender, user);
-        const narrative = getRandomNarrative("RACE_WIN");
-        return sock.sendMessage(from, { text: `🏁 *JUARA DRAG RACE!* 🏁\n\n${narrative}\n\n🏎️ Jentera: *${vehicle.name}* (${totalSpeed} km/h)\n💰 Hadiah: *+RM ${reward.toLocaleString()}*` });
+        return sock.sendMessage(from, { text: `🏁 *JUARA DRAG RACE!* 🏁\n\n🏎️ Jentera: *${vehicle.name}* (${totalSpeed} km/h)\n💰 Hadiah: *+RM ${reward.toLocaleString()}*` });
       } else {
         const repairCost = Math.floor(vehicle.price * 0.02);
         user.cash = Math.max(0, user.cash - repairCost);
         updateUser(cleanSender, user);
-        const narrative = getRandomNarrative("RACE_CRASH");
-        return sock.sendMessage(from, { text: `💥 *TERBABAS DI LITAR!* 💥\n\n${narrative}\n\n💸 Kos Baiki: *-RM ${repairCost.toLocaleString()}*` });
+        return sock.sendMessage(from, { text: `💥 *TERBABAS DI LITAR!* 💥\n\n💸 Kos Baiki: *-RM ${repairCost.toLocaleString()}*` });
       }
     }
 
@@ -1414,8 +1588,7 @@ Sila pilih kategori kedai dengan nombor:
         user.stats.crimes += 1;
         user.stars = Math.min(5, user.stars + c.stars);
         updateUser(cleanSender, user);
-        const narrative = getRandomNarrative("CRIME_SUCCESS");
-        return sock.sendMessage(from, { text: `🦹 *MISI BERJAYA:* ${c.name}\n\n${narrative}\n\n💵 Hasil: *+RM ${reward.toLocaleString()}*\n⭐ Wanted: ${"⭐".repeat(user.stars)}` });
+        return sock.sendMessage(from, { text: `🦹 *MISI BERJAYA:* ${c.name}\n💵 Hasil: *+RM ${reward.toLocaleString()}*\n⭐ Wanted: ${"⭐".repeat(user.stars)}` });
       } else {
         user.stars = Math.min(5, user.stars + 1);
         let jailTimeSec = Math.max(30, user.stars * 30);
@@ -1423,8 +1596,7 @@ Sila pilih kategori kedai dengan nombor:
         user.cash = Math.max(0, user.cash - fine);
         user.cooldowns.jailUntil = now + (jailTimeSec * 1000);
         updateUser(cleanSender, user);
-        const narrative = getRandomNarrative("CRIME_BUSTED");
-        return sock.sendMessage(from, { text: `🚨 *KANTOI POLIS!* 🚨\n\n${narrative}\n\n💸 Denda: *-RM ${fine.toLocaleString()}* & lokap ${jailTimeSec}s! Taip *.upah_lawyer*` });
+        return sock.sendMessage(from, { text: `🚨 *KANTOI POLIS!* \n💸 Denda: *-RM ${fine.toLocaleString()}* & lokap ${jailTimeSec}s! Taip *.upah_lawyer*` });
       }
     }
 
@@ -1465,15 +1637,14 @@ Sila pilih kategori kedai dengan nombor:
       const targetUser = getUser(activeHack.target);
       if (args.join("").trim() === activeHack.emojiPin) {
         delete db.activeHacks[cleanSender];
-        const stolen = Math.floor(targetUser.bank * 0.15);
+        const stolen = Math.floor(targetUser.bank * 0.05); // Nerfed Hack Payout (5%)
         targetUser.bank -= stolen;
         user.cash += stolen;
         user.stats.bankHacks = (user.stats.bankHacks || 0) + 1;
         saveDB(db);
         updateUser(cleanSender, user);
         updateUser(activeHack.target, targetUser);
-        const narrative = getRandomNarrative("BANK_HACK_SUCCESS");
-        return sock.sendMessage(from, { text: `🔓 *GODAM BERJAYA:* +RM ${stolen.toLocaleString()} disedut dari akaun bank mangsa!\n\n${narrative}`, mentions: [activeHack.target] });
+        return sock.sendMessage(from, { text: `🔓 *GODAM BERJAYA:* +RM ${stolen.toLocaleString()} disedut dari akaun bank mangsa!`, mentions: [activeHack.target] });
       } else {
         delete db.activeHacks[cleanSender];
         user.cash = Math.max(0, user.cash - 1500);
@@ -1484,7 +1655,41 @@ Sila pilih kategori kedai dengan nombor:
       }
     }
 
-    // 🏢 KASINO & AHLONG
+    // 🏢 HARTANAH, KASINO & BANK
+    if (cmd === "list_hartanah") {
+      let ui = `╔═══════════════════════════╗\n   🏢 PASARAN HARTANAH AIRI (22 ASET)\n╚═══════════════════════════╝\n`;
+      PROPERTIES.forEach(p => { ui += `• *[ID ${p.id}]* ${p.name}\n  💰 RM ${p.price.toLocaleString()} | 💵 Sewa: RM ${p.rent.toLocaleString()}/hari\n\n`; });
+      return sock.sendMessage(from, { text: ui });
+    }
+
+    if (cmd === "beli_rumah") {
+      const pr = PROPERTIES.find(x => x.id === parseInt(args[0]));
+      if (!pr) return sock.sendMessage(from, { text: `❌ ID hartanah tidak sah!` });
+      if (user.cash < pr.price) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi!` });
+      if (user.properties.includes(pr.id)) return sock.sendMessage(from, { text: `⚠️ Anda sudah ada unit ini!` });
+      user.cash -= pr.price;
+      user.properties.push(pr.id);
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `🏠 Geran rasmi *${pr.name}* kini milik anda!` });
+    }
+
+    if (cmd === "kutip_sewa") {
+      if (user.properties.length === 0) return sock.sendMessage(from, { text: `❌ Anda tiada hartanah!` });
+      if (now < user.cooldowns.rent && !isOwner) {
+        const remH = Math.ceil((user.cooldowns.rent - now) / 3600000);
+        return sock.sendMessage(from, { text: `⏳ Kutip lagi dalam *${remH} jam*.` });
+      }
+      let totalRent = 0;
+      user.properties.forEach(pId => {
+        const pr = PROPERTIES.find(x => x.id === pId);
+        if (pr) totalRent += pr.rent;
+      });
+      user.cash += totalRent;
+      user.cooldowns.rent = now + (24 * 3600 * 1000);
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `💵 *DIVIDEN SEWA:* +RM ${totalRent.toLocaleString()} dikreditkan!` });
+    }
+
     if (cmd === "coinflip") {
       const choice = args[0]?.toLowerCase();
       const bet = parseInt(args[1]);
@@ -1543,7 +1748,6 @@ Sila pilih kategori kedai dengan nombor:
       return sock.sendMessage(from, { text: `🦈 *HUTANG LANGSAI:* Rumah anda selamat!` });
     }
 
-    // BANK
     if (cmd === "deposit" || cmd === "dep") {
       const amt = args[0] === "all" ? user.cash : parseInt(args[0]);
       if (isNaN(amt) || amt <= 0 || user.cash < amt) return sock.sendMessage(from, { text: `❌ Baki tunai tidak mencukupi!` });
@@ -1575,7 +1779,184 @@ Sila pilih kategori kedai dengan nombor:
       return sock.sendMessage(from, { text: `💸 *TRANSFER:* RM ${amt.toLocaleString()} dihantar ke *${targetUser.name}*!` });
     }
 
-    // PROFIL, MENU & ID
+    // 🥷 ROMPAK PEMAIN
+    if (cmd === "rompak") {
+      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+      if (!targetTag) return sock.sendMessage(from, { text: `❌ Tag mangsa: *.rompak @user*` });
+      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+      const targetUser = getUser(cleanTarget);
+      if (targetUser.cash < 100) return sock.sendMessage(from, { text: `😅 Mangsa poket kempis bawah RM100.` });
+
+      if (now < user.cooldowns.crime && !isOwner) {
+        const rem = Math.ceil((user.cooldowns.crime - now) / 1000);
+        return sock.sendMessage(from, { text: `⏳ Anda sedang menyorok dari polis! Tunggu *${rem} saat* lagi.` });
+      }
+
+      if (targetUser.pet && (targetUser.pet.perk === "anti_rob" || targetUser.pet.perk === "dual_def" || targetUser.pet.perk === "dragon_god")) {
+        if (Math.random() < targetUser.pet.val) {
+          user.cash = Math.max(0, user.cash - 1000);
+          updateUser(cleanSender, user);
+          return sock.sendMessage(from, { text: `🛡️ *DISERANG PENGAWAL!*\n\n💸 Ganti Rugi: *-RM 1,000*` });
+        }
+      }
+
+      user.cooldowns.crime = now + (180 * 1000);
+      if (Math.random() < 0.50 || isOwner) {
+        const stolen = Math.floor(targetUser.cash * 0.10); // Nerf: Curi 10% sahaja
+        targetUser.cash -= stolen;
+        user.cash += stolen;
+        user.stars = Math.min(5, user.stars + 1);
+
+        let bountyNotice = "";
+        if (db.bounties && db.bounties[cleanTarget]) {
+          const claimed = db.bounties[cleanTarget];
+          user.cash += claimed;
+          delete db.bounties[cleanTarget];
+          saveDB(db);
+          bountyNotice = `\n🎯 *BOUNTY CLAIMED:* Wang tebusan kepala +RM ${claimed.toLocaleString()}!`;
+        }
+
+        updateUser(cleanSender, user);
+        updateUser(cleanTarget, targetUser);
+        return sock.sendMessage(from, { text: `🥷 *ROMPAKAN BERJAYA!*\n\n💵 Hasil: *+RM ${stolen.toLocaleString()}* dari *${targetUser.name}*!${bountyNotice}`, mentions: [cleanTarget] });
+      } else {
+        user.cash = Math.max(0, user.cash - 500);
+        user.cooldowns.jailUntil = now + (60 * 1000);
+        updateUser(cleanSender, user);
+        return sock.sendMessage(from, { text: `🚨 *KANTOI SAMUN SIBER!* \n\n💸 Denda: *-RM 500* & Lokap 60 saat!`, mentions: [cleanTarget] });
+      }
+    }
+
+    if (cmd === "shop" || cmd === "warung") {
+      let ui = `╔═══════════════════════════╗\n   🍔 WARUNG MAKANAN AIRI\n╚═══════════════════════════╝\n`;
+      FOOD_ITEMS.forEach(f => { ui += `• *[${f.id}]* ${f.name} ➔ RM ${f.price}\n  _${f.desc}_\n\n`; });
+      ui += `💡 Taip *.beli_makanan [id]* & *.makan [id]*`;
+      return sock.sendMessage(from, { text: ui });
+    }
+
+    if (cmd === "beli_makanan") {
+      const f = FOOD_ITEMS.find(x => x.id === args[0]?.toLowerCase());
+      if (!f || user.cash < f.price) return sock.sendMessage(from, { text: `❌ Menu tidak sah atau duit tidak cukup!` });
+      user.cash -= f.price;
+      user.food.push(f.id);
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `🍽️ Berjaya order *${f.name}*!` });
+    }
+
+    if (cmd === "makan") {
+      const idx = user.food.indexOf(args[0]?.toLowerCase());
+      if (idx === -1) return sock.sendMessage(from, { text: `❌ Makanan tiada dalam beg!` });
+      const fId = user.food.splice(idx, 1)[0];
+      if (fId === "nasilemak") user.cooldowns.work = 0;
+      if (fId === "roticanai") user.cooldowns.work = Math.max(0, user.cooldowns.work - 20000);
+      if (fId === "tehtarik") user.cooldowns.work = Math.max(0, user.cooldowns.work - 10000);
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `😋 Kenyang padu! Tenaga bertambah & cooldown dipendekkan!` });
+    }
+
+    if (cmd === "device") {
+      let ui = `╔═══════════════════════════╗\n   📱 KEDAI TELEFON PINTAR\n╚═══════════════════════════╝\n`;
+      PHONE_DEVICES.forEach(p => { ui += `• *[${p.id}]* ${p.name}\n  💰 RM ${p.price.toLocaleString()} | _${p.bonus}_\n\n`; });
+      ui += `💡 Taip *.beli_phone [id]*`;
+      return sock.sendMessage(from, { text: ui });
+    }
+
+    if (cmd === "beli_phone") {
+      const phone = PHONE_DEVICES.find(p => p.id === args[0]?.toLowerCase());
+      if (!phone) return sock.sendMessage(from, { text: `❌ Kod telefon tidak wujud!` });
+      if (user.cash < phone.price) return sock.sendMessage(from, { text: `❌ Tunai tidak cukup!` });
+      user.cash -= phone.price;
+      user.phoneDevice = phone.id;
+      user.phoneName = phone.name;
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `📱 Berjaya beli *${phone.name}*!` });
+    }
+
+    if (cmd === "upah_lawyer") {
+      if (now >= user.cooldowns.jailUntil && !isOwner) return sock.sendMessage(from, { text: `ℹ️ Anda bukan dalam tahanan lokap!` });
+      if (user.cash < 500 && !isOwner) return sock.sendMessage(from, { text: `❌ Sediakan RM 500 tunai!` });
+      if (!isOwner) user.cash -= 500;
+      user.cooldowns.jailUntil = 0;
+      user.stars = Math.max(0, user.stars - 1);
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `⚖️ *IKAT JAMIN:* Peguam selesaikan kes. Anda bebas!` });
+    }
+
+    // 👑 FOUNDER & SEASON RESET TERPERINCI
+    if (cmd === "reset_season" && isOwner) {
+      const goldP = db.market?.gold || 350;
+      const btcP = db.market?.btc || 280000;
+
+      const ranked = Object.entries(db.users || {})
+        .map(([id, u]) => {
+          let propVal = 0;
+          (u.properties || []).forEach(pId => {
+            const pr = PROPERTIES.find(x => x.id === pId);
+            if (pr) propVal += pr.price;
+          });
+          const net = (u.cash || 0) + (u.bank || 0) + Math.floor((u.goldGrams || 0) * goldP) + Math.floor((u.btcUnits || 0) * btcP) + propVal;
+          return { id, name: u.name, netWorth: net };
+        })
+        .sort((a, b) => b.netWorth - a.netWorth);
+
+      const top1 = ranked[0];
+      const top2 = ranked[1];
+      const top3 = ranked[2];
+
+      if (!db.hallOfFame) db.hallOfFame = [];
+      if (top1) {
+        db.hallOfFame.push({
+          season: db.season || 1,
+          first: top1,
+          second: top2 || { name: "-", netWorth: 0 },
+          third: top3 || { name: "-", netWorth: 0 }
+        });
+      }
+
+      const sOld = db.season || 1;
+      db.season = sOld + 1;
+      db.active_event_data = null;
+
+      for (let uid in db.users) {
+        const u = db.users[uid];
+        const legacyBadges = u.badges.filter(b => b.includes("LEGACY") || b.includes("CHRONO") || b.includes("Founder"));
+        
+        let starterCash = 500;
+        if (top1 && uid === top1.id) {
+          legacyBadges.push(`👑 [S${sOld} CHAMPION]`);
+          starterCash = 50000;
+        } else if (top2 && uid === top2.id) {
+          legacyBadges.push(`🥈 [S${sOld} RUNNER-UP]`);
+          starterCash = 25000;
+        } else if (top3 && uid === top3.id) {
+          legacyBadges.push(`🥉 [S${sOld} 3RD PLACE]`);
+          starterCash = 10000;
+        }
+
+        db.users[uid] = {
+          name: u.name, bio: u.bio || "", isOwner: u.isOwner,
+          cash: starterCash, bank: 0, debt: 0, goldGrams: 0, btcUnits: 0,
+          phoneDevice: null, phoneName: "Public Phone Awam 📟",
+          fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" },
+          inventory: [], vehicles: [], vehicleMods: {}, nosStock: {},
+          food: [], properties: [], pet: null, aquarium: [], stars: 0,
+          badges: legacyBadges.length > 0 ? legacyBadges : ["🌱 [COMMON] Warga Baru"],
+          stats: { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0, eventsWon: 0, bankHacks: 0 },
+          cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, rent: 0, bankHack: 0, aiAsk: 0 }
+        };
+      }
+
+      saveDB(db);
+
+      for (const gId of db.groups) {
+        await sock.sendMessage(gId, { 
+          text: `👑 *TIRAI MUSIM KE-${sOld} DITUTUP!* 👑\n\n🥇 Juara: *${top1?.name || "-"}*\n🥈 Tempat Ke-2: *${top2?.name || "-"}*\n🥉 Tempat Ke-3: *${top3?.name || "-"}*\n\n🔥 *MUSIM KE-${db.season} BERMULA SEKARANG!* Semua rekod diset semula ke garisan permulaan.` 
+        }).catch(() => {});
+      }
+      return;
+    }
+
+    // 🪪 PROFIL, MENU & TOP
     if (cmd === "myid" || cmd === "ic") {
       const title = getTitle(user);
       const totalWealth = user.cash + user.bank + Math.floor((user.goldGrams || 0) * (db.market?.gold || 350)) + Math.floor((user.btcUnits || 0) * (db.market?.btc || 280000));
@@ -1656,10 +2037,6 @@ Sila pilih kategori kedai dengan nombor:
 
 🏦 *[8. BANK & IDENTITI]*
 • *.deposit*, *.withdraw*, *.transfer*, *.shop*, *.beli_makanan*, *.makan*, *.myid*, *.profile*, *.top*`;
-
-      if (isOwner) {
-        menuText += `\n\n👑 *[9. CEO MENU]*\n• *.veto* ➔ Buka senarai arahan Founder`;
-      }
 
       return sock.sendMessage(from, { text: menuText });
     }
