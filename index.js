@@ -31,7 +31,7 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (GOOGLE GEMINI 1.5 FLASH)
+// 🤖 1. ENJIN AI SHADOW AIRI (GOOGLE GEMINI 2.5 FLASH)
 // =========================================================================
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || "AQ.Ab8RN6L93ijIy-kYAJuvFh0DoaG9rL0PBmGgmkt3-l7JLz4PGA").trim();
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -54,11 +54,11 @@ Personaliti:
 - Bantu jawab soalan waktu/jam, teknologi, sains, koding, matematik, nasihat hidup, fakta am, kuiz, atau sembang santai dengan tepat.
 - Panggil pengguna dengan nama mereka (${userName}) atau "Awak/Korang".
 - Jawab secara padat, jelas dan tidak terlalu meleret (maksimum 2-3 perenggan).
-- Terus berikan jawapan perbualan tanpa meletakkan sebarang nota proses berfikir.
+- Terus berikan jawapan perbualan tanpa meletakkan sebarang nota proses berfikir atau nama enjin luar.
 `;
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       systemInstruction: systemInstruction
     });
 
@@ -253,7 +253,7 @@ const NARRATIVE_BANKS = {
     "Token transaksi disahkan secara palsu, sedutan wang tunai berlaku sepantas kilat.",
     "Mangsa terkejut baki simpanan bank susut mendadak dikerjakan penggodam elit!",
     "Akses root bank dikuasai, aliran dana disalurkan ke akaun proksi tanpa sekatan.",
-    "Pelayan keselamatan bank hang sekejap masa pemindahan dana haram dijalankan!",
+    "Pelayan keselamatan bank hang sekejap masa pemindahan dana harim dijalankan!",
     "Injeksi kod SQL berjaya bypass authentication, baki akaun mangsa kering kontang.",
     "Siber trojan berjaya tembusi peti besi digital perbankan mangsa dengan bergaya.",
     "Kemenangan mutlak hacker underground, pundi-pundi akaun bertambah kaya-raya!"
@@ -496,7 +496,7 @@ const server = http.createServer((req, res) => {
     res.end(`
       <div style="text-align:center;margin-top:60px;font-family:'Segoe UI',sans-serif;background:#0f172a;color:#f8fafc;padding:30px;min-height:85vh;">
         <h1 style="color:#22c55e;font-size:2.5rem;">⚡ AIRI'S CORNER CYBER OS ONLINE! ⚡</h1>
-        <p style="color:#94a3b8;font-size:1.2rem;">Sistem WhatsApp RPG & Enjin Google Gemini 24/7 aktif.</p>
+        <p style="color:#94a3b8;font-size:1.2rem;">Sistem WhatsApp RPG & Enjin Shadow Airi 24/7 aktif.</p>
         <div style="display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;border-radius:8px;border:1px solid #334155;">
           👑 <b>Founder:</b> Bos Amar (Auto-Veto Active)
         </div>
@@ -924,14 +924,14 @@ const MOD_PARTS = {
     { id: 46, name: "Talaan ECU Remap Stage 1 💻", price: 2500, boostSpeed: 12, desc: "+12 km/h top speed & respon throttle segera" },
     { id: 47, name: "Ekzos Titanium Paip On 🔊", price: 1800, boostSpeed: 8, desc: "+8% peluang menang drag & jeritan padu" },
     { id: 48, name: "Set Tayar Slick Drag Corsa 🏁", price: 1200, boostSpeed: 5, desc: "+5 km/h & cengkaman maksimum di litar lurus" },
-    { id: "49", name: "Botol NOS Nitrous 50hp 🧪", price: 800, boostSpeed: 25, oneTime: true, desc: "Pecutan kilat satu kali guna dalam lumba drag" },
+    { id: 49, name: "Botol NOS Nitrous 50hp 🧪", price: 800, boostSpeed: 25, oneTime: true, desc: "Pecutan kilat satu kali guna dalam lumba drag" },
     { id: 50, name: "Head & Block 65mm Superhead ⚙️", price: 3500, boostSpeed: 20, desc: "+20 km/h top speed jentera highway" },
     { id: 51, name: "Monoshock Ohlins Racing 🟡", price: 2200, boostSpeed: 6, desc: "+6 km/h & kestabilan membrek selekoh maut" }
   ],
   Kereta: [
     { id: 46, name: "Remap Dyno Stage 2 + Pops & Bang 💻", price: 3500, boostSpeed: 15, desc: "+15 km/h & letupan ekzos berapi" },
     { id: 48, name: "Tayar Semi-Slick Toyo R888R 🏁", price: 2400, boostSpeed: 10, desc: "+10 km/h & cengkaman litar profesional" },
-    { id: "49", name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
+    { id: 49, name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
     { id: 51, name: "Suspensi Boleh Laras Adjustable 🟡", price: 4200, boostSpeed: 12, desc: "+12 km/h & badan kereta direndahkan aerodinamik" },
     { id: 52, name: "Sistem Turbo Garrett Ball-Bearing 🐌", price: 7500, boostSpeed: 30, desc: "+30 km/h top speed boost siput berdesing" },
     { id: 53, name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elak risiko terbabas lumba" }
@@ -1378,7 +1378,7 @@ async function startBotEngine() {
       updateUser(cleanSender, user);
 
       const reply = await askAiriAI(query, user.name);
-      return sock.sendMessage(from, { text: `╔═══════════════════════════╗\n   💠 AIRI CYBER RESPONSE 💠\n╚═══════════════════════════╝\n❓ *Soalan:* ${query}\n\n${reply}\n\n✨ _Dikuasakan oleh Enjin Shadow Airi (Gemini)_` });
+      return sock.sendMessage(from, { text: `╔═══════════════════════════╗\n   💠 AIRI CYBER RESPONSE 💠\n╚═══════════════════════════╝\n❓ *Soalan:* ${query}\n\n${reply}\n\n✨ _Dikuasakan oleh Enjin Shadow Airi_` });
     }
 
     // 🏆 RANKING & MUSIM
@@ -2308,7 +2308,7 @@ async function startBotEngine() {
       const userTank = FISHING_SHOP.tanks.find(t => t.id === user.fishingGear?.tank) || FISHING_SHOP.tanks[0];
 
       return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗\n   🪪 CYBER IDENTITY CARD (S${db.season || 1})\n╚═══════════════════════════╝\n👤 Nama: *${user.name}*\n🎖️ Gelaran: ${title}\n📱 Peranti: ${user.phoneName}\n🐕 Pengawal: ${user.pet ? user.pet.name : "Tiada"}\n💵 Tunai: RM ${user.cash.toLocaleString()} | 🏦 Bank: RM ${user.bank.toLocaleString()}。\n🪙 Emas: ${(user.goldGrams || 0).toFixed(2)}g | ₿ BTC: ${(user.btcUnits || 0).toFixed(4)}\n💎 Nilai Harta: RM ${totalWealth.toLocaleString()}\n🏎️ Jentera: ${user.vehicles.length} | 🏢 Hartanah: ${user.properties.length}\n🎣 Set Pancing: ${userRod.name} | ${userReel.name}\n🫙 Akuarium: ${userTank.name} (${user.aquarium.length}/${userTank.capacity})` 
+        text: `╔═══════════════════════════╗\n   🪪 CYBER IDENTITY CARD (S${db.season || 1})\n╚═══════════════════════════╝\n👤 Nama: *${user.name}*\n🎖️ Gelaran: ${title}\n📱 Peranti: ${user.phoneName}\n🐕 Pengawal: ${user.pet ? user.pet.name : "Tiada"}\n💵 Tunai: RM ${user.cash.toLocaleString()} | 🏦 Bank: RM ${user.bank.toLocaleString()}\n🪙 Emas: ${(user.goldGrams || 0).toFixed(2)}g | ₿ BTC: ${(user.btcUnits || 0).toFixed(4)}\n💎 Nilai Harta: RM ${totalWealth.toLocaleString()}\n🏎️ Jentera: ${user.vehicles.length} | 🏢 Hartanah: ${user.properties.length}\n🎣 Set Pancing: ${userRod.name} | ${userReel.name}\n🫙 Akuarium: ${userTank.name} (${user.aquarium.length}/${userTank.capacity})` 
       });
     }
 
@@ -2350,7 +2350,7 @@ async function startBotEngine() {
         text: `╔═══════════════════════════╗\n   🖥️ AIRI'S CORNER CYBER OS (S${db.season || 1})\n╚═══════════════════════════╝\n${evStatus}
 
 🤖 *[1. SHADOW AIRI AI]*
-• *.airi [soalan]* ➔ Tanya & sembang AI (Gemini Flash)
+• *.airi [soalan]* ➔ Tanya & sembang AI
 
 🏆 *[2. SISTEM MUSIM & RANKING]*
 • *.ranking* ➔ Papan pendahulu nilai bersih Top 10
