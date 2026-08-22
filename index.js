@@ -31,7 +31,7 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (GROQ SDK - MODEL SAH & VERIFIED)
+// 🤖 1. ENJIN AI SHADOW AIRI (MODEL GROQ TERBUKTI STABIL)
 // =========================================================================
 const RAW_GROQ_KEY = (process.env.GROQ_API_KEY || "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").trim();
 const groq = new Groq({ apiKey: RAW_GROQ_KEY });
@@ -55,69 +55,72 @@ Personaliti:
 - Jawab secara padat, jelas dan tidak terlalu meleret (maksimum 2-3 perenggan).
 `;
 
-  try {
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: promptText }
-      ],
-      model: "llama-3.1-70b-versatile",
-      temperature: 0.7,
-      max_tokens: 400
-    });
+  // Senarai model yang disahkan wujud & aktif di Groq
+  const candidateModels = [
+    "llama3-70b-8192",
+    "llama3-8b-8192",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it"
+  ];
 
-    return chatCompletion.choices[0]?.message?.content?.trim() || "Airi dengar! Tapi tak pasti nak jawab macam mana tadi hehe~ 💙";
-  } catch (err1) {
-    console.error("⚠️ Ralat Model Utama Groq (70B):", err1?.message || err1);
-
+  for (const modelName of candidateModels) {
     try {
-      const fallbackCompletion = await groq.chat.completions.create({
+      const completion = await groq.chat.completions.create({
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: promptText }
         ],
-        model: "llama-3.1-8b-instant",
+        model: modelName,
         temperature: 0.7,
         max_tokens: 400
       });
 
-      return fallbackCompletion.choices[0]?.message?.content?.trim() || "Airi dengar! 💙";
-    } catch (err2) {
-      console.error("⚠️ Ralat Fatal Groq Fallback (8B):", err2?.message || err2);
-      return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
+      const reply = completion.choices[0]?.message?.content?.trim();
+      if (reply) return reply;
+    } catch (err) {
+      console.warn(`⚠️ Model [${modelName}] gagal, cuba model seterusnya... (${err?.message})`);
     }
   }
+
+  return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
 }
 
-// Enjin Naratif Dinamik untuk Hasil Aksi & Event RPG
+// Enjin Naratif Dinamik untuk RPG
 async function generateNarrative(scenarioType, details, fallbackText) {
-  try {
-    const prompt = `
+  const prompt = `
 Kau ialah Airi, maskot AI bot RPG komuniti WhatsApp "Airi's Corner".
-Tugas kau: Tulis 1 atau 2 ayat naratif / ulasan santai Melayu yang unik, kelakar, bersemangat, atau menyengat untuk situasi berikut:
+Tulis 1 atau 2 ayat naratif / ulasan santai Melayu yang unik, kelakar, bersemangat, atau menyengat untuk situasi berikut:
 
 Jenis Senario: ${scenarioType}
 Maklumat: ${JSON.stringify(details)}
 
 Syarat:
 - Bahasa santai Melayu pasar/slanga moden harian (contoh: tapau, rempit, gempak, padu, kantoi, menangis dompet, fuhh, mantap).
-- Maksimum 1-2 ayat sahaja. Padat, hidup dan terus ke situasi!
+- Maksimum 1-2 ayat sahaja. Padat dan hidup!
 `;
 
-    const res = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: "Kau ialah pencerita naratif aksi RPG yang sangat santai, ceria dan berbisa." },
-        { role: "user", content: prompt }
-      ],
-      model: "llama-3.1-8b-instant",
-      temperature: 0.85,
-      max_tokens: 120
-    });
+  const fastModels = ["llama3-8b-8192", "gemma2-9b-it", "mixtral-8x7b-32768"];
 
-    return res.choices[0]?.message?.content?.trim() || fallbackText;
-  } catch (e) {
-    return fallbackText;
+  for (const modelName of fastModels) {
+    try {
+      const res = await groq.chat.completions.create({
+        messages: [
+          { role: "system", content: "Kau ialah pencerita naratif aksi RPG yang sangat santai dan ceria." },
+          { role: "user", content: prompt }
+        ],
+        model: modelName,
+        temperature: 0.85,
+        max_tokens: 120
+      });
+
+      const text = res.choices[0]?.message?.content?.trim();
+      if (text) return text;
+    } catch (e) {
+      // Cuba fallback berikutnya
+    }
   }
+
+  return fallbackText;
 }
 
 // =========================================================================
@@ -568,7 +571,7 @@ const MOD_PARTS = {
     { id: 49, name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
     { id: 51, name: "Suspensi Boleh Laras Adjustable 🟡", price: 4200, boostSpeed: 12, desc: "+12 km/h & badan kereta direndahkan aerodinamik" },
     { id: 52, name: "Sistem Turbo Garrett Ball-Bearing 🐌", price: 7500, boostSpeed: 30, desc: "+30 km/h top speed boost siput berdesing" },
-    { id: 53, name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elak risiko terbabas lumba" }
+    { id: 53, name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elakリスク terbabas lumba" }
   ]
 };
 
@@ -673,7 +676,7 @@ async function startBotEngine() {
   });
 
   // =========================================================================
-  // 🎲 PEMASA BENCANA MONOPOLI & AIRDROP (DYNAMIC AI GENERATED EVENT NARRATIVES)
+  // 🎲 PEMASA BENCANA MONOPOLI & AIRDROP
   // =========================================================================
   setInterval(async () => {
     const db = loadDB();
@@ -770,7 +773,7 @@ async function startBotEngine() {
   }, 20 * 60 * 1000);
 
   // =========================================================================
-  // ⚡ 15. PENGENDALI MESEJ & COMMAND RPG DENGAN ENJIN AI
+  // ⚡ 15. PENGENDALI MESEJ & COMMAND RPG
   // =========================================================================
   sock.ev.on("messages.upsert", async ({ messages }) => {
     const m = messages[0];
@@ -1173,7 +1176,7 @@ async function startBotEngine() {
     }
 
     // =====================================================================
-    // 🎣 17. KEDAI PANCING & MEMANCING (AI NARRATIVE POWERED)
+    // 🎣 17. KEDAI PANCING & MEMANCING
     // =====================================================================
     if (cmd === "kedai_pancing" || cmd === "tackleshop") {
       let ui = 
@@ -1345,7 +1348,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: ui });
     }
 
-    // 💼 KERJA HALAL (DYNAMIC AI WORK SCENARIO)
+    // 💼 KERJA HALAL
     if (cmd === "kerja" || cmd === "work") {
       let cdDuration = 60 * 1000;
       if (activePhoneObj?.perk === "cd") cdDuration = Math.max(20000, cdDuration - activePhoneObj.val);
@@ -1454,7 +1457,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🔧 *${part.name}* dipasang pada *${vehicle.name}*!` });
     }
 
-    // 🏁 DRAG RACE (DYNAMIC AI RACE NARRATIVE)
+    // 🏁 DRAG RACE
     if (cmd === "lumba" || cmd === "race") {
       const vId = args[0]?.toLowerCase();
       if (!vId || !user.vehicles.includes(vId)) return sock.sendMessage(from, { text: `❌ Masukkan kod jentera! Contoh: *.lumba y15*` });
@@ -1531,7 +1534,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: ui });
     }
 
-    // 💀 MISI JENAYAH (DYNAMIC AI HEIST NARRATIVE)
+    // 💀 MISI JENAYAH
     if (cmd === "buat_jenayah") {
       const c = CRIMES.find(x => x.id === parseInt(args[0]));
       if (!c) return sock.sendMessage(from, { text: `❌ ID jenayah tidak sah!` });
@@ -1756,7 +1759,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `💸 *TRANSFER:* RM ${amt.toLocaleString()} dihantar ke *${targetUser.name}*!` });
     }
 
-    // 🥷 ROMPAK PEMAIN (DYNAMIC AI ROAST & NARRATIVE)
+    // 🥷 ROMPAK PEMAIN
     if (cmd === "rompak") {
       const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
       if (!targetTag) return sock.sendMessage(from, { text: `❌ Tag mangsa: *.rompak @user*` });
