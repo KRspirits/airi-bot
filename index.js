@@ -31,10 +31,33 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (MODEL GROQ TERBUKTI STABIL)
+// 🤖 1. ENJIN AI SHADOW AIRI (DYNAMIC AUTO-DISCOVERY MODEL GROQ)
 // =========================================================================
 const RAW_GROQ_KEY = (process.env.GROQ_API_KEY || "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").trim();
 const groq = new Groq({ apiKey: RAW_GROQ_KEY });
+
+let cachedActiveModel = null;
+
+// Fungsi auto-fetch model yang sah dan aktif dari pelayan Groq secara real-time
+async function getWorkingGroqModel() {
+  if (cachedActiveModel) return cachedActiveModel;
+  try {
+    const list = await groq.models.list();
+    const activeModels = list.data
+      .filter(m => m.active !== false && !m.id.includes("whisper") && !m.id.includes("tts") && !m.id.includes("vision"))
+      .map(m => m.id);
+
+    console.log("📋 Model Groq Aktif Terkini:", activeModels);
+
+    // Utamakan model LLaMA atau Mixtral yang tersedia
+    const preferred = activeModels.find(id => id.includes("llama") || id.includes("mixtral") || id.includes("gemma")) || activeModels[0];
+    cachedActiveModel = preferred;
+    return preferred;
+  } catch (e) {
+    console.error("⚠️ Gagal menyenaraikan model Groq:", e.message);
+    return "llama-3.3-70b-versatile";
+  }
+}
 
 async function askAiriAI(promptText, userName = "Warga Cyber") {
   const currentTimeMY = new Date().toLocaleString("ms-MY", { 
@@ -55,72 +78,56 @@ Personaliti:
 - Jawab secara padat, jelas dan tidak terlalu meleret (maksimum 2-3 perenggan).
 `;
 
-  // Senarai model yang disahkan wujud & aktif di Groq
-  const candidateModels = [
-    "llama3-70b-8192",
-    "llama3-8b-8192",
-    "mixtral-8x7b-32768",
-    "gemma2-9b-it"
-  ];
+  try {
+    const modelToUse = await getWorkingGroqModel();
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: promptText }
+      ],
+      model: modelToUse,
+      temperature: 0.7,
+      max_tokens: 400
+    });
 
-  for (const modelName of candidateModels) {
-    try {
-      const completion = await groq.chat.completions.create({
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: promptText }
-        ],
-        model: modelName,
-        temperature: 0.7,
-        max_tokens: 400
-      });
-
-      const reply = completion.choices[0]?.message?.content?.trim();
-      if (reply) return reply;
-    } catch (err) {
-      console.warn(`⚠️ Model [${modelName}] gagal, cuba model seterusnya... (${err?.message})`);
-    }
+    return chatCompletion.choices[0]?.message?.content?.trim() || "Airi dengar! Tapi tak pasti nak jawab macam mana tadi hehe~ 💙";
+  } catch (err) {
+    console.error("⚠️ Ralat askAiriAI:", err?.message || err);
+    cachedActiveModel = null;
+    return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
   }
-
-  return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
 }
 
-// Enjin Naratif Dinamik untuk RPG
+// Enjin Naratif Dinamik untuk Hasil Aksi & Event RPG
 async function generateNarrative(scenarioType, details, fallbackText) {
-  const prompt = `
+  try {
+    const prompt = `
 Kau ialah Airi, maskot AI bot RPG komuniti WhatsApp "Airi's Corner".
-Tulis 1 atau 2 ayat naratif / ulasan santai Melayu yang unik, kelakar, bersemangat, atau menyengat untuk situasi berikut:
+Tugas kau: Tulis 1 atau 2 ayat naratif / ulasan santai Melayu yang unik, kelakar, bersemangat, atau menyengat untuk situasi berikut:
 
 Jenis Senario: ${scenarioType}
 Maklumat: ${JSON.stringify(details)}
 
 Syarat:
 - Bahasa santai Melayu pasar/slanga moden harian (contoh: tapau, rempit, gempak, padu, kantoi, menangis dompet, fuhh, mantap).
-- Maksimum 1-2 ayat sahaja. Padat dan hidup!
+- Maksimum 1-2 ayat sahaja. Padat, hidup dan terus ke situasi!
 `;
 
-  const fastModels = ["llama3-8b-8192", "gemma2-9b-it", "mixtral-8x7b-32768"];
+    const modelToUse = await getWorkingGroqModel();
+    const res = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: "Kau ialah pencerita naratif aksi RPG yang sangat santai, ceria dan berbisa." },
+        { role: "user", content: prompt }
+      ],
+      model: modelToUse,
+      temperature: 0.85,
+      max_tokens: 120
+    });
 
-  for (const modelName of fastModels) {
-    try {
-      const res = await groq.chat.completions.create({
-        messages: [
-          { role: "system", content: "Kau ialah pencerita naratif aksi RPG yang sangat santai dan ceria." },
-          { role: "user", content: prompt }
-        ],
-        model: modelName,
-        temperature: 0.85,
-        max_tokens: 120
-      });
-
-      const text = res.choices[0]?.message?.content?.trim();
-      if (text) return text;
-    } catch (e) {
-      // Cuba fallback berikutnya
-    }
+    return res.choices[0]?.message?.content?.trim() || fallbackText;
+  } catch (e) {
+    return fallbackText;
   }
-
-  return fallbackText;
 }
 
 // =========================================================================
@@ -571,7 +578,7 @@ const MOD_PARTS = {
     { id: 49, name: "Sistem Dwi-Botol NOS 100hp 🧪", price: 1500, boostSpeed: 35, oneTime: true, desc: "Tekan butang terus terbang memintas musuh" },
     { id: 51, name: "Suspensi Boleh Laras Adjustable 🟡", price: 4200, boostSpeed: 12, desc: "+12 km/h & badan kereta direndahkan aerodinamik" },
     { id: 52, name: "Sistem Turbo Garrett Ball-Bearing 🐌", price: 7500, boostSpeed: 30, desc: "+30 km/h top speed boost siput berdesing" },
-    { id: 53, name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elakリスク terbabas lumba" }
+    { id: 53, name: "Brek Brembo 6-Pot Caliper 🛑", price: 5000, boostSpeed: 5, desc: "Brek serta-merta elak risiko terbabas lumba" }
   ]
 };
 
