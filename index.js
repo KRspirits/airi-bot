@@ -31,7 +31,7 @@ let currentQR = "";
 let isConnected = false;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (GROQ SDK)
+// 🤖 1. ENJIN DYNAMIC NARRATIVE SHADOW AIRI (GROQ SDK)
 // =========================================================================
 const groq = new Groq({ 
   apiKey: process.env.GROQ_API_KEY || "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" 
@@ -64,6 +64,37 @@ Personaliti:
   } catch (err) {
     console.error("⚠️ Ralat Shadow Airi AI:", err.message);
     return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba tanya sekali lagi jap lagi ya!";
+  }
+}
+
+// Enjin Naratif Dinamik untuk Hasil Aksi & Event RPG
+async function generateNarrative(scenarioType, details, fallbackText) {
+  try {
+    const prompt = `
+Kau ialah Airi, maskot AI bot RPG komuniti WhatsApp "Airi's Corner".
+Tugas kau: Tulis 1 atau 2 ayat naratif / ulasan santai Melayu yang unik, kelakar, bersemangat, atau menyengat untuk situasi berikut:
+
+Jenis Senario: ${scenarioType}
+Maklumat: ${JSON.stringify(details)}
+
+Syarat:
+- Bahasa santai Melayu pasar/slanga moden harian (contoh: tapau, rempit, gempak, padu, kantoi, menangis dompet, fuhh, mantap).
+- Maksimum 1-2 ayat sahaja. Padat, hidup dan terus ke situasi!
+`;
+
+    const res = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: "Kau ialah pencerita naratif aksi RPG yang sangat santai, ceria dan berbisa." },
+        { role: "user", content: prompt }
+      ],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.85,
+      max_tokens: 120
+    });
+
+    return res.choices[0]?.message?.content?.trim() || fallbackText;
+  } catch (e) {
+    return fallbackText;
   }
 }
 
@@ -255,7 +286,7 @@ const SEASON_EVENTS = {
 };
 
 // =========================================================================
-// 🎣 6. KEDAI PERALATAN MEMANCING (BALANCED COOLDOWNS & LUCK)
+// 🎣 6. KEDAI PERALATAN MEMANCING
 // =========================================================================
 const FISHING_SHOP = {
   rods: [
@@ -288,7 +319,7 @@ const FISHING_SHOP = {
 };
 
 // =========================================================================
-// 🐟 7. PANGKALAN DATA IKAN & BUFF AKUARIUM
+// 🐟 7. PANGKALAN DATA IKAN
 // =========================================================================
 const FISH_DATABASE = [
   { id: "f1", name: "Kasut But Getah Koyak 🥾", price: 0, tier: "🗑️ [JUNK]", weight: 10, buff: "Tiada buff", isJunk: true },
@@ -620,7 +651,7 @@ async function startBotEngine() {
   });
 
   // =========================================================================
-  // 🎲 PEMASA BAHAYA MONOPOLI & AIRDROP (SETIAP 20 MINIT)
+  // 🎲 PEMASA BENCANA MONOPOLI & AIRDROP (DYNAMIC AI GENERATED EVENT NARRATIVES)
   // =========================================================================
   setInterval(async () => {
     const db = loadDB();
@@ -652,7 +683,8 @@ async function startBotEngine() {
           const tax = Math.floor(victim.cash * 0.15);
           victim.cash -= tax;
           saveDB(db);
-          await sock.sendMessage(gId, { text: `🏛️ *AUDIT LHDN MENGEJUT:* *${victim.name}* dikesan tidak isytihar tunai! Cukai *-RM ${tax.toLocaleString()}* disita!` }).catch(() => {});
+          const aiText = await generateNarrative("LHDN_TAX", { victim: victim.name, amount: tax }, `LHDN mengesan wang tunai tidak berisytihar.`);
+          await sock.sendMessage(gId, { text: `🏛️ *AUDIT LHDN MENGEJUT!*\n\n${aiText}\n\n💸 Sitaan: *-RM ${tax.toLocaleString()}* dari *${victim.name}*!` }).catch(() => {});
         }
       }
 
@@ -663,7 +695,8 @@ async function startBotEngine() {
         if (victim && victim.cash >= loss && !OWNER_NUMBERS.some(n => victimKey.includes(n))) {
           victim.cash -= loss;
           saveDB(db);
-          await sock.sendMessage(gId, { text: `☣️ *SERANGAN RANSOMWARE:* Fail peranti *${victim.name}* disulitkan penggodam! Wang tebusan *-RM ${loss.toLocaleString()}* lesap!` }).catch(() => {});
+          const aiText = await generateNarrative("RANSOMWARE_ATTACK", { victim: victim.name, loss }, `Penggodam menyulitkan fail peranti mangsa.`);
+          await sock.sendMessage(gId, { text: `☣️ *SERANGAN RANSOMWARE SIBER!*\n\n${aiText}\n\n💸 Wang Tebusan: *-RM ${loss.toLocaleString()}* lesap dari *${victim.name}*!` }).catch(() => {});
         }
       }
 
@@ -674,7 +707,8 @@ async function startBotEngine() {
         if (victim && victim.cash >= fine && victim.vehicles && victim.vehicles.length >= 1 && !OWNER_NUMBERS.some(n => victimKey.includes(n))) {
           victim.cash -= fine;
           saveDB(db);
-          await sock.sendMessage(gId, { text: `📸 *SAMAN AES HIGHWAY:* Kamera merakam jentera *${victim.name}* memecut lebih had laju! Denda *-RM ${fine.toLocaleString()}* dipotong.` }).catch(() => {});
+          const aiText = await generateNarrative("AES_SPEED_FINE", { victim: victim.name, fine }, `Kamera lebuhraya merakam jentera melebihi had laju.`);
+          await sock.sendMessage(gId, { text: `📸 *SAMAN AES HIGHWAY!*\n\n${aiText}\n\n💸 Denda: *-RM ${fine.toLocaleString()}* dipotong dari akaun *${victim.name}*!` }).catch(() => {});
         }
       }
 
@@ -684,7 +718,7 @@ async function startBotEngine() {
           db.activeEvents[gId] = { type: "pilihan", target: targetKey, expires: Date.now() + 60000 };
           saveDB(db);
           await sock.sendMessage(gId, { 
-            text: `╔═══════════════════════════╗\n   💼 TAWARAN PELABURAN SIBER\n╚═══════════════════════════╝\n👤 Sasaran Dipilih: @${targetKey.split("@")[0]}\n\n1️⃣ Pilihan 1: Terima Tunai Dijamin (RM 5,000)\n2️⃣ Pilihan 2: Buka Kontrak Kripto (Risiko: +RM 25,000 ATAU -RM 20,000!)\n\n👉 Taip: *.pilih 1* atau *.pilih 2* dalam masa 60 saat!`,
+            text: `╔═══════════════════════════╗\n   💼 TAWARAN PELABURAN SIBER\n╚═══════════════════════════╝\n👤 Sasaran: @${targetKey.split("@")[0]}\n\n1️⃣ Pilihan 1: Terima Tunai Dijamin (RM 5,000)\n2️⃣ Pilihan 2: Kontrak Kripto Berisiko (+RM 25,000 / -RM 20,000)\n\n👉 Taip: *.pilih 1* atau *.pilih 2* dalam 60 saat!`,
             mentions: [targetKey]
           }).catch(() => {});
         }
@@ -696,7 +730,7 @@ async function startBotEngine() {
           db.activeEvents[gId] = { type: "misteri", target: targetKey, expires: Date.now() + 60000 };
           saveDB(db);
           await sock.sendMessage(gId, { 
-            text: `╔═══════════════════════════╗\n   🎁 KOTAK MISTERI MONOPOLY\n╚═══════════════════════════╝\n👤 Sasaran Dipilih: @${targetKey.split("@")[0]}\n\n1️⃣ Pilihan 1: Ambil Duit Selamat (RM 2,000)\n2️⃣ Pilihan 2: Buka Peti Hitam (Risiko: +RM 15,000 ATAU -RM 12,000!)\n\n👉 Taip: *.pilih 1* atau *.pilih 2* dalam masa 60 saat!`,
+            text: `╔═══════════════════════════╗\n   🎁 KOTAK MISTERI MONOPOLY\n╚═══════════════════════════╝\n👤 Sasaran: @${targetKey.split("@")[0]}\n\n1️⃣ Pilihan 1: Ambil Duit Selamat (RM 2,000)\n2️⃣ Pilihan 2: Buka Peti Hitam (+RM 15,000 / -RM 12,000)\n\n👉 Taip: *.pilih 1* atau *.pilih 2* dalam 60 saat!`,
             mentions: [targetKey]
           }).catch(() => {});
         }
@@ -707,14 +741,14 @@ async function startBotEngine() {
         const reward = Math.floor(5000 + Math.random() * 5000);
         db.activeEvents[gId] = { type: "airdrop", code, reward, expires: Date.now() + 120000 };
         saveDB(db);
-        const msg = `╔═══════════════════════════╗\n   🪂 KOTAK AIRDROP TERHEMPAS!\n╚═══════════════════════════╝\n📦 Peti bekalan tunai jatuh di group!\n💰 Nilai Loot: *RM ${reward.toLocaleString()}*\n🔑 Kod Akses: *${code}*\n\n⚡ Taip *.rebut ${code}* terpantas untuk kaut duit!`;
+        const msg = `╔═══════════════════════════╗\n   🪂 KOTAK AIRDROP TERHEMPAS!\n╚═══════════════════════════╝\n📦 Peti kargo tunai jatuh di tengah group!\n💰 Loot: *RM ${reward.toLocaleString()}*\n🔑 Kod Akses: *${code}*\n\n⚡ Taip *.rebut ${code}* terpantas untuk kutip tunai!`;
         await sock.sendMessage(gId, { text: msg }).catch(() => {});
       }
     }
   }, 20 * 60 * 1000);
 
   // =========================================================================
-  // ⚡ 15. PENGENDALI MESEJ & COMMAND RPG LENGKAP
+  // ⚡ 15. PENGENDALI MESEJ & COMMAND RPG DENGAN ENJIN AI
   // =========================================================================
   sock.ev.on("messages.upsert", async ({ messages }) => {
     const m = messages[0];
@@ -897,7 +931,8 @@ async function startBotEngine() {
           updateUser(cleanSender, user);
           delete db.activeEvents[from];
           saveDB(db);
-          return sock.sendMessage(from, { text: `✅ *${user.name}* memilih jalan selamat dan menerima wang tunai *+RM 5,000*!` });
+          const aiText = await generateNarrative("SAFE_CHOICE", { user: user.name, reward: 5000 }, `Memilih jalan selamat dan menerima wang tunai.`);
+          return sock.sendMessage(from, { text: `✅ *${user.name}* ${aiText} (+RM 5,000)` });
         } else if (choice === "2") {
           const isWin = Math.random() < 0.45;
           const amt = isWin ? 25000 : -20000;
@@ -905,11 +940,8 @@ async function startBotEngine() {
           updateUser(cleanSender, user);
           delete db.activeEvents[from];
           saveDB(db);
-          return sock.sendMessage(from, { 
-            text: isWin 
-              ? `🎉 *KONTRAK KRIPTO MELETUP:* *${user.name}* menang besar *+RM 25,000* tunai!` 
-              : `💀 *RUGI TOTAL:* Pasaran kripto jatuh! *${user.name}* rugi *-RM 20,000*!` 
-          });
+          const aiText = await generateNarrative("CRYPTO_GAMBLE", { user: user.name, win: isWin, amount: amt }, isWin ? "Menang besar kontrak kripto!" : "Rugi teruk pasaran jatuh.");
+          return sock.sendMessage(from, { text: `${isWin ? "🎉" : "💀"} *${user.name}* ${aiText} (${isWin ? "+RM 25,000" : "-RM 20,000"})` });
         }
       } else if (currentLiveEvent.type === "misteri") {
         if (choice === "1") {
@@ -925,11 +957,8 @@ async function startBotEngine() {
           updateUser(cleanSender, user);
           delete db.activeEvents[from];
           saveDB(db);
-          return sock.sendMessage(from, { 
-            text: isWin 
-              ? `🎁 *PETI EMAS MONOPOLY:* *${user.name}* membuka peti bertuah *+RM 15,000*!` 
-              : `💥 *PERANGKAP BOM PETI:* *${user.name}* terkena penalti *-RM 12,000*!` 
-          });
+          const aiText = await generateNarrative("MYSTERY_BOX", { user: user.name, win: isWin, amount: amt }, isWin ? "Membuka peti emas bertuah!" : "Terkena perangkap peti kosong.");
+          return sock.sendMessage(from, { text: `${isWin ? "🎁" : "💥"} *${user.name}* ${aiText} (${isWin ? "+RM 15,000" : "-RM 12,000"})` });
         }
       }
     }
@@ -941,7 +970,8 @@ async function startBotEngine() {
         delete db.activeEvents[from];
         saveDB(db);
         updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🎉 *AIRDROP DIBUKA!* *${user.name}* merampas *+RM ${currentLiveEvent.reward.toLocaleString()}* tunai!` });
+        const aiText = await generateNarrative("AIRDROP_CLAIM", { user: user.name, reward: currentLiveEvent.reward }, `Merampas peti airdrop terpantas!`);
+        return sock.sendMessage(from, { text: `🎉 *AIRDROP DISAPU!*\n\n${aiText}\n\n💰 Diterima: *+RM ${currentLiveEvent.reward.toLocaleString()}* tunai!` });
       }
     }
 
@@ -955,7 +985,7 @@ async function startBotEngine() {
         return sock.sendMessage(from, { text: `⏳ Otak Airi tengah proses data jap~ Tunggu *${rem} saat* lagi ya!` });
       }
 
-      user.cooldowns.aiAsk = now + (10 * 1000); // 10 Saat CD
+      user.cooldowns.aiAsk = now + (10 * 1000);
       updateUser(cleanSender, user);
 
       const reply = await askAiriAI(query, user.name);
@@ -1121,7 +1151,7 @@ async function startBotEngine() {
     }
 
     // =====================================================================
-    // 🎣 17. KEDAI PANCING (ROD, REELS, UMPAN, AKUARIUM) & PERALATAN
+    // 🎣 17. KEDAI PANCING & MEMANCING (AI NARRATIVE POWERED)
     // =====================================================================
     if (cmd === "kedai_pancing" || cmd === "tackleshop") {
       let ui = 
@@ -1188,11 +1218,10 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🎉 *PEMBELIAN BERJAYA:* Anda telah melengkapkan *${item.name}*!\n✨ _${item.desc}_` });
     }
 
-    // 🎣 MANCING SEBUT HARGA BERDASARKAN GEAR & UMPAN (BASE CD: 60 SAAT)
     if (cmd === "mancing" || cmd === "fish") {
       const userReel = FISHING_SHOP.reels.find(r => r.id === user.fishingGear?.reel) || FISHING_SHOP.reels[0];
-      const baseCd = 60 * 1000; // 60 Saat Cooldown Base
-      const actualCd = Math.max(15000, baseCd - userReel.cdReduction); // Minima 15-20s dengan reel paling mahal
+      const baseCd = 60 * 1000;
+      const actualCd = Math.max(15000, baseCd - userReel.cdReduction);
 
       if (now < user.cooldowns.fish && !isOwner) {
         const rem = Math.ceil((user.cooldowns.fish - now) / 1000);
@@ -1208,7 +1237,7 @@ async function startBotEngine() {
       let fPrice = caught.price;
       if (userBait && fPrice > 0) {
         fPrice = Math.floor(fPrice * userBait.priceMult);
-        user.fishingGear.bait = null; // Umpan habis digunakan
+        user.fishingGear.bait = null;
       }
       if (currentSeasonEvent?.fishMult) fPrice = Math.floor(fPrice * currentSeasonEvent.fishMult);
 
@@ -1220,10 +1249,12 @@ async function startBotEngine() {
       if (fPrice === 0) {
         delete db.pendingFish[cleanSender];
         saveDB(db);
-        return sock.sendMessage(from, { text: `🎣 Anda menaikkan *${caught.name}* (Nilai: RM 0). Sampah ini dibuang balik ke laut!` });
+        const aiJunk = await generateNarrative("FISHING_JUNK", { user: user.name, junk: caught.name }, `Menaikkan barang sampah dari dasar sungai.`);
+        return sock.sendMessage(from, { text: `🎣 *${user.name}* ${aiJunk}\n(Nilai: RM 0 - Dibuang balik ke laut!)` });
       }
 
-      const baitUsedText = userBait ? `\n🪱 Umpan Digunakan: *${userBait.name}* (+${Math.round((userBait.priceMult - 1) * 100)}% Nilai Jual)` : "";
+      const baitUsedText = userBait ? `\n🪱 Umpan: *${userBait.name}* (+${Math.round((userBait.priceMult - 1) * 100)}% Jual)` : "";
+      const aiCatch = await generateNarrative("FISHING_SUCCESS", { user: user.name, fish: caught.name, tier: caught.tier, price: fPrice }, `Menaikkan hasil tangkapan bernilai tinggi.`);
 
       return sock.sendMessage(from, { 
         text: `╔═══════════════════════════════════╗
@@ -1232,7 +1263,7 @@ async function startBotEngine() {
 🐟 Mangsa: *${caught.name}*
 🏷️ Peringkat: *${caught.tier}*
 💰 Tawaran Peraih: *RM ${fPrice.toLocaleString()}*${baitUsedText}
-✨ Buff Akuarium: _${caught.buff}_
+✨ Naratif Airi: _"${aiCatch}"_
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👉 *PILIHAN ANDA:*
 1️⃣ Taip: *.jual_ikan* ➔ Ambil RM ${fPrice.toLocaleString()} tunai
@@ -1292,9 +1323,9 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: ui });
     }
 
-    // 💼 KERJA HALAL (BASE CD: 60 SAAT)
+    // 💼 KERJA HALAL (DYNAMIC AI WORK SCENARIO)
     if (cmd === "kerja" || cmd === "work") {
-      let cdDuration = 60 * 1000; // 60 Saat Cooldown Base
+      let cdDuration = 60 * 1000;
       if (activePhoneObj?.perk === "cd") cdDuration = Math.max(20000, cdDuration - activePhoneObj.val);
 
       if (now < user.cooldowns.work && !isOwner) {
@@ -1313,8 +1344,17 @@ async function startBotEngine() {
       user.cooldowns.work = now + cdDuration;
       updateUser(cleanSender, user);
 
+      const aiJobComment = await generateNarrative("WORK_SHIFT", { user: user.name, job: assignedJob.name, pay: payout }, `Selesai menjalankan tugas dengan cemerlang.`);
+
       return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗\n   💼 SLIP GAJI HALAL AIRI\n╚═══════════════════════════╝\n👤 Pekerja: *${user.name}*\n🏢 Tugasan: *${assignedJob.name}*\n💵 Upah: *+RM ${payout.toLocaleString()}*` 
+        text: `╔═══════════════════════════╗
+   💼 SLIP GAJI HALAL AIRI
+╚═══════════════════════════╝
+👤 Pekerja: *${user.name}*
+🏢 Tugasan: *${assignedJob.name}*
+💵 Upah: *+RM ${payout.toLocaleString()}*
+
+✨ _"${aiJobComment}"_` 
       });
     }
 
@@ -1322,7 +1362,7 @@ async function startBotEngine() {
       if (now < user.cooldowns.daily && !isOwner) return sock.sendMessage(from, { text: `⏳ Elaun harian dah dituntut! Datang esok ya.` });
       let bonusAmt = currentSeasonEvent?.type === "INFLATION_SPIKE" ? 750 : 250;
       user.cash += bonusAmt;
-      user.cooldowns.daily = now + (24 * 3600 * 1000); // 24 Jam
+      user.cooldowns.daily = now + (24 * 3600 * 1000);
       updateUser(cleanSender, user);
       return sock.sendMessage(from, { text: `🎁 *BANTUAN HARIAN:* +RM ${bonusAmt.toLocaleString()} tunai dikreditkan!` });
     }
@@ -1392,7 +1432,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `🔧 *${part.name}* dipasang pada *${vehicle.name}*!` });
     }
 
-    // 🏁 DRAG RACE (COOLDOWN: 90 SAAT)
+    // 🏁 DRAG RACE (DYNAMIC AI RACE NARRATIVE)
     if (cmd === "lumba" || cmd === "race") {
       const vId = args[0]?.toLowerCase();
       if (!vId || !user.vehicles.includes(vId)) return sock.sendMessage(from, { text: `❌ Masukkan kod jentera! Contoh: *.lumba y15*` });
@@ -1402,7 +1442,7 @@ async function startBotEngine() {
       }
 
       const vehicle = VEHICLES.find(v => v.id === vId);
-      user.cooldowns.race = now + (90 * 1000); // 90 Saat Cooldown
+      user.cooldowns.race = now + (90 * 1000);
 
       let speedBonus = 0;
       (user.vehicleMods?.[vId] || []).forEach(mName => {
@@ -1414,18 +1454,22 @@ async function startBotEngine() {
       let winChance = totalSpeed / 240;
       if (activePhoneObj?.perk === "race" || activePhoneObj?.perk === "god") winChance += activePhoneObj.val;
 
-      if (Math.random() < winChance || isOwner) {
+      const isWon = Math.random() < winChance || isOwner;
+
+      if (isWon) {
         let reward = Math.floor((vehicle.price * 0.12) + 1000);
         if (currentSeasonEvent?.raceMult) reward = Math.floor(reward * currentSeasonEvent.raceMult);
         user.cash += reward;
         user.stats.racesWon = (user.stats.racesWon || 0) + 1;
         updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🏁 *JUARA DRAG RACE!* *${vehicle.name}* (${totalSpeed} km/h) menang *+RM ${reward.toLocaleString()}*!` });
+        const aiRaceWin = await generateNarrative("RACE_WIN", { user: user.name, vehicle: vehicle.name, speed: totalSpeed }, `Memecut laju memintas lawan di garisan penamat.`);
+        return sock.sendMessage(from, { text: `🏁 *JUARA DRAG RACE!* 🏁\n\n${aiRaceWin}\n\n🏎️ Jentera: *${vehicle.name}* (${totalSpeed} km/h)\n💰 Hadiah: *+RM ${reward.toLocaleString()}*` });
       } else {
         const repairCost = Math.floor(vehicle.price * 0.02);
         user.cash = Math.max(0, user.cash - repairCost);
         updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `💥 *TERBABAS!* Jentera remuk, kos baiki *-RM ${repairCost.toLocaleString()}*.` });
+        const aiRaceCrash = await generateNarrative("RACE_CRASH", { user: user.name, vehicle: vehicle.name }, `Terbabas di selekoh tajam litar.`);
+        return sock.sendMessage(from, { text: `💥 *TERBABAS DI LITAR!* 💥\n\n${aiRaceCrash}\n\n💸 Kos Baiki: *-RM ${repairCost.toLocaleString()}*` });
       }
     }
 
@@ -1465,7 +1509,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: ui });
     }
 
-    // 💀 MISI JENAYAH (COOLDOWN: 120 SAAT / 2 MINIT)
+    // 💀 MISI JENAYAH (DYNAMIC AI HEIST NARRATIVE)
     if (cmd === "buat_jenayah") {
       const c = CRIMES.find(x => x.id === parseInt(args[0]));
       if (!c) return sock.sendMessage(from, { text: `❌ ID jenayah tidak sah!` });
@@ -1479,18 +1523,21 @@ async function startBotEngine() {
         return sock.sendMessage(from, { text: `⏳ Polis sedang meronda kawasan! Tunggu *${rem} saat* lagi.` });
       }
 
-      user.cooldowns.crime = now + (120 * 1000); // 120 Saat Cooldown
+      user.cooldowns.crime = now + (120 * 1000);
       let crimeRate = 0.55;
       if (activePhoneObj?.perk === "crime" || activePhoneObj?.perk === "god") crimeRate += activePhoneObj.val;
 
-      if (Math.random() < crimeRate || isOwner) {
+      const isSuccess = Math.random() < crimeRate || isOwner;
+
+      if (isSuccess) {
         let reward = Math.floor(Math.random() * (c.rewardMax - c.rewardMin + 1)) + c.rewardMin;
         if (currentSeasonEvent?.rewardMult) reward = Math.floor(reward * currentSeasonEvent.rewardMult);
         user.cash += reward;
         user.stats.crimes += 1;
         user.stars = Math.min(5, user.stars + c.stars);
         updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🦹 *OPERASI SELESAI:* ${c.name}\n💵 Loot: *+RM ${reward.toLocaleString()}*\n⭐ Wanted: ${"⭐".repeat(user.stars)}` });
+        const aiCrimeSuccess = await generateNarrative("CRIME_SUCCESS", { user: user.name, crime: c.name, reward }, `Berjaya melarikan diri bersama hasil rompakan.`);
+        return sock.sendMessage(from, { text: `🦹 *MISI BERJAYA:* ${c.name}\n\n${aiCrimeSuccess}\n\n💵 Hasil: *+RM ${reward.toLocaleString()}*\n⭐ Wanted: ${"⭐".repeat(user.stars)}` });
       } else {
         user.stars = Math.min(5, user.stars + 1);
         let jailTimeSec = Math.max(30, user.stars * 30);
@@ -1498,7 +1545,8 @@ async function startBotEngine() {
         user.cash = Math.max(0, user.cash - fine);
         user.cooldowns.jailUntil = now + (jailTimeSec * 1000);
         updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🚨 *KANTOI POLIS!* Denda *-RM ${fine.toLocaleString()}* & lokap ${jailTimeSec}s! Taip *.upah_lawyer*` });
+        const aiCrimeFail = await generateNarrative("CRIME_BUSTED", { user: user.name, crime: c.name }, `Terkepung dan digari oleh pihak berkuasa.`);
+        return sock.sendMessage(from, { text: `🚨 *KANTOI POLIS!* 🚨\n\n${aiCrimeFail}\n\n💸 Denda: *-RM ${fine.toLocaleString()}* & lokap ${jailTimeSec}s! Taip *.upah_lawyer*` });
       }
     }
 
@@ -1523,7 +1571,13 @@ async function startBotEngine() {
       saveDB(db);
 
       return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗\n   ⚡ CYBER NEURAL HANDSHAKE ⚡\n╚═══════════════════════════╝\n🎯 Sasaran: *${targetUser.name}*\n🔑 *KOD EMOJI PIN DIPERLUKAN:* ${selectedPin.split("").join("  ")}\n⏳ Tempoh: 30 Saat!\n👉 Taip: *.bypass ${selectedPin}*` 
+        text: `╔═══════════════════════════╗
+   ⚡ CYBER NEURAL HANDSHAKE ⚡
+╚═══════════════════════════╝
+🎯 Sasaran: *${targetUser.name}*
+🔑 *KOD EMOJI PIN DIPERLUKAN:* ${selectedPin.split("").join("  ")}
+⏳ Tempoh: 30 Saat!
+👉 Taip: *.bypass ${selectedPin}*` 
       });
     }
 
@@ -1545,7 +1599,8 @@ async function startBotEngine() {
         saveDB(db);
         updateUser(cleanSender, user);
         updateUser(activeHack.target, targetUser);
-        return sock.sendMessage(from, { text: `🔓 *GODAM BERJAYA:* +RM ${stolen.toLocaleString()} disedut dari akaun bank mangsa!`, mentions: [activeHack.target] });
+        const aiHackWin = await generateNarrative("BANK_HACK_SUCCESS", { user: user.name, victim: targetUser.name, stolen }, `Berjaya memintas firewall bank dan menyedut dana.`);
+        return sock.sendMessage(from, { text: `🔓 *GODAM BERJAYA:* +RM ${stolen.toLocaleString()} disedut dari akaun bank mangsa!\n\n${aiHackWin}`, mentions: [activeHack.target] });
       } else {
         delete db.activeHacks[cleanSender];
         user.cash = Math.max(0, user.cash - 1500);
@@ -1586,7 +1641,7 @@ async function startBotEngine() {
         if (pr) totalRent += pr.rent;
       });
       user.cash += totalRent;
-      user.cooldowns.rent = now + (24 * 3600 * 1000); // 24 Jam
+      user.cooldowns.rent = now + (24 * 3600 * 1000);
       updateUser(cleanSender, user);
       return sock.sendMessage(from, { text: `💵 *DIVIDEN SEWA:* +RM ${totalRent.toLocaleString()} dikreditkan!` });
     }
@@ -1596,7 +1651,8 @@ async function startBotEngine() {
       const bet = parseInt(args[1]);
       if (!["kepala", "bunga"].includes(choice) || isNaN(bet) || bet <= 0 || user.cash < bet) return sock.sendMessage(from, { text: `Format: *.coinflip [kepala/bunga] [taruhan]*` });
       user.cash -= bet;
-      if (Math.random() < 0.49 || isOwner) {
+      const isWin = Math.random() < 0.49 || isOwner;
+      if (isWin) {
         const win = bet * 2;
         user.cash += win;
         updateUser(cleanSender, user);
@@ -1679,7 +1735,7 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `💸 *TRANSFER:* RM ${amt.toLocaleString()} dihantar ke *${targetUser.name}*!` });
     }
 
-    // 🥷 ROMPAK PEMAIN (COOLDOWN: 180 SAAT / 3 MINIT)
+    // 🥷 ROMPAK PEMAIN (DYNAMIC AI ROAST & NARRATIVE)
     if (cmd === "rompak") {
       const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
       if (!targetTag) return sock.sendMessage(from, { text: `❌ Tag mangsa: *.rompak @user*` });
@@ -1696,11 +1752,12 @@ async function startBotEngine() {
         if (Math.random() < targetUser.pet.val) {
           user.cash = Math.max(0, user.cash - 1000);
           updateUser(cleanSender, user);
-          return sock.sendMessage(from, { text: `🛡️ *DISERANG PENGAWAL:* *${targetUser.pet.name}* melindungi mangsa! Rompakan gagal & rugi RM 1,000!` });
+          const aiPetDefend = await generateNarrative("PET_DEFEND", { robber: user.name, victim: targetUser.name, pet: targetUser.pet.name }, `Pengawal haiwan menyerang perompak hingga lari lintang-pukang.`);
+          return sock.sendMessage(from, { text: `🛡️ *DISERANG PENGAWAL!*\n\n${aiPetDefend}\n\n💸 Ganti Rugi: *-RM 1,000*` });
         }
       }
 
-      user.cooldowns.crime = now + (180 * 1000); // 180 Saat Cooldown
+      user.cooldowns.crime = now + (180 * 1000);
       if (Math.random() < 0.50 || isOwner) {
         const stolen = Math.floor(targetUser.cash * 0.25);
         targetUser.cash -= stolen;
@@ -1713,17 +1770,19 @@ async function startBotEngine() {
           user.cash += claimed;
           delete db.bounties[cleanTarget];
           saveDB(db);
-          bountyNotice = `\n🎯 *BOUNTY CLAIMED:* Anda menyapu wang tebusan kepala mangsa +RM ${claimed.toLocaleString()}!`;
+          bountyNotice = `\n🎯 *BOUNTY CLAIMED:* Wang tebusan kepala +RM ${claimed.toLocaleString()}!`;
         }
 
         updateUser(cleanSender, user);
         updateUser(cleanTarget, targetUser);
-        return sock.sendMessage(from, { text: `🥷 *ROMPAKAN BERJAYA:* Merembat RM ${stolen.toLocaleString()} dari *${targetUser.name}*!${bountyNotice}` });
+        const aiRobSuccess = await generateNarrative("ROB_SUCCESS", { robber: user.name, victim: targetUser.name, amount: stolen }, `Berjaya merembat wang tunai dari poket mangsa.`);
+        return sock.sendMessage(from, { text: `🥷 *ROMPAKAN BERJAYA!*\n\n${aiRobSuccess}\n\n💵 Hasil: *+RM ${stolen.toLocaleString()}* dari *${targetUser.name}*!${bountyNotice}`, mentions: [cleanTarget] });
       } else {
         user.cash = Math.max(0, user.cash - 500);
         user.cooldowns.jailUntil = now + (60 * 1000);
         updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🚨 *KANTOI SAMUN:* Denda RM 500 & masuk lokap 60 saat!` });
+        const aiRobFail = await generateNarrative("ROB_FAIL_ROAST", { robber: user.name, victim: targetUser.name }, `Gagal merompak dan ditangkap polis.`);
+        return sock.sendMessage(from, { text: `🚨 *KANTOI SAMUN SIBER!* 🚨\n\n${aiRobFail}\n\n💸 Denda: *-RM 500* & Lokap 60 saat!`, mentions: [cleanTarget] });
       }
     }
 
