@@ -890,6 +890,12 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `👑 *VETO CEO:* Musim siber kini diset ke *Musim Ke-${sNum}*!` });
     }
 
+    if (cmd === "list_event" && isOwner) {
+      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   📜 KOD EVENT MUSIM (40)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
+      for (let key in SEASON_EVENTS) { ui += `• *${key}*\n  _${SEASON_EVENTS[key].name}_\n\n`; }
+      return sock.sendMessage(from, { text: ui });
+    }
+
     if (cmd === "start_event" && isOwner) {
       const evType = args[0]?.toUpperCase(); 
       const days = parseInt(args[1]) || 3;
