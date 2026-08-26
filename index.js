@@ -1,8 +1,13 @@
 // =========================================================================
-// 🛡️ SHADOW LEGACY ENGINE V4.0 (FULL DATABASE - 100% NO CUTS)
+// 🛡️ SHADOW LEGACY ENGINE V4.0 (FULL UNMINIFIED EDITION)
 // =========================================================================
-process.on("uncaughtException", (err) => { console.error("⚠️ [Anti-Crash] Uncaught Exception:", err?.message || err); });
-process.on("unhandledRejection", (reason, promise) => { console.error("⚠️ [Anti-Crash] Unhandled Rejection:", reason); });
+process.on("uncaughtException", (err) => { 
+  console.error("⚠️ [Anti-Crash] Uncaught Exception:", err?.message || err); 
+});
+
+process.on("unhandledRejection", (reason, promise) => { 
+  console.error("⚠️ [Anti-Crash] Unhandled Rejection:", reason); 
+});
 
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from "@whiskeysockets/baileys";
 import pino from "pino";
@@ -12,14 +17,23 @@ import QRCode from "qrcode";
 import Groq from "groq-sdk";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 // =========================================================================
 // 👑 0. KUNCI KESELAMATAN FOUNDER MUTLAK 
 // =========================================================================
-const OWNER_NUMBERS = ["1166533534", "601166533534", "38956007690292"];
-let currentQR = ""; let isConnected = false; let globalChatActivity = 0;
+const OWNER_NUMBERS = [
+  "1166533534", 
+  "601166533534", 
+  "38956007690292"
+];
 
+let currentQR = ""; 
+let isConnected = false; 
+let globalChatActivity = 0;
+
+// API GROQ
 const GROQ_API_KEY = "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";
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
@@ -27,10 +41,17 @@ async function askAiriAI(promptText, userName = "Warga Cyber") {
   try {
     const currentTimeMY = new Date().toLocaleString("ms-MY", { timeZone: "Asia/Kuala_Lumpur" });
     const sysPrompt = `Nama kau Airi, maskot AI Airi's Corner. Bos mutlak kau Amar. Waktu semasa: ${currentTimeMY}. Personaliti: Ceria, comel, santai Melayu. Jawab ringkas. Pengguna: ${userName}.`;
+    
     const chat = await groq.chat.completions.create({
-      messages: [{ role: "system", content: sysPrompt }, { role: "user", content: promptText }],
-      model: "llama3-8b-8192", temperature: 0.8, max_tokens: 400,
+      messages: [
+        { role: "system", content: sysPrompt }, 
+        { role: "user", content: promptText }
+      ],
+      model: "llama3-8b-8192", 
+      temperature: 0.8, 
+      max_tokens: 400,
     });
+    
     return chat.choices[0]?.message?.content || "Airi tak pasti nak jawab macam mana hehe~ 💙";
   } catch (err) {
     console.error("🔴 RALAT GROQ API:", err);
@@ -44,70 +65,153 @@ async function askAiriAI(promptText, userName = "Warga Cyber") {
 const PORT = process.env.PORT || 3000;
 const server = http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/html" });
-  if (isConnected) res.end(`<div style="text-align:center;margin-top:60px;font-family:sans-serif;background:#0f172a;color:#f8fafc;padding:30px;"><h2>⚡ SHADOW LEGACY OS V4.0 ONLINE! ⚡</h2></div>`);
-  else if (currentQR) QRCode.toDataURL(currentQR).then(img => res.end(`<div style="text-align:center;margin-top:40px;font-family:sans-serif;background:#0a0f1d;color:#fff;padding:25px;"><h2>⚡ IMBAS KOD QR ⚡</h2><img src="${img}" style="width:280px;height:280px;border-radius:16px;"/></div>`)).catch(() => res.end("Ralat QR"));
-  else res.end(`<div style="text-align:center;margin-top:80px;color:#fff;font-family:sans-serif;"><h2>⏳ Menjana Kod QR...</h2></div>`);
+  if (isConnected) {
+    res.end(`<div style="text-align:center;margin-top:60px;font-family:sans-serif;background:#0f172a;color:#f8fafc;padding:30px;"><h2>⚡ SHADOW LEGACY OS V4.0 ONLINE! ⚡</h2></div>`);
+  } else if (currentQR) {
+    QRCode.toDataURL(currentQR)
+      .then(img => res.end(`<div style="text-align:center;margin-top:40px;font-family:sans-serif;background:#0a0f1d;color:#fff;padding:25px;"><h2>⚡ IMBAS KOD QR ⚡</h2><img src="${img}" style="width:280px;height:280px;border-radius:16px;"/></div>`))
+      .catch(() => res.end("Ralat QR"));
+  } else {
+    res.end(`<div style="text-align:center;margin-top:80px;color:#fff;font-family:sans-serif;"><h2>⏳ Menjana Kod QR...</h2></div>`);
+  }
 });
-server.listen(PORT, "0.0.0.0", () => { console.log(`🌐 Server aktif port ${PORT}`); });
+server.listen(PORT, "0.0.0.0", () => { 
+  console.log(`🌐 Server aktif port ${PORT}`); 
+});
 
 // =========================================================================
-// 💾 2. DATABASE & MIGRATION SCRIPT
+// 💾 2. DATABASE & MIGRATION SCRIPT (AUTO-HEAL)
 // =========================================================================
-let localDB = { users: {}, groups: [], market: { gold: 350, btc: 280000, scrap: 5, lastUpdate: Date.now() }, season: 1, auction: null, hallOfFame: [], p2pMarket: [] };
+let localDB = { 
+  users: {}, 
+  groups: [], 
+  market: { gold: 350, btc: 280000, scrap: 5, lastUpdate: Date.now() }, 
+  season: 1, 
+  auction: null, 
+  hallOfFame: [], 
+  p2pMarket: [] 
+};
+
 const MONGO_URI = process.env.MONGO_URI || "";
 let mongoCollection = null;
 
 async function initDB() {
   try {
     if (!MONGO_URI) throw new Error("Tiada MONGO_URI");
-    const client = new MongoClient(MONGO_URI); await client.connect();
+    const client = new MongoClient(MONGO_URI); 
+    await client.connect();
     mongoCollection = client.db("AiriCorner").collection("GameData");
     const cloudData = await mongoCollection.findOne({ _id: "MAIN_DATA" });
-    if (cloudData) { localDB = cloudData.data; console.log("✅ DB Cloud Dimuat Turun!"); } 
-    else { await mongoCollection.insertOne({ _id: "MAIN_DATA", data: localDB }); }
+    
+    if (cloudData) { 
+      localDB = cloudData.data; 
+      console.log("✅ DB Cloud Dimuat Turun!"); 
+    } else { 
+      await mongoCollection.insertOne({ _id: "MAIN_DATA", data: localDB }); 
+    }
   } catch (err) {
-    if (fs.existsSync("./database.json")) localDB = JSON.parse(fs.readFileSync("./database.json", "utf-8"));
-    else fs.writeFileSync("./database.json", JSON.stringify(localDB));
+    if (fs.existsSync("./database.json")) {
+      localDB = JSON.parse(fs.readFileSync("./database.json", "utf-8"));
+    } else {
+      fs.writeFileSync("./database.json", JSON.stringify(localDB));
+    }
   }
 }
 
-function loadDB() { return localDB; }
+function loadDB() { 
+  return localDB; 
+}
+
 function saveDB(data) {
   localDB = data;
-  if (mongoCollection) mongoCollection.updateOne({ _id: "MAIN_DATA" }, { $set: { data: localDB } }, { upsert: true }).catch(()=>{});
-  else fs.writeFileSync("./database.json", JSON.stringify(data, null, 2));
+  if (mongoCollection) {
+    mongoCollection.updateOne({ _id: "MAIN_DATA" }, { $set: { data: localDB } }, { upsert: true }).catch(()=>{});
+  } else {
+    fs.writeFileSync("./database.json", JSON.stringify(data, null, 2));
+  }
 }
 
 function getUser(userId, pushName = "") {
   const db = loadDB();
   if (!db.users[userId]) {
     db.users[userId] = {
-      name: pushName || "Warga Cyber", bio: "", cash: 500, bank: 0, debt: 0, goldGrams: 0, btcUnits: 0, phoneDevice: null, phoneName: "Public Phone 📟", 
-      fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" }, magnetGear: { magnet: null }, scrapMetalKg: 0, misteryBoxes: 0,
-      inventory: [], vehicles: [], vehicleMods: {}, food: [], properties: [], pet: null, aquarium: [], stars: 0, badges: ["🌱 [COMMON] Warga Baru"],
-      stats: { works: 0, crimes: 0, racesWon: 0, fishes: 0, bankHacks: 0 }, cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, magnet: 0, rent: 0, bankHack: 0, aiAsk: 0, hospitalUntil: 0 }
-    }; saveDB(db);
+      name: pushName || "Warga Cyber", 
+      bio: "", 
+      cash: 500, 
+      bank: 0, 
+      debt: 0, 
+      goldGrams: 0, 
+      btcUnits: 0, 
+      phoneDevice: null, 
+      phoneName: "Public Phone 📟", 
+      fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" }, 
+      magnetGear: { magnet: null }, 
+      scrapMetalKg: 0, 
+      misteryBoxes: 0,
+      inventory: [], 
+      vehicles: [], 
+      vehicleMods: {}, 
+      food: [], 
+      properties: [], 
+      pet: null, 
+      aquarium: [], 
+      stars: 0, 
+      badges: ["🌱 [COMMON] Warga Baru"],
+      stats: { works: 0, crimes: 0, racesWon: 0, fishes: 0, bankHacks: 0 }, 
+      cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, magnet: 0, rent: 0, bankHack: 0, aiAsk: 0, hospitalUntil: 0 }
+    }; 
+    saveDB(db);
   }
-  const u = db.users[userId];
-  if (pushName && pushName !== "Warga Cyber" && u.name !== pushName) { u.name = pushName; saveDB(db); }
   
-  // 💉 AUTO-FIX LEGACY ACCOUNTS MIGRATION (Ubat Akaun Lama)
-  if (!u.stars) u.stars = 0;
-  if (!u.stats) u.stats = { works: 0, crimes: 0, racesWon: 0, fishes: 0, bankHacks: 0 };
-  if (!u.cooldowns) u.cooldowns = { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, magnet: 0, rent: 0, bankHack: 0, aiAsk: 0, hospitalUntil: 0 };
+  const u = db.users[userId];
+  if (pushName && pushName !== "Warga Cyber" && u.name !== pushName) { 
+    u.name = pushName; 
+    saveDB(db); 
+  }
+  
+  // 🛡️ AUTO-HEAL: PENYELAMAT AKAUN LAMA DARI SILENT CRASH
+  if (!u.inventory) u.inventory = [];
+  if (!u.vehicles) u.vehicles = [];
+  if (!u.properties) u.properties = [];
+  if (!u.aquarium) u.aquarium = [];
+  if (!u.food) u.food = [];
+  if (!u.vehicleMods) u.vehicleMods = {};
+  if (!u.magnetGear) u.magnetGear = { magnet: null };
+  if (!u.scrapMetalKg) u.scrapMetalKg = 0;
+  if (!u.misteryBoxes) u.misteryBoxes = 0;
+  if (!u.badges) u.badges = ["🌱 [COMMON] Warga Baru"];
+  
+  if (!u.stats) u.stats = {};
+  if (u.stats.crimes === undefined) u.stats.crimes = 0;
+  if (u.stats.works === undefined) u.stats.works = 0;
+  if (u.stats.racesWon === undefined) u.stats.racesWon = 0;
+  if (u.stats.fishes === undefined) u.stats.fishes = 0;
+  if (u.stats.bankHacks === undefined) u.stats.bankHacks = 0;
+  
+  if (!u.cooldowns) u.cooldowns = {};
   if (!u.cooldowns.crime) u.cooldowns.crime = 0;
   if (!u.cooldowns.bankHack) u.cooldowns.bankHack = 0;
   if (!u.cooldowns.race) u.cooldowns.race = 0;
-  if (!u.aquarium) u.aquarium = []; 
-  if (!u.magnetGear) u.magnetGear = { magnet: null }; 
-  if (!u.scrapMetalKg) u.scrapMetalKg = 0; 
-  if (!u.misteryBoxes) u.misteryBoxes = 0; 
+  if (!u.cooldowns.work) u.cooldowns.work = 0;
+  if (!u.cooldowns.jailUntil) u.cooldowns.jailUntil = 0;
   if (!u.cooldowns.hospitalUntil) u.cooldowns.hospitalUntil = 0;
-  
+  if (!u.cooldowns.daily) u.cooldowns.daily = 0;
+  if (!u.cooldowns.fish) u.cooldowns.fish = 0;
+  if (!u.cooldowns.magnet) u.cooldowns.magnet = 0;
+  if (!u.cooldowns.rent) u.cooldowns.rent = 0;
+
+  if (u.stars === undefined) u.stars = 0;
+  if (isNaN(u.cash)) u.cash = 500;
+  if (isNaN(u.bank)) u.bank = 0;
+
   return u;
 }
 
-function updateUser(userId, userData) { const db = loadDB(); db.users[userId] = userData; saveDB(db); }
+function updateUser(userId, userData) { 
+  const db = loadDB(); 
+  db.users[userId] = userData; 
+  saveDB(db); 
+}
 
 function getTitle(user) {
   const total = user.cash + user.bank;
@@ -120,8 +224,55 @@ function getTitle(user) {
   return "🌱 [COMMON] Warga Cyber";
 }
 
+const NARRATIVE_BANKS = {
+  RACE_WIN: [
+    "Asap ekzos tinggal kat belakang, jentera meluncur laju macam peluru pandu!", 
+    "Pecutan sempurna di garisan penamat, pihak lawan makan habuk!"
+  ],
+  RACE_CRASH: [
+    "Adoi oversteer teruk dekat selekoh, jentera cium divider!", 
+    "Tergolek tepi longkang litar akibat hilang kawalan!"
+  ],
+  CRIME_SUCCESS: [
+    "Langkah licik macam bayang-bayang, hasil rompakan disorok kemas!", 
+    "Misi jenayah siber berjalan lancar tanpa cap jari digital!"
+  ],
+  CRIME_BUSTED: [
+    "Kantoi basah di tempat kejadian! Tangan dah kena gari.", 
+    "Siren polis memekak satu blok, tak sempat nak lari!"
+  ],
+  BANK_HACK_SUCCESS: [
+    "Firewall bank runtuh sekelip mata, duit mangsa disedut bersih!"
+  ],
+  ROB_SUCCESS: [
+    "Acukan tepat sasaran, mangsa gigil serah duit!", 
+    "Rembatan pantas di lorong gelap! Dompet mangsa licin."
+  ],
+  ROB_FAIL_ROAST: [
+    "Niat merompak tapi tangan gigil dompet sendiri tercicir!", 
+    "Terpijak kulit pisang masa nak samun, terlentang adeh!"
+  ],
+  PET_DEFEND: [
+    "Pengawal haiwan melompat terkam perompak sampai koyak seluar!"
+  ],
+  SANTAU_SUCCESS: [
+    "Jampi mantera siber berjaya meresap! Mangsa muntah paku digital.", 
+    "Santau Maya masuk tepat ke dalam sistem kewangan mangsa!"
+  ],
+  SANTAU_FAIL: [
+    "Mantera melantun balik! Firewall mangsa kebal berselawat.", 
+    "Dukun siber scam, santau langsung tak jalan!"
+  ]
+};
+
+function getRandomNarrative(bankKey, fallback = "Aksi selesai.") {
+  const bank = NARRATIVE_BANKS[bankKey];
+  if (!bank || bank.length === 0) return fallback;
+  return bank[Math.floor(Math.random() * bank.length)];
+}
+
 // =========================================================================
-// 🌟 3. PANGKALAN DATA PENUH (100% NO CUTS)
+// 🌟 3. PANGKALAN DATA (TERSUSUN & TIDAK DIMAMPATKAN)
 // =========================================================================
 const SEASON_EVENTS = {
   "CRIME_BOOM": { name: "🔥 Musim Jenayah Gila", desc: "Loot jenayah naik 2x ganda!", rewardMult: 2.0, jailMult: 2.0, fineMult: 1.2, jobMult: 1.0, fishMult: 1.0, rentMult: 1.0, raceMult: 1.0 },
@@ -294,12 +445,32 @@ const FISH_DATABASE = [
 ];
 
 function generateFishInstance(rod) {
-  let pool = FISH_DATABASE.map(f => ({ ...f, weight: f.isJunk && rod.luckBonus>1.5 ? 0 : f.dropRate * (f.isJunk?1:rod.luckBonus) }));
-  let tot = pool.reduce((s, i) => s + i.weight, 0), r = Math.random() * tot, sel = pool[0];
-  for (const f of pool) { if (r < f.weight) { sel = f; break; } r -= f.weight; }
-  const sm = [{n:"Kecil 🐟", m:0.75}, {n:"Sederhana 🐠", m:1.0}, {n:"Besar 🐡", m:1.45}, {n:"Gergasi 🦈", m:2.2}]; 
-  const c = sm[Math.floor(Math.random()*sm.length)];
-  return { id: sel.id, name: `${sel.name} (${c.n})`, price: sel.isJunk?0:Math.floor(sel.basePrice*c.m), weightKg: Number((sel.weightKg*c.m).toFixed(1)), tier: sel.tier, isDangerous: sel.isDangerous, buff: sel.baseBuff };
+  let pool = FISH_DATABASE.map(f => ({ ...f, weight: f.isJunk && rod.luckBonus > 1.5 ? 0 : f.dropRate * (f.isJunk ? 1 : rod.luckBonus) }));
+  let tot = pool.reduce((s, i) => s + i.weight, 0);
+  let r = Math.random() * tot;
+  let sel = pool[0];
+  for (const f of pool) { 
+    if (r < f.weight) { 
+      sel = f; break; 
+    } 
+    r -= f.weight; 
+  }
+  const sm = [
+    { n: "Kecil 🐟", m: 0.75 }, 
+    { n: "Sederhana 🐠", m: 1.0 }, 
+    { n: "Besar 🐡", m: 1.45 }, 
+    { n: "Gergasi 🦈", m: 2.2 }
+  ]; 
+  const c = sm[Math.floor(Math.random() * sm.length)];
+  return { 
+    id: sel.id, 
+    name: `${sel.name} (${c.n})`, 
+    price: sel.isJunk ? 0 : Math.floor(sel.basePrice * c.m), 
+    weightKg: Number((sel.weightKg * c.m).toFixed(1)), 
+    tier: sel.tier, 
+    isDangerous: sel.isDangerous, 
+    buff: sel.baseBuff 
+  };
 }
 
 const PHONE_DEVICES = [
@@ -312,7 +483,7 @@ const PHONE_DEVICES = [
   { id: "ip15pro", name: "iPhone 15 Pro Titanium 🍏", price: 5400, bonus: "Gaji kerja +20%", perk: "work", val: 0.20 },
   { id: "s24ultra", name: "Samsung Galaxy S24 Ultra AI 🤖", price: 6200, bonus: "Hack bank +15%", perk: "crime", val: 0.15 },
   { id: "magicv2", name: "HONOR Magic V2 Lipat 📂", price: 6900, bonus: "Faedah dividen bank +10%", perk: "bank", val: 0.10 },
-  { id: "shadow_phone", name: "Shadow Legion X CyberDeck 🐺", price: 15000, bonus: "Gajet Ultimate Founder! +20% Lumba & Kerja, 50% Kebal Denda", perk: "god", val: 0.20 },
+  { id: "shadow_phone", name: "Shadow Legion X CyberDeck 🐺", price: 15000, bonus: "Gajet Ultimate Founder! +20% Lumba & Kerja", perk: "god", val: 0.20 },
   { id: "vertu_sig", name: "Vertu Signature Cobra Sapphire 🐍", price: 50000, bonus: "Pendapatan sewa hartanah +25%", perk: "rent", val: 0.25 },
   { id: "solana_saga", name: "Solana Saga Genesis Crypto 🪙", price: 85000, bonus: "Keuntungan Kripto & Emas +15%", perk: "trade", val: 0.15 },
   { id: "caviar_gold", name: "Caviar Gold iPhone 24K Emas 👑", price: 140000, bonus: "Gaji kerja +35% & Kebal Rompak +10%", perk: "work", val: 0.35 },
@@ -322,35 +493,60 @@ const PHONE_DEVICES = [
   { id: "falcon_super", name: "Falcon SuperNova Pink Diamond 💎", price: 3500000, bonus: "Diskaun denda lokap 40%", perk: "def", val: 0.40 },
   { id: "neural_optic", name: "Neuralink Cyber-Cranial Device 🧠", price: 8000000, bonus: "Potong 25s semua cooldown RPG", perk: "cd", val: 25000 },
   { id: "quantum_prime", name: "Quantum Matrix Core OS 🌌", price: 20000000, bonus: "Menang Coinflip/Slot +15%", perk: "gamble", val: 0.15 },
-  { id: "airi_chrono", name: "Airi Chrono Infinity Handheld 🔮", price: 50000000, bonus: "Gajet Dewa! +40% Semua Payout & Kebal 60% Denda", perk: "god", val: 0.40 }
+  { id: "airi_chrono", name: "Airi Chrono Infinity Handheld 🔮", price: 50000000, bonus: "Gajet Dewa! +40% Semua Payout & Kebal Denda", perk: "god", val: 0.40 }
 ];
 
 const JOBS = [
-  { id: 1, name: "Pekerja Am Majlis", minPay: 100, maxPay: 180 }, { id: 2, name: "Pencuci Pinggan Kedai Tomyam", minPay: 105, maxPay: 185 },
-  { id: 3, name: "Rider GrabFood Berhujan", minPay: 110, maxPay: 195 }, { id: 4, name: "Runner Foodpanda Pink", minPay: 110, maxPay: 195 },
-  { id: 5, name: "Pemandu Van Jenazah/Kargo", minPay: 120, maxPay: 205 }, { id: 6, name: "Kerani Kaunter Pejabat", minPay: 125, maxPay: 215 },
-  { id: 7, name: "Juruteknik Aircond & Wiring", minPay: 130, maxPay: 220 }, { id: 8, name: "Operator Kilang Shift Malam", minPay: 135, maxPay: 225 },
-  { id: 9, name: "Penebar Burger Ramly Special", minPay: 140, maxPay: 230 }, { id: 10, name: "Barista Kopi Hipster", minPay: 140, maxPay: 230 },
-  { id: 11, name: "Jurujual Coway / Cuckoo", minPay: 145, maxPay: 235 }, { id: 12, name: "Tukang Masak Katering Kenduri", minPay: 150, maxPay: 240 },
-  { id: 13, name: "Graphic Designer Canva Pro", minPay: 155, maxPay: 245 }, { id: 14, name: "Video Editor TikTok Viral", minPay: 160, maxPay: 250 },
-  { id: 15, name: "Social Media Admin Group", minPay: 160, maxPay: 250 }, { id: 16, name: "Ejen Hartanah Rumah Lelong", minPay: 165, maxPay: 255 },
-  { id: 17, name: "Tukang Paip Rumah Bocor", minPay: 165, maxPay: 255 }, { id: 18, name: "Juruelektrik Tiga Fasa", minPay: 170, maxPay: 260 },
-  { id: 19, name: "Mekanik Motor Modenas/Yamaha", minPay: 175, maxPay: 265 }, { id: 20, name: "Foreman Bengkel Kereta", minPay: 180, maxPay: 270 },
-  { id: 21, name: "Cikgu Tuisyen SPM Matematik", minPay: 185, maxPay: 275 }, { id: 22, name: "Jurutera Tapak Bina JKR", minPay: 190, maxPay: 285 },
-  { id: 23, name: "Akauntan Audit LHDN", minPay: 195, maxPay: 290 }, { id: 24, name: "Pengurus Projek MRT3", minPay: 200, maxPay: 295 },
-  { id: 25, name: "Peguam Mahkamah Majistret", minPay: 210, maxPay: 300 }, { id: 26, name: "Doktor Pakar Klinik Kesihatan", minPay: 220, maxPay: 310 },
-  { id: 27, name: "Software Engineer Fullstack", minPay: 230, maxPay: 320 }, { id: 28, name: "Data Scientist Machine Learning", minPay: 240, maxPay: 330 },
-  { id: 29, name: "Pilot AirAsia / MAS", minPay: 250, maxPay: 340 }, { id: 30, name: "Kapten Kapal Dagang Antarabangsa", minPay: 250, maxPay: 340 },
-  { id: 31, name: "Arkitek Bangunan Pencakar Langit", minPay: 245, maxPay: 335 }, { id: 32, name: "Pakar Bedah Jantung", minPay: 260, maxPay: 350 },
-  { id: 33, name: "Trader Forex Pacak Signal", minPay: 200, maxPay: 340 }, { id: 34, name: "Pelombong Bitcoin / Kripto", minPay: 210, maxPay: 350 },
-  { id: 35, name: "Content Creator YouTube", minPay: 220, maxPay: 345 }, { id: 36, name: "Streamer Mobile Legends", minPay: 225, maxPay: 355 },
-  { id: 37, name: "Tukang Jahit Baju Melayu", minPay: 180, maxPay: 260 }, { id: 38, name: "Web Developer Freelance", minPay: 215, maxPay: 325 },
-  { id: 39, name: "Ejen Insurans Takaful", minPay: 190, maxPay: 280 }, { id: 40, name: "Pengurus Cawangan Bank", minPay: 255, maxPay: 345 },
-  { id: 41, name: "Cef Eksekutif Hotel 5 Bintang", minPay: 260, maxPay: 355 }, { id: 42, name: "Jurugambar Acara Perkahwinan", minPay: 205, maxPay: 290 },
-  { id: 43, name: "Juruaudit Forensik SPRM", minPay: 235, maxPay: 325 }, { id: 44, name: "Kontraktor Bina Banglo", minPay: 245, maxPay: 335 },
-  { id: 45, name: "Ahli Farmasi Berdaftar", minPay: 240, maxPay: 330 }, { id: 46, name: "Pakar Psikologi Kaunseling", minPay: 230, maxPay: 320 },
-  { id: 47, name: "Penganalisis Keselamatan Siber", minPay: 255, maxPay: 345 }, { id: 48, name: "Pakar Ekonomi Negara", minPay: 270, maxPay: 365 },
-  { id: 49, name: "Pelabur Saham Bursa Malaysia", minPay: 280, maxPay: 380 }, { id: 50, name: "CEO Konglomerat Korporat", minPay: 300, maxPay: 400 },
+  { id: 1, name: "Pekerja Am Majlis", minPay: 100, maxPay: 180 },
+  { id: 2, name: "Pencuci Pinggan Kedai Tomyam", minPay: 105, maxPay: 185 },
+  { id: 3, name: "Rider GrabFood Berhujan", minPay: 110, maxPay: 195 },
+  { id: 4, name: "Runner Foodpanda Pink", minPay: 110, maxPay: 195 },
+  { id: 5, name: "Pemandu Van Jenazah/Kargo", minPay: 120, maxPay: 205 },
+  { id: 6, name: "Kerani Kaunter Pejabat", minPay: 125, maxPay: 215 },
+  { id: 7, name: "Juruteknik Aircond & Wiring", minPay: 130, maxPay: 220 },
+  { id: 8, name: "Operator Kilang Shift Malam", minPay: 135, maxPay: 225 },
+  { id: 9, name: "Penebar Burger Ramly Special", minPay: 140, maxPay: 230 },
+  { id: 10, name: "Barista Kopi Hipster", minPay: 140, maxPay: 230 },
+  { id: 11, name: "Jurujual Coway / Cuckoo", minPay: 145, maxPay: 235 },
+  { id: 12, name: "Tukang Masak Katering Kenduri", minPay: 150, maxPay: 240 },
+  { id: 13, name: "Graphic Designer Canva Pro", minPay: 155, maxPay: 245 },
+  { id: 14, name: "Video Editor TikTok Viral", minPay: 160, maxPay: 250 },
+  { id: 15, name: "Social Media Admin Group", minPay: 160, maxPay: 250 },
+  { id: 16, name: "Ejen Hartanah Rumah Lelong", minPay: 165, maxPay: 255 },
+  { id: 17, name: "Tukang Paip Rumah Bocor", minPay: 165, maxPay: 255 },
+  { id: 18, name: "Juruelektrik Tiga Fasa", minPay: 170, maxPay: 260 },
+  { id: 19, name: "Mekanik Motor Modenas/Yamaha", minPay: 175, maxPay: 265 },
+  { id: 20, name: "Foreman Bengkel Kereta", minPay: 180, maxPay: 270 },
+  { id: 21, name: "Cikgu Tuisyen SPM Matematik", minPay: 185, maxPay: 275 },
+  { id: 22, name: "Jurutera Tapak Bina JKR", minPay: 190, maxPay: 285 },
+  { id: 23, name: "Akauntan Audit LHDN", minPay: 195, maxPay: 290 },
+  { id: 24, name: "Pengurus Projek MRT3", minPay: 200, maxPay: 295 },
+  { id: 25, name: "Peguam Mahkamah Majistret", minPay: 210, maxPay: 300 },
+  { id: 26, name: "Doktor Pakar Klinik Kesihatan", minPay: 220, maxPay: 310 },
+  { id: 27, name: "Software Engineer Fullstack", minPay: 230, maxPay: 320 },
+  { id: 28, name: "Data Scientist Machine Learning", minPay: 240, maxPay: 330 },
+  { id: 29, name: "Pilot AirAsia / MAS", minPay: 250, maxPay: 340 },
+  { id: 30, name: "Kapten Kapal Dagang Antarabangsa", minPay: 250, maxPay: 340 },
+  { id: 31, name: "Arkitek Bangunan Pencakar Langit", minPay: 245, maxPay: 335 },
+  { id: 32, name: "Pakar Bedah Jantung", minPay: 260, maxPay: 350 },
+  { id: 33, name: "Trader Forex Pacak Signal", minPay: 200, maxPay: 340 },
+  { id: 34, name: "Pelombong Bitcoin / Kripto", minPay: 210, maxPay: 350 },
+  { id: 35, name: "Content Creator YouTube", minPay: 220, maxPay: 345 },
+  { id: 36, name: "Streamer Mobile Legends", minPay: 225, maxPay: 355 },
+  { id: 37, name: "Tukang Jahit Baju Melayu", minPay: 180, maxPay: 260 },
+  { id: 38, name: "Web Developer Freelance", minPay: 215, maxPay: 325 },
+  { id: 39, name: "Ejen Insurans Takaful", minPay: 190, maxPay: 280 },
+  { id: 40, name: "Pengurus Cawangan Bank", minPay: 255, maxPay: 345 },
+  { id: 41, name: "Cef Eksekutif Hotel 5 Bintang", minPay: 260, maxPay: 355 },
+  { id: 42, name: "Jurugambar Acara Perkahwinan", minPay: 205, maxPay: 290 },
+  { id: 43, name: "Juruaudit Forensik SPRM", minPay: 235, maxPay: 325 },
+  { id: 44, name: "Kontraktor Bina Banglo", minPay: 245, maxPay: 335 },
+  { id: 45, name: "Ahli Farmasi Berdaftar", minPay: 240, maxPay: 330 },
+  { id: 46, name: "Pakar Psikologi Kaunseling", minPay: 230, maxPay: 320 },
+  { id: 47, name: "Penganalisis Keselamatan Siber", minPay: 255, maxPay: 345 },
+  { id: 48, name: "Pakar Ekonomi Negara", minPay: 270, maxPay: 365 },
+  { id: 49, name: "Pelabur Saham Bursa Malaysia", minPay: 280, maxPay: 380 },
+  { id: 50, name: "CEO Konglomerat Korporat", minPay: 300, maxPay: 400 },
   { id: 101, name: "Pomen Bawah Pokok Ceri 🔧", minPay: 130, maxPay: 240 },
   { id: 102, name: "Founder Skincare Timbang Kilo 🧴", minPay: 200, maxPay: 350 },
   { id: 103, name: "Tauke Bundle Seluar Koyak 👖", minPay: 150, maxPay: 280 },
@@ -522,46 +718,89 @@ const FOOD_ITEMS = [
 ];
 
 // =========================================================================
-// 🚀 6. ENJIN UTAMA (MEGA LOOP & EVENTS)
+// 🚀 6. ENJIN UTAMA & MESSAGE HANDLER (DENGAN RUANG & LOGIK PENUH)
 // =========================================================================
 async function startBotEngine() {
   await initDB();
   const { state, saveCreds } = await useMultiFileAuthState("auth_session");
-  const sock = makeWASocket({ auth: state, logger: pino({ level: "silent" }), browser: Browsers.macOS("Desktop"), printQRInTerminal: false });
+  const sock = makeWASocket({ 
+    auth: state, 
+    logger: pino({ level: "silent" }), 
+    browser: Browsers.macOS("Desktop"), 
+    printQRInTerminal: false 
+  });
+  
   sock.ev.on("creds.update", saveCreds);
 
+  // LOOP AUTO EVENT SETIAP 5 SAAT
   let lastRandomEventTime = Date.now();
+  
   setInterval(async () => {
-    const db = loadDB(); const now = Date.now();
+    const db = loadDB(); 
+    const now = Date.now();
+    
     if (db.auction && db.auction.active && (now - db.auction.lastBidTime > 60000)) {
-      db.auction.active = false; let pText = "🔔 *LELONGAN DIBATALKAN!* Tiada bidaan baru.";
+      db.auction.active = false; 
+      let pText = "🔔 *LELONGAN DIBATALKAN!* Tiada bidaan baru.";
+      
       if (db.auction.highestBidder) {
-        const winner = getUser(db.auction.highestBidder); winner.cash += db.auction.rewardValue; updateUser(db.auction.highestBidder, winner);
+        const winner = getUser(db.auction.highestBidder); 
+        winner.cash += db.auction.rewardValue; 
+        updateUser(db.auction.highestBidder, winner);
         pText = `🔔 *LELONGAN DITUTUP!*\n🎉 Pemenang: *${winner.name}* (RM ${db.auction.highestBid.toLocaleString()})\n📦 Habuan: *${db.auction.rewardName}*\n💰 Untung: *+RM ${db.auction.rewardValue.toLocaleString()}*`;
       }
-      db.auction = null; saveDB(db); if (db.groups[0]) await sock.sendMessage(db.groups[0], { text: pText }).catch(()=>{});
+      
+      db.auction = null; 
+      saveDB(db); 
+      
+      if (db.groups[0]) {
+        await sock.sendMessage(db.groups[0], { text: pText }).catch(()=>{});
+      }
     }
+    
     if (now - lastRandomEventTime >= 15 * 60 * 1000) {
       lastRandomEventTime = now;
       if (globalChatActivity >= 3 && db.groups.length > 0) {
-        globalChatActivity = 0; const mainGroup = db.groups[0]; const chance = Math.random();
+        globalChatActivity = 0; 
+        const mainGroup = db.groups[0]; 
+        const chance = Math.random();
+        
         if (chance < 0.2 && !db.auction) {
-          const isT20 = Math.random() < 0.1; const startPrice = isT20 ? 100000 : 10000; const isScam = Math.random() < 0.5;
+          const isT20 = Math.random() < 0.1; 
+          const startPrice = isT20 ? 100000 : 10000; 
+          const isScam = Math.random() < 0.5;
           const rwName = isT20 ? (isScam ? "Habuk 💨" : "Kunci Lamborghini 🏎️") : (isScam ? "Bata 🧱" : "10 Jongkong Emas 🪙");
           const rwVal = isT20 ? (isScam ? 0 : 1500000) : (isScam ? 0 : 50000);
-          db.auction = { active: true, highestBid: startPrice, highestBidder: null, lastBidTime: now, rewardName: rwName, rewardValue: rwVal }; saveDB(db);
+          
+          db.auction = { 
+            active: true, 
+            highestBid: startPrice, 
+            highestBidder: null, 
+            lastBidTime: now, 
+            rewardName: rwName, 
+            rewardValue: rwVal 
+          }; 
+          saveDB(db);
           await sock.sendMessage(mainGroup, { text: `🚨 *LELONGAN KONTENA MISTERI!*\n💵 Tapak: *RM ${startPrice.toLocaleString()}*\n⏱️ Reset 60s setiap bidaan.\n👉 Taip: *.bida [harga]*` });
+        
         } else if (chance < 0.7) {
           const activeIds = Object.keys(db.users);
           if (activeIds.length > 0) {
-             const randomId = activeIds[Math.floor(Math.random() * activeIds.length)]; const u = db.users[randomId];
+             const randomId = activeIds[Math.floor(Math.random() * activeIds.length)]; 
+             const u = db.users[randomId];
              const scenario = RANDOM_SCENARIOS[Math.floor(Math.random() * RANDOM_SCENARIOS.length)];
              const val = Math.floor(Math.random() * (scenario.max - scenario.min + 1)) + scenario.min;
+             
              if (scenario.type === "win") {
-               let finalVal = val; if (u.pet === "kucing_jalanan") finalVal = Math.floor(finalVal * 1.15);
-               u.cash += finalVal; updateUser(randomId, u); await sock.sendMessage(mainGroup, { text: `🎁 *NASIB RAWAK!*\n*${u.name}*, ${scenario.msg.replace("{val}", finalVal.toLocaleString())}` });
+               let finalVal = val; 
+               if (u.pet === "kucing_jalanan") finalVal = Math.floor(finalVal * 1.15);
+               u.cash += finalVal; 
+               updateUser(randomId, u); 
+               await sock.sendMessage(mainGroup, { text: `🎁 *NASIB RAWAK!*\n*${u.name}*, ${scenario.msg.replace("{val}", finalVal.toLocaleString())}` });
              } else {
-               u.cash = Math.max(0, u.cash - val); updateUser(randomId, u); await sock.sendMessage(mainGroup, { text: `💀 *BENCANA RAWAK!*\n*${u.name}*, ${scenario.msg.replace("{val}", val.toLocaleString())}` });
+               u.cash = Math.max(0, u.cash - val); 
+               updateUser(randomId, u); 
+               await sock.sendMessage(mainGroup, { text: `💀 *BENCANA RAWAK!*\n*${u.name}*, ${scenario.msg.replace("{val}", val.toLocaleString())}` });
              }
           }
         }
@@ -570,27 +809,63 @@ async function startBotEngine() {
   }, 5000);
 
   sock.ev.on("connection.update", (u) => {
-    if (u.qr) { currentQR = u.qr; isConnected = false; }
-    if (u.connection === "close") { isConnected = false; setTimeout(() => startBotEngine(), 5000); } 
-    else if (u.connection === "open") { isConnected = true; currentQR = ""; console.log("✅ BOT AIRI V4.0 BERSAMBUNG!"); }
+    if (u.qr) { 
+      currentQR = u.qr; 
+      isConnected = false; 
+    }
+    if (u.connection === "close") { 
+      isConnected = false; 
+      setTimeout(() => startBotEngine(), 5000); 
+    } else if (u.connection === "open") { 
+      isConnected = true; 
+      currentQR = ""; 
+      console.log("✅ BOT AIRI V4.0 BERSAMBUNG KE WHATSAPP!"); 
+    }
   });
 
   sock.ev.on("messages.upsert", async ({ messages }) => {
-    const m = messages[0]; if (!m?.message) return;
-    const from = m.key.remoteJid; if (from?.endsWith("@g.us")) { globalChatActivity++; const db = loadDB(); if (!db.groups.includes(from)) { db.groups.push(from); saveDB(db); } }
-    const msgText = m.message.conversation || m.message.extendedTextMessage?.text || ""; if (!msgText.trim().startsWith(".")) return;
-
-    const args = msgText.trim().slice(1).split(/ +/); const cmd = args.shift().toLowerCase();
-    const sender = m.key.participant || from; const cleanSender = sender.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-    const pushName = m.pushName || ""; const user = getUser(cleanSender, pushName); const now = Date.now();
-    const isOwner = OWNER_NUMBERS.some(num => cleanSender.includes(num)) || user.isOwner;
-    if (isOwner && !user.isOwner) { user.isOwner = true; updateUser(cleanSender, user); }
+    const m = messages[0]; 
+    if (!m?.message) return;
     
-    const activePhoneObj = PHONE_DEVICES.find(p => p.id === user.phoneDevice);
-    const db = loadDB(); const currentEvent = db.active_event_data ? SEASON_EVENTS[db.active_event_data.type] : null;
+    const from = m.key.remoteJid; 
+    if (from?.endsWith("@g.us")) { 
+      globalChatActivity++; 
+      const db = loadDB(); 
+      if (!db.groups.includes(from)) { 
+        db.groups.push(from); 
+        saveDB(db); 
+      } 
+    }
+    
+    const msgText = m.message.conversation || m.message.extendedTextMessage?.text || ""; 
+    if (!msgText.trim().startsWith(".")) return;
 
-    if (now < user.cooldowns.hospitalUntil && !isOwner) { return sock.sendMessage(from, { text: `🚑 Anda di hospital. Baki masa rawatan: ${Math.ceil((user.cooldowns.hospitalUntil - now)/1000)}s.` }); }
-    if (now < user.cooldowns.jailUntil && !["upah_lawyer", "myid"].includes(cmd) && !isOwner) { return sock.sendMessage(from, { text: `🚨 Anda di dalam sel lokap! Baki: ${Math.ceil((user.cooldowns.jailUntil - now)/1000)}s. (Boleh guna *.upah_lawyer*)` }); }
+    const args = msgText.trim().slice(1).split(/ +/); 
+    const cmd = args.shift().toLowerCase();
+    
+    const sender = m.key.participant || from; 
+    const cleanSender = sender.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+    const pushName = m.pushName || ""; 
+    const user = getUser(cleanSender, pushName); 
+    const now = Date.now();
+    
+    const isOwner = OWNER_NUMBERS.some(num => cleanSender.includes(num)) || user.isOwner;
+    if (isOwner && !user.isOwner) { 
+      user.isOwner = true; 
+      updateUser(cleanSender, user); 
+    }
+    
+    const activePhoneObj = user.phoneDevice ? PHONE_DEVICES.find(p => p.id === user.phoneDevice) : null;
+    const db = loadDB(); 
+    const currentEvent = (db.active_event_data && SEASON_EVENTS[db.active_event_data.type]) ? SEASON_EVENTS[db.active_event_data.type] : null;
+
+    if (now < user.cooldowns.hospitalUntil && !isOwner) { 
+      return sock.sendMessage(from, { text: `🚑 Anda di hospital. Baki masa rawatan: ${Math.ceil((user.cooldowns.hospitalUntil - now)/1000)}s.` }); 
+    }
+    
+    if (now < user.cooldowns.jailUntil && !["upah_lawyer", "myid"].includes(cmd) && !isOwner) { 
+      return sock.sendMessage(from, { text: `🚨 Anda di dalam sel lokap! Baki: ${Math.ceil((user.cooldowns.jailUntil - now)/1000)}s. (Boleh guna *.upah_lawyer*)` }); 
+    }
 
     // =====================================================================
     // 👑 ARAHAN VETO CEO
@@ -607,114 +882,56 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: diagUI });
     }
 
-    if (cmd === "list_event" && isOwner) {
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   📜 KOD EVENT MUSIM (40)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      for (let key in SEASON_EVENTS) { ui += `• *${key}*\n  _${SEASON_EVENTS[key].name}_\n\n`; }
-      return sock.sendMessage(from, { text: ui });
-    }
-
     if (cmd === "set_season" && isOwner) {
-      const sNum = parseInt(args[0]); if (isNaN(sNum) || sNum < 1) return sock.sendMessage(from, { text: `❌ Format: *.set_season [nombor]*` });
-      db.season = sNum; saveDB(db); return sock.sendMessage(from, { text: `👑 *VETO CEO:* Musim siber kini diset ke *Musim Ke-${sNum}*!` });
+      const sNum = parseInt(args[0]); 
+      if (isNaN(sNum) || sNum < 1) return sock.sendMessage(from, { text: `❌ Format: *.set_season [nombor]*` });
+      db.season = sNum; 
+      saveDB(db); 
+      return sock.sendMessage(from, { text: `👑 *VETO CEO:* Musim siber kini diset ke *Musim Ke-${sNum}*!` });
     }
 
     if (cmd === "start_event" && isOwner) {
-      const evType = args[0]?.toUpperCase(); const days = parseInt(args[1]) || 3;
+      const evType = args[0]?.toUpperCase(); 
+      const days = parseInt(args[1]) || 3;
       if (!evType || !SEASON_EVENTS[evType]) return sock.sendMessage(from, { text: `❌ Event tak sah. Guna *.list_event*` });
-      db.active_event_data = { type: evType, end: now + (days * 24 * 3600 * 1000) }; saveDB(db);
+      db.active_event_data = { type: evType, end: now + (days * 24 * 3600 * 1000) }; 
+      saveDB(db);
       return sock.sendMessage(from, { text: `👑 Veto: Acara *${SEASON_EVENTS[evType].name}* diaktifkan selama ${days} hari!` });
     }
 
-    if (cmd === "stop_event" && isOwner) { db.active_event_data = null; saveDB(db); return sock.sendMessage(from, { text: `👑 Veto: Acara dihentikan!` }); }
+    if (cmd === "stop_event" && isOwner) { 
+      db.active_event_data = null; 
+      saveDB(db); 
+      return sock.sendMessage(from, { text: `👑 Veto: Acara dihentikan!` }); 
+    }
 
     if (cmd === "give_cash" && isOwner) {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; const amt = parseInt(args[1]);
+      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; 
+      const amt = parseInt(args[1]);
       if (!targetTag || isNaN(amt)) return sock.sendMessage(from, { text: `❌ Format: *.give_cash @user [jumlah]*` });
-      const targetUser = getUser(targetTag); targetUser.cash += amt; updateUser(targetTag, targetUser);
+      const targetUser = getUser(targetTag); 
+      targetUser.cash += amt; 
+      updateUser(targetTag, targetUser);
       return sock.sendMessage(from, { text: `👑 Veto: +RM ${amt.toLocaleString()} tunai dikreditkan ke *${targetUser.name}*!`, mentions: [targetTag] });
     }
 
-    if (cmd === "give_gold" && isOwner) {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; const grams = parseFloat(args[1]);
-      if (!targetTag || isNaN(grams)) return sock.sendMessage(from, { text: `❌ Format: *.give_gold @user [gram]*` });
-      const targetUser = getUser(targetTag); targetUser.goldGrams = (targetUser.goldGrams || 0) + grams; updateUser(targetTag, targetUser);
-      return sock.sendMessage(from, { text: `👑 Veto: +${grams}g Emas 999 diberikan kepada *${targetUser.name}*!`, mentions: [targetTag] });
-    }
-
-    if (cmd === "give_btc" && isOwner) {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; const units = parseFloat(args[1]);
-      if (!targetTag || isNaN(units)) return sock.sendMessage(from, { text: `❌ Format: *.give_btc @user [unit]*` });
-      const targetUser = getUser(targetTag); targetUser.btcUnits = (targetUser.btcUnits || 0) + units; updateUser(targetTag, targetUser);
-      return sock.sendMessage(from, { text: `👑 Veto: +${units} BTC diberikan kepada *${targetUser.name}*!`, mentions: [targetTag] });
-    }
-
-    if (cmd === "set_market" && isOwner) {
-      const type = args[0]?.toLowerCase(); const price = parseInt(args[1]);
-      if (!type || !["gold", "btc", "emas", "scrap"].includes(type) || isNaN(price) || price <= 0) return sock.sendMessage(from, { text: `❌ Format: *.set_market [gold/btc/scrap] [harga]*` });
-      if (type === "gold" || type === "emas") db.market.gold = price;
-      if (type === "btc") db.market.btc = price;
-      if (type === "scrap") db.market.scrap = price;
-      db.market.lastUpdate = now; saveDB(db);
-      return sock.sendMessage(from, { text: `👑 Veto Bursa: Harga ${type.toUpperCase()} diubah ke RM ${price.toLocaleString()}!` });
-    }
-
     if (cmd === "jail_user" && isOwner) {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; const sec = parseInt(args[1]) || 120;
+      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; 
+      const sec = parseInt(args[1]) || 120;
       if (!targetTag) return sock.sendMessage(from, { text: `❌ Format: *.jail_user @user [saat]*` });
-      const targetUser = getUser(targetTag); targetUser.cooldowns.jailUntil = now + (sec * 1000); updateUser(targetTag, targetUser);
+      const targetUser = getUser(targetTag); 
+      targetUser.cooldowns.jailUntil = now + (sec * 1000); 
+      updateUser(targetTag, targetUser);
       return sock.sendMessage(from, { text: `👑 Veto: *${targetUser.name}* disumbat ke lokap ${sec}s!`, mentions: [targetTag] });
     }
 
     if (cmd === "free_user" && isOwner) {
       const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
       if (!targetTag) return sock.sendMessage(from, { text: `❌ Format: *.free_user @user*` });
-      const targetUser = getUser(targetTag); targetUser.cooldowns.jailUntil = 0; updateUser(targetTag, targetUser);
+      const targetUser = getUser(targetTag); 
+      targetUser.cooldowns.jailUntil = 0; 
+      updateUser(targetTag, targetUser);
       return sock.sendMessage(from, { text: `👑 Veto: *${targetUser.name}* dibebaskan dari lokap!`, mentions: [targetTag] });
-    }
-
-    if (cmd === "reset_user" && isOwner) {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-      if (!targetTag) return sock.sendMessage(from, { text: `❌ Format: *.reset_user @user*` });
-      db.users[targetTag] = {
-        name: getUser(targetTag).name, bio: "", cash: 500, bank: 0, debt: 0, goldGrams: 0, btcUnits: 0, phoneDevice: null, phoneName: "Public Phone 📟", 
-        fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" }, magnetGear: { magnet: null }, scrapMetalKg: 0, misteryBoxes: 0,
-        inventory: [], vehicles: [], vehicleMods: {}, food: [], properties: [], pet: null, aquarium: [], stars: 0, badges: ["🌱 [COMMON] Warga Baru"],
-        stats: { works: 0, crimes: 0, racesWon: 0, fishes: 0, bankHacks: 0 }, cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, magnet: 0, rent: 0, bankHack: 0, aiAsk: 0, hospitalUntil: 0 }
-      }; saveDB(db);
-      return sock.sendMessage(from, { text: `👑 Veto Wipe: Akaun *${getUser(targetTag).name}* diset semula ke asas!`, mentions: [targetTag] });
-    }
-
-    if (cmd === "reset_season" && isOwner) {
-      const goldP = db.market?.gold || 350; const btcP = db.market?.btc || 280000;
-      const ranked = Object.entries(db.users || {}).map(([id, u]) => {
-        let propVal = 0; (u.properties || []).forEach(pId => { const pr = PROPERTIES.find(x => x.id === pId); if (pr) propVal += pr.price; });
-        const net = (u.cash || 0) + (u.bank || 0) + Math.floor((u.goldGrams || 0) * goldP) + Math.floor((u.btcUnits || 0) * btcP) + propVal;
-        return { id, name: u.name, netWorth: net };
-      }).sort((a, b) => b.netWorth - a.netWorth);
-
-      const top1 = ranked[0], top2 = ranked[1], top3 = ranked[2];
-      if (!db.hallOfFame) db.hallOfFame = [];
-      if (top1) db.hallOfFame.push({ season: db.season || 1, first: top1, second: top2 || { name: "-", netWorth: 0 }, third: top3 || { name: "-", netWorth: 0 } });
-
-      const sOld = db.season || 1; db.season = sOld + 1; db.active_event_data = null;
-      for (let uid in db.users) {
-        const u = db.users[uid]; const legacyBadges = u.badges.filter(b => b.includes("LEGACY") || b.includes("CHRONO") || b.includes("Founder"));
-        let starterCash = 500;
-        if (top1 && uid === top1.id) { legacyBadges.push(`👑 [S${sOld} CHAMPION]`); starterCash = 50000; } 
-        else if (top2 && uid === top2.id) { legacyBadges.push(`🥈 [S${sOld} RUNNER-UP]`); starterCash = 25000; } 
-        else if (top3 && uid === top3.id) { legacyBadges.push(`🥉 [S${sOld} 3RD PLACE]`); starterCash = 10000; }
-        db.users[uid] = { 
-          name: u.name, bio: u.bio || "", isOwner: u.isOwner, cash: starterCash, bank: 0, debt: 0, goldGrams: 0, btcUnits: 0, phoneDevice: null, phoneName: "Public Phone 📟", 
-          fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" }, magnetGear: { magnet: null }, scrapMetalKg: 0, misteryBoxes: 0,
-          inventory: [], vehicles: [], vehicleMods: {}, food: [], properties: [], pet: null, aquarium: [], stars: 0, badges: legacyBadges.length > 0 ? legacyBadges : ["🌱 [COMMON] Warga Baru"],
-          stats: { works: 0, crimes: 0, racesWon: 0, fishes: 0, bankHacks: 0 }, cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, magnet: 0, rent: 0, bankHack: 0, aiAsk: 0, hospitalUntil: 0 } 
-        };
-      }
-      saveDB(db);
-      for (const gId of db.groups) {
-        await sock.sendMessage(gId, { text: `👑 *TIRAI MUSIM KE-${sOld} DITUTUP!* 👑\n\n🥇 Juara: *${top1?.name || "-"}*\n🥈 Tempat Ke-2: *${top2?.name || "-"}*\n🥉 Tempat Ke-3: *${top3?.name || "-"}*\n\n🔥 *MUSIM KE-${db.season} BERMULA SEKARANG!* Rekod telah diset semula.` }).catch(()=>{});
-      }
-      return;
     }
 
     // =====================================================================
@@ -724,739 +941,44 @@ async function startBotEngine() {
       const query = args.join(" ").trim();
       if (!query) return sock.sendMessage(from, { text: `Hai ${user.name}! 💙 Airi ada kat sini~ Taip: *.airi [borak]* hehe~ ✨` });
       if (now < (user.cooldowns.aiAsk || 0) && !isOwner) return sock.sendMessage(from, { text: `⏳ Sabar weh, otak LPU tengah proses data!` });
-      user.cooldowns.aiAsk = now + 8000; updateUser(cleanSender, user);
+      user.cooldowns.aiAsk = now + 8000; 
+      updateUser(cleanSender, user);
       const reply = await askAiriAI(query, user.name);
       return sock.sendMessage(from, { text: `💠 *AIRI (Groq LPU)* 💠\n\n${reply}` });
     }
 
     // =====================================================================
-    // 🎲 10 MINI-GAME KOMUNITI BAHARU (V4.0)
-    // =====================================================================
-    if (cmd === "bgk") {
-      const c = args[0]?.toLowerCase(); const bet = parseInt(args[1]);
-      if (!["batu", "gunting", "kertas"].includes(c) || isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `✊🖐✌️ Format: *.bgk [batu/gunting/kertas] [taruhan]*` });
-      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Tunai poket tak cukup untuk bertaruh! Semak baki guna *.bal*` });
-      user.cash -= bet; const pilihan = ["batu", "gunting", "kertas"]; const botC = pilihan[Math.floor(Math.random() * 3)]; let res = ""; let p = 0;
-      if (c === botC) { res = "SERI!"; p = bet; } else if ((c==="batu"&&botC==="gunting") || (c==="gunting"&&botC==="kertas") || (c==="kertas"&&botC==="batu")) { res = "MENANG!"; p = bet * 2; } else { res = "KALAH!"; p = 0; }
-      user.cash += p; updateUser(cleanSender, user); return sock.sendMessage(from, { text: `✊🖐✌️ *OSOM!*\n\nAnda: ${c.toUpperCase()}\nAI: ${botC.toUpperCase()}\n\nKeputusan: *${res}*\n💸 ${p > 0 ? "+RM "+p : "-RM "+bet}` });
-    }
-
-    if (cmd === "gacha_mlbb") {
-      if (user.cash < 2000) return sock.sendMessage(from, { text: `❌ Spin *Mobile Legends* perlukan RM 2,000!` });
-      user.cash -= 2000; const rng = Math.random(); let prize = 0; let msg = "";
-      if (rng < 0.01) { prize = 25000; msg = `🌟 *LEGENDARY SKIN!* Dapat Franco Legend! (Jual: +RM 25,000)`; }
-      else if (rng < 0.05) { prize = 8000; msg = `🔥 *EPIC SKIN!* Dapat Lancelot Dragon Tamer! (Jual: +RM 8,000)`; }
-      else if (rng < 0.20) { prize = 2500; msg = `✨ *ELITE SKIN!* Boleh tahan la. (Jual: +RM 2,500)`; }
-      else { prize = 0; msg = `🗑️ *MAGIC DUST x5!* Adoi rugi RM 2,000!`; }
-      user.cash += prize; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🎮 *GACHA MLBB*\n\n${msg}` });
-    }
-
-    if (cmd === "tiktok_affiliate") {
-      if (user.cash < 500) return sock.sendMessage(from, { text: `❌ Perlu RM 500 modal marketing (Ads) TikTok.` });
-      user.cash -= 500; const rng = Math.random(); let untung = 0; let msg = "";
-      if (rng < 0.05) { untung = 15000; msg = `🚀 *FYP MELETUP!* Produk anda masuk di bawah beg kuning. Untung besar!`; }
-      else if (rng < 0.15) { untung = 3000; msg = `🔥 *VIRAL!* Jualan masuk bertalu-talu.`; }
-      else if (rng < 0.45) { untung = 600; msg = `👍 *BALIK MODAL.* Ada la sikit untung buat beli kopi.`; }
-      else { untung = 0; msg = `📉 *FLOP.* View sendu 20 orang je. Modal RM 500 lebur.`; }
-      user.cash += untung; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `📱 *TIKTOK AFFILIATE*\n\n${msg}\n💵 Untung: +RM ${untung.toLocaleString()}` });
-    }
-
-    if (cmd === "sabung_ayam" || cmd === "ayam_sabung") {
-      const choice = args[0]?.toLowerCase(); const bet = parseInt(args[1]);
-      if (!["merah", "hitam"].includes(choice) || isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `🐔 Format: *.sabung_ayam [merah/hitam] [taruhan]*` });
-      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Duit tunai tak cukup!` });
-      user.cash -= bet; const winner = Math.random() < 0.5 ? "merah" : "hitam";
-      if (choice === winner) {
-        user.cash += (bet * 2); updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🐔 *SABUNG AYAM*\n\nAyam ${winner.toUpperCase()} menang bertarung!\n💵 Anda menang: +RM ${(bet*2).toLocaleString()}!` });
-      } else {
-        updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🐔 *SABUNG AYAM*\n\nAyam ${winner.toUpperCase()} yang menang. Ayam ${choice.toUpperCase()} anda lari masuk reban!\n❌ Rugi: -RM ${bet.toLocaleString()}` });
-      }
-    }
-
-    if (cmd === "teka_nombor") {
-      const guess = parseInt(args[0]); const bet = parseInt(args[1]);
-      if (isNaN(guess) || guess < 1 || guess > 10 || isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `🔢 Format: *.teka_nombor [1-10] [taruhan]*` });
-      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Duit tunai tak cukup!` });
-      user.cash -= bet; const result = Math.floor(Math.random() * 10) + 1;
-      if (guess === result) {
-        user.cash += (bet * 10); updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🎉 *JACKPOT TEKA NOMBOR!*\n\nNombor betul adalah ${result}! Anda menang 10X ganda!\n💵 +RM ${(bet*10).toLocaleString()}` });
-      } else {
-        updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `❌ *SALAH!* Nombor rahsia adalah ${result}. Taruhan RM ${bet.toLocaleString()} lebur.` });
-      }
-    }
-
-    if (cmd === "kotak_beracun") {
-      const pilihan = parseInt(args[0]);
-      if (isNaN(pilihan) || pilihan < 1 || pilihan > 3) return sock.sendMessage(from, { text: `📦 Main Kotak Beracun (Modal: RM1000). Ada Bom, Kosong, & Emas!\nFormat: *.kotak_beracun [1/2/3]*` });
-      if (user.cash < 1000) return sock.sendMessage(from, { text: `❌ Anda perlukan RM 1,000 untuk main!` });
-      user.cash -= 1000;
-      const hadiah = [ {n: "BOM! 💥", v: -5000}, {n: "Kosong 🕸️", v: 0}, {n: "Emas Tulen! 🪙", v: 10000} ].sort(() => Math.random() - 0.5);
-      const nasib = hadiah[pilihan - 1]; user.cash += nasib.v; if (user.cash < 0) user.cash = 0; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `📦 *KOTAK BERACUN*\n\nAnda membuka Kotak ${pilihan} dan isinya ialah... *${nasib.n}*\n\n💸 Impak: ${nasib.v > 0 ? "+RM "+nasib.v : nasib.v < 0 ? "-RM "+Math.abs(nasib.v) : "Tiada rugi/untung"}` });
-    }
-
-    if (cmd === "tarik_tali") {
-      const bet = parseInt(args[0]);
-      if (isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `🪢 Format: *.tarik_tali [taruhan]*` });
-      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Duit tunai tak cukup!` });
-      user.cash -= bet; const pStrength = Math.random() * 100; const botStrength = Math.random() * 100;
-      if (pStrength > botStrength) {
-        user.cash += (bet * 2); updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🪢 *TARIK TALI*\n\n💪 Kuasa Anda: ${pStrength.toFixed(1)} | AI: ${botStrength.toFixed(1)}\n🎉 Anda tarik AI jatuh lumpur!\n💵 Menang: +RM ${(bet*2).toLocaleString()}` });
-      } else {
-        updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🪢 *TARIK TALI*\n\n💪 Kuasa Anda: ${pStrength.toFixed(1)} | AI: ${botStrength.toFixed(1)}\n❌ Anda tersungkur ditarik AI! Rugi: RM ${bet.toLocaleString()}` });
-      }
-    }
-
-    if (cmd === "tembak_botol") {
-      if (user.cash < 500) return sock.sendMessage(from, { text: `🎯 Modal tembak botol RM 500.` });
-      user.cash -= 500; const rng = Math.random(); let msg = ""; let win = 0;
-      if (rng < 0.05) { win = 5000; msg = `🎯 *HEADSHOT!* Semua botol pecah berderai!`; }
-      else if (rng < 0.3) { win = 800; msg = `💥 Kena 2 botol. Not bad.`; }
-      else if (rng < 0.6) { win = 200; msg = `😅 Kena 1 botol je. Rugi sikit.`; }
-      else { win = 0; msg = `🤡 Tembak ke laut! Kosong.`; }
-      user.cash += win; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🎯 *TEMBAK BOTOL PESTA*\n\n${msg}\n💵 Tunai diterima: RM ${win}` });
-    }
-
-    if (cmd === "lumba_kuda") {
-      const k = parseInt(args[0]); const bet = parseInt(args[1]);
-      if (isNaN(k) || k < 1 || k > 5 || isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `🐎 Format: *.lumba_kuda [1-5] [taruhan]*` });
-      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Tunai tak cukup!` });
-      user.cash -= bet; const winner = Math.floor(Math.random() * 5) + 1;
-      if (k === winner) {
-        user.cash += (bet * 5); updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🐎 *LUMBA KUDA*\n\nKuda nombor ${winner} menang lumba lurus!\n💵 Hadiah 5X Ganda: +RM ${(bet*5).toLocaleString()}` });
-      } else {
-        updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🐎 *LUMBA KUDA*\n\nKuda nombor ${winner} yang menang. Kuda ${k} asyik makan rumput!\n❌ Lebur RM ${bet.toLocaleString()}` });
-      }
-    }
-
-    if (cmd === "tikam_nombor") {
-      const num = parseInt(args[0]);
-      if (isNaN(num) || num < 1 || num > 100) return sock.sendMessage(from, { text: `🎫 Tiket loteri bernilai RM 1000! Boleh menang RM 100,000.\nFormat: *.tikam_nombor [1-100]*` });
-      if (user.cash < 1000) return sock.sendMessage(from, { text: `❌ Anda tak cukup RM 1000 untuk beli tiket.` });
-      user.cash -= 1000; const rng = Math.floor(Math.random() * 100) + 1;
-      if (num === rng) {
-        user.cash += 100000; updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🎫 *CABUTAN TIKET BERTUAH*\n\nNombor anda: ${num} | Cabutan: ${rng}\n🎉 *JACKPOT GILA!* Anda menang +RM 100,000!` });
-      } else {
-        updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🎫 *CABUTAN TIKET BERTUAH*\n\nNombor anda: ${num} | Cabutan: ${rng}\n❌ Nasib tak menyebelahi anda.` });
-      }
-    }
-
-    if (cmd === "gacha_calc" || cmd === "pity") {
-      const pulls = parseInt(args[0]);
-      if (isNaN(pulls)) return sock.sendMessage(from, { text: `🧮 Guna: *.pity [jumlah_pull_sekarang]*` });
-      const needed = 90 - pulls; const costGems = needed * 160;
-      return sock.sendMessage(from, { text: `🎮 *KALKULATOR PITY GACHA*\n\nPull Semasa: ${pulls}/90\nPull ke Hard Pity: ${needed} lagi\n💎 Primogems Diperlukan: *${costGems}*` });
-    }
-
-    if (cmd === "split_bil") {
-      const amount = parseFloat(args[0]); const pax = parseInt(args[1]);
-      if (isNaN(amount) || isNaN(pax) || pax < 2) return sock.sendMessage(from, { text: `🧮 Guna: *.split_bil [jumlah_RM] [bil_orang]*` });
-      const split = (amount / pax).toFixed(2);
-      return sock.sendMessage(from, { text: `💸 *PEMBAHAGI BIL TOMYAM*\n\nJumlah: RM ${amount}\nAhli: ${pax} Orang\n\n👉 *RM ${split} seorang!* Bayar cepat!` });
-    }
-
-    if (cmd === "santau" || cmd === "santau_maya") {
-       const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-       if (!targetTag) return sock.sendMessage(from, { text: `❌ Tag mangsa: *.santau @user*` });
-       const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-       if (cleanTarget === cleanSender) return sock.sendMessage(from, { text: `❌ Nak santau diri sendiri buat apa?` });
-       if (user.cash < 2000) return sock.sendMessage(from, { text: `❌ Upah Dukun Siber (RM 2,000) tak cukup!` });
-       user.cash -= 2000; const targetUser = getUser(cleanTarget);
-       const isSuccess = Math.random() < 0.6; 
-       if (isSuccess) {
-           const curseLoss = Math.floor(targetUser.cash * 0.15); targetUser.cash -= curseLoss;
-           updateUser(cleanSender, user); updateUser(cleanTarget, targetUser);
-           const nar = getRandomNarrative("SANTAU_SUCCESS");
-           return sock.sendMessage(from, { text: `💀 *ILMU HITAM BERJAYA!*\n\n${nar}\nWang mangsa merosot sebanyak *-RM ${curseLoss.toLocaleString()}*!`, mentions: [cleanTarget] });
-       } else {
-           updateUser(cleanSender, user); const nar = getRandomNarrative("SANTAU_FAIL");
-           return sock.sendMessage(from, { text: `🛡️ *SANTAU DITEPIH!*\n\n${nar}\nRM 2,000 hangus bayar dukun siber.`, mentions: [cleanTarget] });
-       }
-    }
-
-    // =====================================================================
-    // 🛒 SISTEM PASARAN PEMAIN (P2P MARKETPLACE V4.0)
-    // =====================================================================
-    if (cmd === "jual_market") {
-      const type = args[0]?.toLowerCase(); const itemId = args[1]?.toLowerCase(); const price = parseInt(args[2]);
-      if (!["kenderaan", "bm"].includes(type) || !itemId || isNaN(price) || price <= 0) return sock.sendMessage(from, { text: `❌ Format: *.jual_market [kenderaan/bm] [kod_item] [harga_jual]*` });
-      
-      let itemName = ""; let actualItem = null;
-      if (type === "kenderaan") {
-         if (!user.vehicles.includes(itemId)) return sock.sendMessage(from, { text: `❌ Kenderaan tiada dalam garaj!` });
-         actualItem = VEHICLES.find(v => v.id === itemId); itemName = actualItem.name;
-         user.vehicles = user.vehicles.filter(v => v !== itemId);
-      } else {
-         const idx = user.inventory.findIndex(i => i.id == itemId);
-         if (idx === -1) return sock.sendMessage(from, { text: `❌ Barang tiada dalam beg!` });
-         itemName = user.inventory[idx].name; user.inventory.splice(idx, 1);
-      }
-
-      const listingId = Math.random().toString(36).substring(2, 7).toUpperCase();
-      if (!db.p2pMarket) db.p2pMarket = [];
-      db.p2pMarket.push({ listId: listingId, sellerId: cleanSender, sellerName: user.name, type: type, itemId: itemId, itemName: itemName, price: price });
-      saveDB(db); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `✅ *[P2P]* ${itemName} berjaya disenaraikan di Pasaran Lelongan!\n🔖 Kod Listing: *${listingId}* | Harga: RM ${price.toLocaleString()}` });
-    }
-
-    if (cmd === "pasar_pemain" || cmd === "p2p") {
-      if (!db.p2pMarket || db.p2pMarket.length === 0) return sock.sendMessage(from, { text: `🛒 Pasaran P2P sunyi sepi... Tiada pemain yang menjual barang.` });
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🛒 PASARAN LELONGAN PEMAIN (P2P)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      db.p2pMarket.forEach(m => { ui += `🔖 *[${m.listId}]* ${m.itemName}\n👤 Penjual: ${m.sellerName}\n💰 Harga: RM ${m.price.toLocaleString()}\n\n`; });
-      ui += `👉 Beli: *.beli_market [Kod_Listing]*`;
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "beli_market") {
-      const listId = args[0]?.toUpperCase();
-      if (!listId || !db.p2pMarket) return sock.sendMessage(from, { text: `❌ Masukkan Kod Listing dari *.pasar_pemain*!` });
-      const itemIdx = db.p2pMarket.findIndex(m => m.listId === listId);
-      if (itemIdx === -1) return sock.sendMessage(from, { text: `❌ Kod Listing tidak wujud atau telah dibeli orang lain.` });
-      
-      const itemData = db.p2pMarket[itemIdx];
-      if (itemData.sellerId === cleanSender) return sock.sendMessage(from, { text: `❌ Takkan nak beli barang sendiri bos?` });
-      if (user.cash < itemData.price) return sock.sendMessage(from, { text: `❌ Duit tunai poket tak cukup!` });
-
-      if (itemData.type === "kenderaan") user.vehicles.push(itemData.itemId);
-      else user.inventory.push({ id: itemData.itemId, name: itemData.itemName });
-      
-      user.cash -= itemData.price;
-      const seller = getUser(itemData.sellerId); seller.cash += itemData.price;
-      
-      db.p2pMarket.splice(itemIdx, 1);
-      saveDB(db); updateUser(cleanSender, user); updateUser(itemData.sellerId, seller);
-      
-      return sock.sendMessage(from, { text: `🤝 *TRANSAKSI P2P BERJAYA!*\n\nAnda membeli *${itemData.itemName}* dengan harga RM ${itemData.price.toLocaleString()}.\nWang telah dipindahkan ke *${seller.name}*.` });
-    }
-
-    // =====================================================================
-    // 📈 INFO, ID & PASARAN
-    // =====================================================================
-    if (cmd === "balance" || cmd === "bal") {
-      return sock.sendMessage(from, { text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   💳 AKAUN: @${user.name}\n┣━━━━━━━━━━━━━━━━━━━━━━━━━━┫\n💼 Tunai : RM ${user.cash.toLocaleString()}\n🏦 Bank  : RM ${user.bank.toLocaleString()}\n🪙 Emas  : ${(user.goldGrams).toFixed(2)}g\n₿ Kripto: ${(user.btcUnits).toFixed(4)} BTC\n📦 Besi  : ${user.scrapMetalKg} kg\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛` });
-    }
-
-    if (cmd === "myid" || cmd === "ic") {
-      const totalWealth = user.cash + user.bank + Math.floor((user.goldGrams || 0) * (db.market?.gold || 350)) + Math.floor((user.btcUnits || 0) * (db.market?.btc || 280000));
-      const userRod = FISHING_SHOP.rods.find(r => r.id === user.fishingGear?.rod) || FISHING_SHOP.rods[0];
-      const userReel = FISHING_SHOP.reels.find(r => r.id === user.fishingGear?.reel) || FISHING_SHOP.reels[0];
-      const petNameDisplay = user.pet ? (CYBER_PETS.find(p => p.id === user.pet)?.name || "Tiada") : "Tiada";
-
-      return sock.sendMessage(from, { 
-        text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🪪 CYBER IDENTITY CARD (S${db.season || 1})\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n👤 Nama: *${user.name}*\n🎖️ Gelaran: ${getTitle(user)}\n📱 Peranti: ${user.phoneName}\n🐕 Pengawal: ${petNameDisplay}\n💵 Tunai: RM ${user.cash.toLocaleString()} | 🏦 Bank: RM ${user.bank.toLocaleString()}\n🪙 Emas: ${(user.goldGrams || 0).toFixed(2)}g | ₿ BTC: ${(user.btcUnits || 0).toFixed(4)}\n💎 Nilai Harta: RM ${totalWealth.toLocaleString()}\n🏎️ Jentera: ${user.vehicles.length} | 🏢 Hartanah: ${user.properties.length}\n🎣 Set Pancing: ${userRod.name} | ${userReel.name}` 
-      });
-    }
-
-    if (cmd === "profile") {
-      const vList = user.vehicles.length ? user.vehicles.join(", ") : "Garaj kosong";
-      const iList = user.inventory.length ? user.inventory.map(i => i.name).join(", ") : "Beg kosong";
-      const userRod = FISHING_SHOP.rods.find(r => r.id === user.fishingGear?.rod)?.name || "Joran Buluh";
-      const userBait = FISHING_SHOP.baits.find(b => b.id === user.fishingGear?.bait)?.name || "Tiada Umpan";
-      const magName = user.magnetGear?.magnet ? (MAGNET_SHOP.find(m => m.id === user.magnetGear.magnet)?.name) : "Tiada Magnet";
-
-      return sock.sendMessage(from, { 
-        text: `🎒 *PROFIL INVENTORI & PERALATAN*\n\n🏎️ Jentera: ${vList}\n🏴‍☠️ Barang BM: ${iList}\n\n🎣 Joran: *${userRod}*\n🪱 Umpan: *${userBait}*\n🧲 Magnet: *${magName}*\n📦 Besi Buruk: *${user.scrapMetalKg} KG*\n📦 Peti Misteri: *${user.misteryBoxes}*` 
-      });
-    }
-
-    if (cmd === "top") {
-      const topUsers = Object.entries(db.users || {}).map(([id, d]) => ({ name: d.name || id.split("@")[0], total: (d.cash || 0) + (d.bank || 0) })).sort((a, b) => b.total - a.total).slice(0, 5);
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🏆 5 JUTAWAN TERKAYA AIRI\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      topUsers.forEach((u, i) => { ui += `${i + 1}. *${u.name}* ➔ RM ${u.total.toLocaleString()}\n`; });
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "ranking" || cmd === "top_season" || cmd === "leaderboard") {
-      const goldP = db.market?.gold || 350; const btcP = db.market?.btc || 280000;
-      const ranked = Object.entries(db.users || {}).map(([id, u]) => {
-          let propValue = 0; (u.properties || []).forEach(pId => { const pr = PROPERTIES.find(x => x.id === pId); if (pr) propValue += pr.price; });
-          const totalNetWorth = (u.cash || 0) + (u.bank || 0) + Math.floor((u.goldGrams || 0) * goldP) + Math.floor((u.btcUnits || 0) * btcP) + propValue;
-          return { id, name: u.name || id.split("@")[0], netWorth: totalNetWorth };
-      }).sort((a, b) => b.netWorth - a.netWorth).slice(0, 10);
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🏆 KEDUDUKAN MUSIM KE-${db.season || 1}\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      const medals = ["👑 1st", "🥈 2nd", "🥉 3rd", "🔹 4th", "🔹 5th", "🔹 6th", "🔹 7th", "🔹 8th", "🔹 9th", "🔹 10th"];
-      ranked.forEach((r, idx) => { ui += `${medals[idx]} *${r.name}*\n   💰 Nilai Bersih: *RM ${r.netWorth.toLocaleString()}*\n\n`; });
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "halloffame" || cmd === "hof") {
-      if (!db.hallOfFame || db.hallOfFame.length === 0) return sock.sendMessage(from, { text: `🏛️ Dewan Kemegahan masih kosong!` });
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🏛️ AIRI'S HALL OF FAME\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n`;
-      db.hallOfFame.forEach(h => { ui += `🌟 *MUSIM KE-${h.season}*\n🥇 Juara: *${h.first.name}*\n🥈 Naib: *${h.second.name}*\n🥉 Ketiga: *${h.third.name}*\n━━━━━━━━━━━━━━━━━━━━\n`; });
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "season_info" || cmd === "musim") {
-      const ev = db.active_event_data ? SEASON_EVENTS[db.active_event_data.type] : null;
-      let evText = "Tiada event khas aktif.";
-      if (ev && db.active_event_data) {
-        const remH = Math.max(1, Math.ceil((db.active_event_data.end - now) / 3600000));
-        evText = `*${ev.name}*\n• Kesan: _${ev.desc}_\n• Baki Masa: *${remH} Jam*`;
-      }
-      return sock.sendMessage(from, { text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🌐 STATUS MUSIM AIRI\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n📅 *Musim Semasa:* Musim Ke-${db.season || 1}\n🔥 *Acara:* ${evText}` });
-    }
-
-    if (cmd === "pasaran" || cmd === "crypto" || cmd === "gold") {
-      const goldPrice = db.market?.gold || 350; const btcPrice = db.market?.btc || 280000; const scrapPrice = db.market?.scrap || 5;
-      return sock.sendMessage(from, { 
-        text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   📈 BURSA SIBER & KOMODITI\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n🪙 *EMAS 999 FIZIKAL:*\n• Harga Semasa: *RM ${goldPrice.toLocaleString()} / g*\n• Simpanan Anda: *${(user.goldGrams || 0).toFixed(2)} g*\n\n₿ *BITCOIN (BTC/MYR):*\n• Harga Semasa: *RM ${btcPrice.toLocaleString()} / BTC*\n• Simpanan Anda: *${(user.btcUnits || 0).toFixed(4)} BTC*\n\n⚙️ *BESI BURUK:*\n• Harga Semasa: *RM ${scrapPrice.toLocaleString()} / kg*\n• Simpanan Anda: *${user.scrapMetalKg} kg*\n\n💡 *.beli_emas*, *.jual_emas*, *.beli_btc*, *.jual_btc*, *.jual_besi*` 
-      });
-    }
-
-    if (cmd === "beli_emas") {
-      const grams = parseFloat(args[0]); if (isNaN(grams) || grams <= 0) return sock.sendMessage(from, { text: `❌ Format: *.beli_emas [gram]*` });
-      const cost = Math.floor(grams * (db.market?.gold || 350));
-      if (user.cash < cost) return sock.sendMessage(from, { text: `❌ Duit tunai tidak cukup (Perlu RM ${cost.toLocaleString()})!` });
-      user.cash -= cost; user.goldGrams = (user.goldGrams || 0) + grams; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🪙 *BELI EMAS:* +${grams}g Emas 999 disimpan!` });
-    }
-
-    if (cmd === "jual_emas") {
-      const grams = parseFloat(args[0]);
-      if (isNaN(grams) || grams <= 0 || (user.goldGrams || 0) < grams) return sock.sendMessage(from, { text: `❌ Baki emas tidak cukup!` });
-      const payout = Math.floor(grams * (db.market?.gold || 350));
-      user.goldGrams -= grams; user.cash += payout; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🪙 *JUAL EMAS:* +RM ${payout.toLocaleString()} tunai dikreditkan!` });
-    }
-
-    if (cmd === "beli_btc") {
-      const units = parseFloat(args[0]); if (isNaN(units) || units <= 0) return sock.sendMessage(from, { text: `❌ Format: *.beli_btc [unit]*` });
-      const cost = Math.floor(units * (db.market?.btc || 280000));
-      if (user.cash < cost) return sock.sendMessage(from, { text: `❌ Duit tunai tidak cukup (Perlu RM ${cost.toLocaleString()})!` });
-      user.cash -= cost; user.btcUnits = (user.btcUnits || 0) + units; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `₿ *BELI BITCOIN:* +${units} BTC disimpan!` });
-    }
-
-    if (cmd === "jual_btc") {
-      const units = parseFloat(args[0]);
-      if (isNaN(units) || units <= 0 || (user.btcUnits || 0) < units) return sock.sendMessage(from, { text: `❌ Baki BTC tidak cukup!` });
-      const payout = Math.floor(units * (db.market?.btc || 280000));
-      user.btcUnits -= units; user.cash += payout; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `₿ *JUAL BITCOIN:* +RM ${payout.toLocaleString()} tunai dicairkan!` });
-    }
-
-    // =====================================================================
-    // 🎯 BOUNTY & KEDAI PET
-    // =====================================================================
-    if (cmd === "bounty") {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; const amt = parseInt(args[1]);
-      if (!targetTag || isNaN(amt) || amt < 5000) return sock.sendMessage(from, { text: `❌ Format: *.bounty @user [jumlah]* (Min RM 5,000)!` });
-      if (user.cash < amt) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi!` });
-      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-      if (cleanTarget === cleanSender) return sock.sendMessage(from, { text: `❌ Tak boleh letak bounty kat kepala sendiri bos!` });
-      user.cash -= amt;
-      if (!db.bounties) db.bounties = {};
-      db.bounties[cleanTarget] = (db.bounties[cleanTarget] || 0) + amt;
-      saveDB(db); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🎯 *BOUNTY DIBUKA:* Kepala @${cleanTarget.split("@")[0]} kini bernilai RM ${db.bounties[cleanTarget].toLocaleString()}!`, mentions: [cleanTarget] });
-    }
-
-    if (cmd === "list_bounty") {
-      if (!db.bounties || Object.keys(db.bounties).length === 0) return sock.sendMessage(from, { text: `📜 Tiada buronan aktif.` });
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🎯 PAPAN BURONAN SIBER\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      for (const tId in db.bounties) { ui += `• *${getUser(tId).name}* ➔ 💰 RM ${db.bounties[tId].toLocaleString()}\n`; }
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "kedai_pet" || cmd === "petshop") {
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🐕 KEDAI PENGAWAL SIBER\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      CYBER_PETS.forEach(p => { ui += `• *[${p.id}]* ${p.name}\n  💰 RM ${p.price.toLocaleString()} | _${p.buff}_\n\n`; });
-      ui += `💡 Taip *.beli_pet [id]* ATAU *.beli_telur* (RM 50k) eram rawak!`;
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "beli_pet") {
-      const petId = args[0]?.toLowerCase(); const petObj = CYBER_PETS.find(p => p.id === petId);
-      if (!petObj) return sock.sendMessage(from, { text: `❌ Kod pet tidak sah!` });
-      if (user.cash < petObj.price) return sock.sendMessage(from, { text: `❌ Duit tunai tidak cukup!` });
-      user.cash -= petObj.price; user.pet = petObj.id; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🎉 Anda kini dilindungi oleh *${petObj.name}*!` });
-    }
-
-    if (cmd === "beli_telur") {
-      if (user.cash < 50000) return sock.sendMessage(from, { text: `❌ Telur Misteri berharga RM 50,000!` });
-      user.cash -= 50000; user.inventory.push({ id: 99, name: "Telur Pet Misteri 🥚" }); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🥚 Berjaya membeli Telur Pet Misteri! Taip *.tetas_telur*.` });
-    }
-
-    if (cmd === "tetas_telur") {
-      const idx = user.inventory.findIndex(i => i.id === 99);
-      if (idx === -1) return sock.sendMessage(from, { text: `❌ Anda tiada Telur Pet Misteri dalam beg!` });
-      user.inventory.splice(idx, 1);
-      const rng = Math.random(); let hatchedPet = CYBER_PETS[0]; 
-      if (rng < 0.05) hatchedPet = CYBER_PETS.find(p => p.id === "kripto_dragon"); 
-      else if (rng < 0.20) hatchedPet = CYBER_PETS.find(p => p.id === "xiaov_sentry");
-      else if (rng < 0.50) hatchedPet = CYBER_PETS.find(p => p.id === "harimau_malaya");
-      user.pet = hatchedPet.id; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🐣 *TELUR MENETAS!*\n\nTahniah! Dapat *${hatchedPet.name}* (Nilai RM ${hatchedPet.price.toLocaleString()})!\n✨ Buff: _${hatchedPet.buff}_` });
-    }
-
-    // =====================================================================
-    // 🧲 KEDAI & MAGNET FISHING 
-    // =====================================================================
-    if (cmd === "kedai_magnet") {
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🧲 KEDAI MAGNET SIBER\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      MAGNET_SHOP.forEach(m => { ui += `• *[${m.id}]* ${m.name}\n  💰 RM ${m.price.toLocaleString()} | Kuasa: ${m.pullPower}x\n  _${m.desc}_\n\n`; });
-      ui += `💡 Beli: *.beli_magnet [id]*\n🎣 Baling: *.baling_magnet*`;
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "beli_magnet") {
-      const magId = args[0]?.toLowerCase(); const mag = MAGNET_SHOP.find(m => m.id === magId);
-      if (!mag) return sock.sendMessage(from, { text: `❌ ID magnet tidak wujud!` });
-      if (user.cash < mag.price) return sock.sendMessage(from, { text: `❌ Tunai tak cukup!` });
-      user.cash -= mag.price; user.magnetGear.magnet = mag.id; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🧲 Berjaya membeli *${mag.name}*!` });
-    }
-
-    if (cmd === "baling_magnet") {
-      if (!user.magnetGear.magnet) return sock.sendMessage(from, { text: `❌ Anda tiada magnet! Beli di *.kedai_magnet*` });
-      if (now < user.cooldowns.magnet && !isOwner) return sock.sendMessage(from, { text: `⏳ Lenguh! Tunggu ${Math.ceil((user.cooldowns.magnet-now)/1000)}s.` });
-      user.cooldowns.magnet = now + 45000; 
-      const magEquipped = MAGNET_SHOP.find(m => m.id === user.magnetGear.magnet);
-      const pull = magEquipped.pullPower; const baseKg = Math.floor(Math.random() * 5) + 1;
-      const totalKg = baseKg * pull; user.scrapMetalKg += totalKg;
-      let extraText = ""; const rareChance = pull * 0.02; 
-      if (Math.random() < rareChance) {
-         const loot = [...MAGNET_LOOT].sort(() => 0.5 - Math.random())[0];
-         if (loot.type === "box") {
-             user.misteryBoxes += 1;
-             extraText = `\n🎁 *RARE PULL!* Anda menarik *Peti Besi Misteri* berlumut dari dasar! Buka dengan *.buka_peti*`;
-         } else {
-             user.cash += loot.price;
-             extraText = `\n💎 *JACKPOT!* Anda terjumpa *${loot.name}* bernilai RM ${loot.price.toLocaleString()}!`;
-         }
-      }
-      updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🧲 *TARIKAN BERJAYA!*\n\nAnda menggunakan ${magEquipped.name} dan berjaya menarik:\n⚙️ *${totalKg} KG Besi Buruk*\n📦 Jumlah Besi Anda: ${user.scrapMetalKg} KG\n${extraText}\n\n💡 Taip *.jual_besi* untuk tunai.` });
-    }
-    
-    if (cmd === "jual_besi") {
-      if (user.scrapMetalKg <= 0) return sock.sendMessage(from, { text: `❌ Anda tiada besi buruk untuk dijual!` });
-      const scrapPrice = db.market?.scrap || 5; const payout = user.scrapMetalKg * scrapPrice;
-      user.cash += payout; const soldKg = user.scrapMetalKg; user.scrapMetalKg = 0; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `⚙️ *TIMBANG KILO:* Anda menjual ${soldKg} KG besi pada harga pasaran RM ${scrapPrice}/KG.\n💵 Tunai diterima: *+RM ${payout.toLocaleString()}*` });
-    }
-
-    if (cmd === "buka_peti") {
-      if (user.misteryBoxes <= 0) return sock.sendMessage(from, { text: `❌ Anda tiada Peti Besi Misteri!` });
-      user.misteryBoxes -= 1; const isZonk = Math.random() < 0.4; 
-      if (isZonk) {
-         updateUser(cleanSender, user);
-         return sock.sendMessage(from, { text: `📦 *PETI DIBUKA:* Alamak! Dalam peti cuma ada surat khabar lama basah. (Tiada nilai)` });
-      } else {
-         const reward = Math.floor(Math.random() * 50000) + 5000; user.cash += reward; updateUser(cleanSender, user);
-         return sock.sendMessage(from, { text: `📦 *PETI DIBUKA:* Jackpot! Anda menemui jongkong perak & wang kertas lama bernilai *RM ${reward.toLocaleString()}*!` });
-      }
-    }
-
-    if (cmd === "bida") {
-      if (!db.auction || !db.auction.active) return sock.sendMessage(from, { text: `❌ Tiada lelongan aktif!` });
-      const bidaan = parseInt(args[0]);
-      if (isNaN(bidaan) || bidaan <= db.auction.highestBid) return sock.sendMessage(from, { text: `❌ Bidaan mestilah LEBIH tinggi dari RM ${db.auction.highestBid.toLocaleString()}!` });
-      if (user.cash < bidaan) return sock.sendMessage(from, { text: `❌ Duit dalam dompet tak cukup bos!` });
-      if (db.auction.highestBidder === cleanSender) return sock.sendMessage(from, { text: `⚠️ Anda sudah memegang bidaan tertinggi!` });
-
-      if (db.auction.highestBidder) {
-        const prevUser = getUser(db.auction.highestBidder); prevUser.cash += db.auction.highestBid; updateUser(db.auction.highestBidder, prevUser);
-      }
-      user.cash -= bidaan; updateUser(cleanSender, user);
-      db.auction.highestBid = bidaan; db.auction.highestBidder = cleanSender; db.auction.lastBidTime = now; saveDB(db);
-      return sock.sendMessage(from, { text: `📣 *BIDAAN DITERIMA!* \n\n*${user.name}* membida dengan harga *RM ${bidaan.toLocaleString()}*!\n⏳ Masa dipanjangkan ke 60 saat.` });
-    }
-
-    // =====================================================================
-    // 🎣 KEDAI PANCING & MEMANCING 
-    // =====================================================================
-    if (cmd === "kedai_pancing" || cmd === "tackleshop") {
-      const subCategory = args[0];
-      if (!subCategory) {
-        let menu = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🎣 KEDAI PERALATAN PANCING AIRI 🎣\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\nSila pilih kategori kedai dengan nombor:\n1️⃣ Joran (Rod)\n2️⃣ Kekili (Reel)\n3️⃣ Umpan (Bait)\n4️⃣ Akuarium (Tank)\n\n👉 Contoh guna: *.kedai_pancing 1*`;
-        return sock.sendMessage(from, { text: menu });
-      }
-      let ui = "";
-      if (subCategory === "1") { ui += `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🎋 KEDAI KATEGORI: JORAN (ROD)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`; FISHING_SHOP.rods.forEach(r => { ui += `• *[${r.id}]* ${r.name}\n  💰 RM ${r.price.toLocaleString()} | _${r.desc}_\n\n`; }); } 
-      else if (subCategory === "2") { ui += `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   ⚙️ KEDAI KATEGORI: KEKILI (REEL)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`; FISHING_SHOP.reels.forEach(re => { ui += `• *[${re.id}]* ${re.name}\n  💰 RM ${re.price.toLocaleString()} | _${re.desc}_\n\n`; }); } 
-      else if (subCategory === "3") { ui += `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🪱 KEDAI KATEGORI: UMPAN (BAIT)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`; FISHING_SHOP.baits.forEach(b => { ui += `• *[${b.id}]* ${b.name}\n  💰 RM ${b.price.toLocaleString()} | _${b.desc}_\n\n`; }); } 
-      else if (subCategory === "4") { ui += `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🫙 KEDAI KATEGORI: AKUARIUM (TANK)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`; FISHING_SHOP.tanks.forEach(t => { ui += `• *[${t.id}]* ${t.name}\n  💰 RM ${t.price.toLocaleString()} | _${t.desc}_\n\n`; }); } 
-      else return sock.sendMessage(from, { text: `❌ Pilihan tidak sah! Sila pilih nombor 1 hingga 4.` });
-      ui += `👉 Beli: *.beli_pancing [id]*`;
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "beli_pancing") {
-      const itemCode = args[0]?.toLowerCase(); if (!itemCode) return sock.sendMessage(from, { text: `❌ Sila masukkan kod barang!` });
-      const allFishingItems = [...FISHING_SHOP.rods, ...FISHING_SHOP.reels, ...FISHING_SHOP.baits, ...FISHING_SHOP.tanks];
-      const item = allFishingItems.find(i => i.id === itemCode);
-      if (!item) return sock.sendMessage(from, { text: `❌ Kod peralatan tidak wujud!` });
-      if (user.cash < item.price) return sock.sendMessage(from, { text: `❌ Tunai anda tidak mencukupi!` });
-
-      user.cash -= item.price;
-      if (item.luckBonus !== undefined) user.fishingGear.rod = item.id;
-      else if (item.cdReduction !== undefined) user.fishingGear.reel = item.id;
-      else if (item.priceMult !== undefined) user.fishingGear.bait = item.id;
-      else if (item.capacity !== undefined) user.fishingGear.tank = item.id;
-
-      updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🎉 *PEMBELIAN BERJAYA:* Anda melengkapkan *${item.name}*!\n✨ _${item.desc}_` });
-    }
-
-    if (cmd === "mancing" || cmd === "fish") {
-      const userReel = FISHING_SHOP.reels.find(r => r.id === user.fishingGear?.reel) || FISHING_SHOP.reels[0];
-      const actualCd = Math.max(15000, 60000 - userReel.cdReduction);
-
-      if (now < user.cooldowns.fish && !isOwner) {
-        const rem = Math.ceil((user.cooldowns.fish - now) / 1000);
-        return sock.sendMessage(from, { text: `🎣 Joran masih di air menunggu ikan mematuk! Sila tunggu *${rem} saat* lagi.` });
-      }
-
-      const userRod = FISHING_SHOP.rods.find(r => r.id === user.fishingGear?.rod) || FISHING_SHOP.rods[0];
-      const userBait = FISHING_SHOP.baits.find(b => b.id === user.fishingGear?.bait);
-
-      user.cooldowns.fish = now + actualCd;
-      let caughtInstance = generateFishInstance(userRod);
-      
-      if (caughtInstance.isDangerous && Math.random() < 0.35) {
-          user.cooldowns.hospitalUntil = now + (300 * 1000); 
-          user.cash = Math.max(0, user.cash - 1500); 
-          
-          if (db.pendingFish?.[cleanSender]) delete db.pendingFish[cleanSender];
-          saveDB(db); updateUser(cleanSender, user);
-          return sock.sendMessage(from, { text: `🚨 *TRAGEDI JETI!*\n\nAnda cuba menaikkan *${caughtInstance.name}* tetapi ia mengganas dan menyerang anda!\n🚑 Dihantar ke Hospital (5 minit).\n💸 Bil Perubatan: *-RM 1,500*` });
-      }
-
-      let fPrice = caughtInstance.price;
-      if (userBait && fPrice > 0) fPrice = Math.floor(fPrice * userBait.priceMult);
-      if (currentEvent?.fishMult) fPrice = Math.floor(fPrice * currentEvent.fishMult);
-      caughtInstance.price = fPrice; 
-
-      if (!db.pendingFish) db.pendingFish = {};
-      db.pendingFish[cleanSender] = { fish: caughtInstance, finalPrice: fPrice };
-      saveDB(db); updateUser(cleanSender, user);
-
-      if (fPrice === 0) {
-        delete db.pendingFish[cleanSender]; saveDB(db);
-        return sock.sendMessage(from, { text: `🎣 *${user.name}* menaikkan ${caughtInstance.name} (${caughtInstance.weightKg} kg).\n(Sampah - Dibuang semula ke laut!)` });
-      }
-
-      const baitUsedText = userBait ? `\n🪱 Umpan: *${userBait.name}* (Kekal)` : "";
-
-      return sock.sendMessage(from, { 
-        text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-   🎣 TANGKAPAN JETI BERJAYA!
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-🐟 Hasil: *${caughtInstance.name}*
-⚖️ Berat: *${caughtInstance.weightKg} kg*
-🏷️ Peringkat: *${caughtInstance.tier}*
-💰 Nilai Jual: *RM ${fPrice.toLocaleString()}*${baitUsedText}
-✨ *Buff Pasif:* _${caughtInstance.buff}_
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👉 *TINDAKAN ANDA:*
-1️⃣ Taip: *.jual_ikan* ➔ Ambil tunai
-2️⃣ Taip: *.bela_ikan* ➔ Simpan ke Akuarium` 
-      });
-    }
-
-    if (cmd === "jual_ikan") {
-      const pData = db.pendingFish?.[cleanSender];
-      if (!pData) return sock.sendMessage(from, { text: `❌ Tiada ikan sedang menunggu keputusan! Taip *.mancing* dahulu.` });
-      user.cash += pData.finalPrice; user.stats.fishes = (user.stats.fishes || 0) + 1;
-      delete db.pendingFish[cleanSender]; saveDB(db); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `💵 *IKAN DIJUAL:* +RM ${pData.finalPrice.toLocaleString()} tunai diterima!` });
-    }
-
-    if (cmd === "bela_ikan") {
-      const pData = db.pendingFish?.[cleanSender];
-      if (!pData) return sock.sendMessage(from, { text: `❌ Tiada ikan menunggu keputusan!` });
-      const currentTank = FISHING_SHOP.tanks.find(t => t.id === user.fishingGear?.tank) || FISHING_SHOP.tanks[0];
-      if (user.aquarium.length >= currentTank.capacity) return sock.sendMessage(from, { text: `❌ *AKUARIUM PENUH!* (Maks: ${currentTank.capacity}) Jual ikan guna *.jual_ikan*!` });
-      user.aquarium.push(pData.fish); user.stats.fishes = (user.stats.fishes || 0) + 1;
-      delete db.pendingFish[cleanSender]; saveDB(db); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🐠 *IKAN DIBELA:* *${pData.fish.name}* dimasukkan ke Akuarium!` });
-    }
-
-    if (cmd === "akuarium") {
-      const currentTank = FISHING_SHOP.tanks.find(t => t.id === user.fishingGear?.tank) || FISHING_SHOP.tanks[0];
-      if (!user.aquarium || user.aquarium.length === 0) return sock.sendMessage(from, { text: `🐠 Akuarium (${currentTank.name}) anda masih kosong!` });
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🐠 KOLEKSI AKUARIUM (${currentTank.name})\n   [ Kapasiti: ${user.aquarium.length}/${currentTank.capacity} Ekor ]\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      user.aquarium.forEach((f, idx) => { ui += `${idx + 1}. *${f.name}* (${f.weightKg}kg)\n   💰 RM ${f.price.toLocaleString()}\n   ✨ _${f.buff}_\n\n`; });
-      ui += `💡 Taip *.jual_akuarium* untuk jual semua ikan serentak!`;
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "jual_akuarium") {
-      if (!user.aquarium || user.aquarium.length === 0) return sock.sendMessage(from, { text: `🐠 Akuarium kosong bos!` });
-      let totalP = 0; user.aquarium.forEach(f => { totalP += f.price; });
-      user.cash += totalP; user.aquarium = []; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `💵 *AKUARIUM DIKOSONGKAN!* Semua ikan dijual dengan nilai keseluruhan +RM ${totalP.toLocaleString()}!` });
-    }
-
-    // =====================================================================
-    // 💼 KERJA HALAL & DAILY
-    // =====================================================================
-    if (cmd === "kerja" || cmd === "work") {
-      if (now < user.cooldowns.work && !isOwner) {
-        const rem = Math.ceil((user.cooldowns.work - now) / 1000);
-        return sock.sendMessage(from, { text: `⚠️ Rehat *${rem} saat* lagi sebelum shift seterusnya!` });
-      }
-      const assignedJob = JOBS[Math.floor(Math.random() * JOBS.length)];
-      let payout = Math.floor(Math.random() * (assignedJob.maxPay - assignedJob.minPay + 1)) + assignedJob.minPay;
-      if (activePhoneObj?.perk === "work" || activePhoneObj?.perk === "god") payout += Math.floor(payout * activePhoneObj.val);
-      if (currentEvent?.jobMult) payout = Math.floor(payout * currentEvent.jobMult);
-      if (user.pet) {
-         const petObj = CYBER_PETS.find(p => p.id === user.pet);
-         if (petObj && (petObj.perk === "work_boost" || petObj.perk === "dragon_god")) payout += Math.floor(payout * petObj.val);
-      }
-      user.cash += payout; user.stats.works += 1; user.cooldowns.work = now + 30000; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   💼 SLIP GAJI HALAL AIRI\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n👤 Pekerja: *${user.name}*\n🏢 Tugasan: *${assignedJob.name}*\n💵 Upah: *+RM ${payout.toLocaleString()}*` });
-    }
-
-    if (cmd === "daily") {
-      if (now < user.cooldowns.daily && !isOwner) return sock.sendMessage(from, { text: `⏳ Elaun harian dah dituntut! Datang esok ya.` });
-      let bonusAmt = currentEvent?.type === "INFLATION_SPIKE" ? 300 : 100;
-      user.cash += bonusAmt; user.cooldowns.daily = now + (24 * 3600 * 1000); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🎁 *BANTUAN HARIAN:* +RM ${bonusAmt.toLocaleString()} tunai dikreditkan!` });
-    }
-
-    // =====================================================================
-    // 🏎️ SHOWROOM JENTERA & BENGKEL
-    // =====================================================================
-    if (cmd === "showroom") {
-      const page = parseInt(args[0]) || 1; const start = (page - 1) * 20; const pageVehicles = VEHICLES.slice(start, start + 20);
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🏎️ SHOWROOM JENTERA (PAGE ${page}/4)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      pageVehicles.forEach(v => { ui += `• *[${v.id}]* ${v.name} (${v.type})\n  💰 RM ${v.price.toLocaleString()} | ⚡ ${v.speed} km/h\n\n`; });
-      ui += `💡 Taip *.beli_kenderaan [id]* | Halaman: *.showroom 1*, *.showroom 2*, *.showroom 3*`;
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "beli_kenderaan") {
-      const v = VEHICLES.find(x => x.id === args[0]?.toLowerCase());
-      if (!v) return sock.sendMessage(from, { text: `❌ Kod jentera tidak wujud!` });
-      if (user.cash < v.price) return sock.sendMessage(from, { text: `❌ Baki tunai tidak cukup!` });
-      if (user.vehicles.includes(v.id)) return sock.sendMessage(from, { text: `⚠️ Jentera ini sudah ada di garaj!` });
-      user.cash -= v.price; user.vehicles.push(v.id); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🎉 Berjaya beli *${v.name}*!` });
-    }
-
-    if (cmd === "bengkel") {
-      const vId = args[0]?.toLowerCase();
-      if (!vId) {
-        if (user.vehicles.length === 0) return sock.sendMessage(from, { text: `❌ Garaj kosong! Beli di *.showroom* dahulu.` });
-        let garajUI = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🔧 BENGKEL MODIFIKASI AIRI\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-        user.vehicles.forEach((userVId, index) => { const vData = VEHICLES.find(v => v.id === userVId); if (vData) garajUI += `${index + 1}. ${vData.name} ➔ Kod: *${vData.id}*\n`; });
-        garajUI += `\n💡 Taip *.bengkel [kod_jentera]*`;
-        return sock.sendMessage(from, { text: garajUI });
-      }
-      if (!user.vehicles.includes(vId)) return sock.sendMessage(from, { text: `❌ Jentera tiada dalam garaj!` });
-      const vehicle = VEHICLES.find(v => v.id === vId); const partsAvailable = MOD_PARTS[vehicle.type] || []; const installedMods = user.vehicleMods?.[vId] || [];
-      let modUI = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🛠️ MODIFIKASI : ${vehicle.name.toUpperCase()}\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      partsAvailable.forEach(p => { const isInstalled = installedMods.includes(p.name); modUI += `• *[ID ${p.id}]* ${p.name} ➔ ${isInstalled ? "✅ [TERPASANG]" : `RM ${p.price.toLocaleString()}`}\n  _${p.desc}_\n\n`; });
-      modUI += `💡 Taip *.pasang ${vId} [ID_Barang]*`;
-      return sock.sendMessage(from, { text: modUI });
-    }
-
-    if (cmd === "pasang") {
-      const vId = args[0]?.toLowerCase(); const partId = parseInt(args[1]);
-      if (!vId || isNaN(partId) || !user.vehicles.includes(vId)) return sock.sendMessage(from, { text: `❌ Format: *.pasang [kod_jentera] [id_barang]*` });
-      const vehicle = VEHICLES.find(v => v.id === vId); const part = MOD_PARTS[vehicle.type]?.find(p => p.id === partId);
-      if (!part) return sock.sendMessage(from, { text: `❌ ID barang tidak sah!` });
-      if (!user.vehicleMods) user.vehicleMods = {}; if (!user.vehicleMods[vId]) user.vehicleMods[vId] = [];
-      if (user.vehicleMods[vId].includes(part.name)) return sock.sendMessage(from, { text: `⚠️ Jentera ini sudah dilengkapi dengan *${part.name}*!` });
-      if (user.cash < part.price) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi!` });
-      user.cash -= part.price; user.vehicleMods[vId].push(part.name); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🔧 *${part.name}* berjaya dipasang pada *${vehicle.name}*!` });
-    }
-
-    if (cmd === "lumba" || cmd === "race") {
-      const vId = args[0]?.toLowerCase();
-      if (!vId || !user.vehicles.includes(vId)) return sock.sendMessage(from, { text: `❌ Masukkan kod jentera! Contoh: *.lumba y15*` });
-      if (now < user.cooldowns.race && !isOwner) return sock.sendMessage(from, { text: `🏎️ Enjin jentera panas! Tunggu *${Math.ceil((user.cooldowns.race - now) / 1000)} saat*.` });
-      const vehicle = VEHICLES.find(v => v.id === vId); user.cooldowns.race = now + (90 * 1000);
-      let speedBonus = 0; (user.vehicleMods?.[vId] || []).forEach(mName => { const pObj = MOD_PARTS[vehicle.type]?.find(p => p.name === mName); if (pObj) speedBonus += pObj.boostSpeed; });
-      const totalSpeed = vehicle.speed + speedBonus; let winChance = totalSpeed / 240;
-      if (activePhoneObj?.perk === "race" || activePhoneObj?.perk === "god") winChance += activePhoneObj.val;
-      if (Math.random() < winChance || isOwner) {
-        let reward = Math.floor((vehicle.price * 0.05) + 500); if (currentEvent?.raceMult) reward = Math.floor(reward * currentEvent.raceMult);
-        user.cash += reward; user.stats.racesWon = (user.stats.racesWon || 0) + 1; updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🏁 *JUARA DRAG RACE!* 🏁\n\n${getRandomNarrative("RACE_WIN")}\n\n🏎️ Jentera: *${vehicle.name}* (${totalSpeed} km/h)\n💰 Hadiah: *+RM ${reward.toLocaleString()}*` });
-      } else {
-        const repairCost = Math.floor(vehicle.price * 0.02); user.cash = Math.max(0, user.cash - repairCost); updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `💥 *TERBABAS DI LITAR!* 💥\n\n${getRandomNarrative("RACE_CRASH")}\n\n💸 Kos Baiki: *-RM ${repairCost.toLocaleString()}*` });
-      }
-    }
-
-    // =====================================================================
-    // 🏢 HARTANAH
-    // =====================================================================
-    if (cmd === "list_hartanah") {
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🏢 PASARAN HARTANAH AIRI (25 ASET)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      PROPERTIES.forEach(p => { ui += `• *[ID ${p.id}]* ${p.name}\n  💰 RM ${p.price.toLocaleString()} | 💵 Sewa: RM ${p.rent.toLocaleString()}/hari\n\n`; });
-      return sock.sendMessage(from, { text: ui });
-    }
-
-    if (cmd === "beli_rumah") {
-      const pr = PROPERTIES.find(x => x.id === parseInt(args[0]));
-      if (!pr) return sock.sendMessage(from, { text: `❌ ID hartanah tidak sah!` });
-      if (user.cash < pr.price) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi!` });
-      if (user.properties.includes(pr.id)) return sock.sendMessage(from, { text: `⚠️ Anda sudah ada unit ini!` });
-      user.cash -= pr.price; user.properties.push(pr.id); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🏠 Geran rasmi *${pr.name}* kini milik anda!` });
-    }
-
-    if (cmd === "kutip_sewa") {
-      if (user.properties.length === 0) return sock.sendMessage(from, { text: `❌ Anda tiada hartanah!` });
-      if (now < user.cooldowns.rent && !isOwner) {
-        const remH = Math.ceil((user.cooldowns.rent - now) / 3600000);
-        return sock.sendMessage(from, { text: `⏳ Kutip lagi dalam *${remH} jam*.` });
-      }
-      let totalRent = 0;
-      user.properties.forEach(pId => { const pr = PROPERTIES.find(x => x.id === pId); if (pr) totalRent += pr.rent; });
-      user.cash += totalRent; user.cooldowns.rent = now + (24 * 3600 * 1000); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `💵 *DIVIDEN SEWA:* +RM ${totalRent.toLocaleString()} dikreditkan!` });
-    }
-
-    // =====================================================================
-    // 🏴‍☠️ UNDERWORLD (BLACK MARKET, CRIME, ROMPAK, HACKBANK)
+    // 🏴‍☠️ UNDERWORLD (BM, JENAYAH, ROMPAK)
     // =====================================================================
     if (cmd === "bm" || cmd === "beli_bm") {
       const mytHour = new Date(Date.now() + 28800000).getUTCHours();
-      if (mytHour >= 7 && !isOwner) return sock.sendMessage(from, { text: `🚨 *BLACK MARKET DITUTUP!* Operasi haram hanya bermula 12:00 AM hingga 7:00 AM.` });
-
+      if (mytHour >= 7 && !isOwner) return sock.sendMessage(from, { text: `🚨 *DITUTUP!* Operasi haram hanya 12:00 AM hingga 7:00 AM.` });
+      
       if (cmd === "bm") {
         let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🏴‍☠️ BLACK MARKET UNDERWORLD\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-        BLACKMARKET_ITEMS.forEach(i => { let pPrice = currentEvent?.type === "TECH_SURGE" ? Math.floor(i.price * 0.60) : i.price; ui += `• *[ID ${i.id}]* ${i.name}\n  💰 RM ${pPrice.toLocaleString()} | _${i.desc}_\n\n`; });
-        ui += `💡 Taip *.beli_bm [ID]*`; return sock.sendMessage(from, { text: ui });
+        BLACKMARKET_ITEMS.forEach(i => { 
+          let pPrice = currentEvent?.type === "TECH_SURGE" ? Math.floor(i.price * 0.60) : i.price; 
+          ui += `• *[ID ${i.id}]* ${i.name}\n  💰 RM ${pPrice.toLocaleString()} | _${i.desc}_\n\n`; 
+        });
+        ui += `💡 Taip *.beli_bm [ID]*`; 
+        return sock.sendMessage(from, { text: ui });
       }
-
+      
       if (cmd === "beli_bm") {
         const item = BLACKMARKET_ITEMS.find(i => i.id === parseInt(args[0]));
         if (!item) return sock.sendMessage(from, { text: `❌ ID perkakasan tidak wujud!` });
         let realPrice = currentEvent?.type === "TECH_SURGE" ? Math.floor(item.price * 0.60) : item.price;
         if (user.cash < realPrice) return sock.sendMessage(from, { text: `❌ Tunai tidak mencukupi!` });
         if (user.inventory.some(i => i.id === item.id)) return sock.sendMessage(from, { text: `⚠️ Barang ini sudah ada di inventori!` });
-
-        user.cash -= realPrice; user.inventory.push({ id: item.id, name: item.name }); updateUser(cleanSender, user);
+        user.cash -= realPrice; 
+        user.inventory.push({ id: item.id, name: item.name }); 
+        updateUser(cleanSender, user);
         return sock.sendMessage(from, { text: `🛒 Berjaya beli *${item.name}*!` });
       }
     }
 
     if (cmd === "jenayah" || cmd === "buat_jenayah") {
       const crimeId = parseInt(args[0]);
-      
-      // Jika pengguna taip .jenayah tanpa nombor, papar menu
       if (isNaN(crimeId)) {
         let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   💀 DARKWEB CRIME NETWORK\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
         CRIMES.forEach(c => {
@@ -1465,31 +987,42 @@ async function startBotEngine() {
           let rMax = currentEvent?.rewardMult ? Math.floor(c.rewardMax * currentEvent.rewardMult) : c.rewardMax;
           ui += `• *[ID ${c.id}]* ${c.name}\n  💵 Loot: RM ${rMin.toLocaleString()} - ${rMax.toLocaleString()} | 🔒 ${reqObj ? reqObj.name : "Bebas"}\n\n`;
         });
-        ui += `💡 Taip *.jenayah [ID]*`; return sock.sendMessage(from, { text: ui });
+        ui += `💡 Taip *.jenayah [ID]*`; 
+        return sock.sendMessage(from, { text: ui });
       }
-
-      // Jika ada nombor, terus laksanakan jenayah
+      
       const c = CRIMES.find(x => x.id === crimeId); 
       if (!c) return sock.sendMessage(from, { text: `❌ ID jenayah tidak sah!` });
       if (c.reqItem && !user.inventory.some(i => i.id === c.reqItem)) return sock.sendMessage(from, { text: `❌ Perlukan alat dari *.bm*!` });
       if (now < user.cooldowns.crime && !isOwner) return sock.sendMessage(from, { text: `⏳ Polis meronda! Tunggu *${Math.ceil((user.cooldowns.crime - now) / 1000)} saat* lagi.` });
 
-      user.cooldowns.crime = now + (c.cd * 1000); let crimeRate = (c.id === 15) ? 0.60 : 0.55; 
+      user.cooldowns.crime = now + (c.cd * 1000); 
+      let crimeRate = (c.id === 15) ? 0.60 : 0.55; 
       if (activePhoneObj?.perk === "crime" || activePhoneObj?.perk === "god") crimeRate += activePhoneObj.val;
 
       if (Math.random() < crimeRate || isOwner) {
         let reward = Math.floor(Math.random() * (c.rewardMax - c.rewardMin + 1)) + c.rewardMin;
         if (currentEvent?.rewardMult) reward = Math.floor(reward * currentEvent.rewardMult);
-        user.cash += reward; user.stats.crimes += 1; user.stars = Math.min(5, user.stars + c.stars); updateUser(cleanSender, user);
+        user.cash += reward; 
+        user.stats.crimes += 1; 
+        user.stars = Math.min(5, user.stars + c.stars); 
+        updateUser(cleanSender, user);
         return sock.sendMessage(from, { text: `🦹 *MISI BERJAYA:* ${c.name}\n\n${getRandomNarrative(c.id === 15 ? "BANK_HACK_SUCCESS" : "CRIME_SUCCESS")}\n\n💵 Hasil: *+RM ${reward.toLocaleString()}*\n⭐ Wanted: ${"⭐".repeat(user.stars)}` });
       } else {
-        user.stars = Math.min(5, user.stars + 1); let jailTimeSec = Math.max(30, user.stars * 30);
+        user.stars = Math.min(5, user.stars + 1); 
+        let jailTimeSec = Math.max(30, user.stars * 30);
         let fine = currentEvent?.fineMult ? Math.floor(c.fine * currentEvent.fineMult) : c.fine;
-        user.cash = Math.max(0, user.cash - fine); user.cooldowns.jailUntil = now + (jailTimeSec * 1000);
+        user.cash = Math.max(0, user.cash - fine); 
+        user.cooldowns.jailUntil = now + (jailTimeSec * 1000);
         
-        let extraText = ""; if (c.id === 15) { const invIdx = user.inventory.findIndex(i => i.id === 12); if (invIdx !== -1) user.inventory.splice(invIdx, 1); extraText = "\n💥 *ALAT PENGGODAM RM150K ANDA TELAH MUSNAH TERBAKAR!*"; }
+        let extraText = ""; 
+        if (c.id === 15) { 
+          const invIdx = user.inventory.findIndex(i => i.id === 12); 
+          if (invIdx !== -1) user.inventory.splice(invIdx, 1); 
+          extraText = "\n💥 *ALAT PENGGODAM ANDA MUSNAH!*"; 
+        }
         updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🚨 *KANTOI POLIS!* 🚨\n\n${getRandomNarrative("CRIME_BUSTED")}\n\n💸 Denda: *-RM ${fine.toLocaleString()}* & lokap ${jailTimeSec}s!${extraText}` });
+        return sock.sendMessage(from, { text: `🚨 *KANTOI POLIS!*\n\n${getRandomNarrative("CRIME_BUSTED")}\n\n💸 Denda: *-RM ${fine.toLocaleString()}* & lokap ${jailTimeSec}s!${extraText}` });
       }
     }
 
@@ -1505,171 +1038,745 @@ async function startBotEngine() {
       if (targetUser.cash < 100) return sock.sendMessage(from, { text: `😅 Mangsa poket kempis bawah RM100.` });
       if (now < user.cooldowns.crime && !isOwner) return sock.sendMessage(from, { text: `⏳ Anda sedang menyorok dari polis! Tunggu *${Math.ceil((user.cooldowns.crime - now) / 1000)} saat* lagi.` });
 
-      let petObj = null; if (targetUser.pet) petObj = CYBER_PETS.find(p => p.id === targetUser.pet);
+      let petObj = null; 
+      if (targetUser.pet) petObj = CYBER_PETS.find(p => p.id === targetUser.pet);
+      
       if (petObj && (petObj.perk === "anti_rob" || petObj.perk === "dual_def" || petObj.perk === "dragon_god")) {
         if (Math.random() < petObj.val) {
-          user.cash = Math.max(0, user.cash - 1000); updateUser(cleanSender, user);
+          user.cash = Math.max(0, user.cash - 1000); 
+          updateUser(cleanSender, user);
           return sock.sendMessage(from, { text: `🛡️ *DISERANG PENGAWAL!*\n\n${getRandomNarrative("PET_DEFEND")}\n\n💸 Ganti Rugi: *-RM 1,000*` });
         }
       }
 
       user.cooldowns.crime = now + (180 * 1000);
       if (Math.random() < 0.50 || isOwner) {
-        const stolen = Math.floor(targetUser.cash * 0.10); targetUser.cash -= stolen; user.cash += stolen; 
+        const stolen = Math.floor(targetUser.cash * 0.10); 
+        targetUser.cash -= stolen; 
+        user.cash += stolen; 
         user.stars = Math.min(5, user.stars + 1);
-        let bountyNotice = ""; if (db.bounties && db.bounties[cleanTarget]) { const claimed = db.bounties[cleanTarget]; user.cash += claimed; delete db.bounties[cleanTarget]; saveDB(db); bountyNotice = `\n🎯 *BOUNTY CLAIMED:* Wang tebusan kepala +RM ${claimed.toLocaleString()}!`; }
-        updateUser(cleanSender, user); updateUser(cleanTarget, targetUser);
+        
+        let bountyNotice = ""; 
+        if (db.bounties && db.bounties[cleanTarget]) { 
+          const claimed = db.bounties[cleanTarget]; 
+          user.cash += claimed; 
+          delete db.bounties[cleanTarget]; 
+          saveDB(db); 
+          bountyNotice = `\n🎯 *BOUNTY CLAIMED:* Wang tebusan kepala +RM ${claimed.toLocaleString()}!`; 
+        }
+        
+        updateUser(cleanSender, user); 
+        updateUser(cleanTarget, targetUser);
         return sock.sendMessage(from, { text: `🥷 *ROMPAKAN BERJAYA!*\n\n${getRandomNarrative("ROB_SUCCESS")}\n\n💵 Hasil: *+RM ${stolen.toLocaleString()}* dari *${targetUser.name}*!${bountyNotice}`, mentions: [cleanTarget] });
       } else {
-        user.cash = Math.max(0, user.cash - 500); user.cooldowns.jailUntil = now + (60 * 1000); updateUser(cleanSender, user);
+        user.cash = Math.max(0, user.cash - 500); 
+        user.cooldowns.jailUntil = now + (60 * 1000); 
+        updateUser(cleanSender, user);
         return sock.sendMessage(from, { text: `🚨 *KANTOI SAMUN SIBER!* \n\n${getRandomNarrative("ROB_FAIL_ROAST")}\n\n💸 Denda: *-RM 500* & Lokap 60 saat!`, mentions: [cleanTarget] });
       }
     }
-    
 
-    if (cmd === "hackbank" || cmd === "godam_bank") {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; if (!targetTag) return sock.sendMessage(from, { text: `❌ Tag mangsa: *.hackbank @user*` });
-      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net"; if (cleanTarget === cleanSender) return sock.sendMessage(from, { text: `❌ Tak boleh godam akaun sendiri!` });
-      if (now < user.cooldowns.bankHack && !isOwner) return sock.sendMessage(from, { text: `⏳ *JEJAK KESELAMATAN AKTIF!* Sila bersembunyi selama *${Math.ceil((user.cooldowns.bankHack - now) / 60000)} minit*.` });
-
-      const hasHackDevice = user.inventory.some(i => i.id === 11 || i.id === 2 || i.id === 5);
-      if (!hasHackDevice && !isOwner) return sock.sendMessage(from, { text: `❌ Perlukan *Cyber Bypass Dongle (ID 11)* di *.bm*!` });
-      const targetUser = getUser(cleanTarget); if (targetUser.bank < 1000) return sock.sendMessage(from, { text: `😅 Simpanan bank mangsa bawah RM 1,000.` });
-
-      let petObj = null; if (targetUser.pet) petObj = CYBER_PETS.find(p => p.id === targetUser.pet);
-      if (petObj && (petObj.perk === "anti_hack" || petObj.perk === "dual_def" || petObj.perk === "dragon_god")) {
-          if (Math.random() < petObj.val) {
-              user.cash = Math.max(0, user.cash - 1000); user.cooldowns.bankHack = now + (15 * 60 * 1000); updateUser(cleanSender, user);
-              return sock.sendMessage(from, { text: `🛡️ *FIREWALL DISEKAT AI!*\n\nPengawal *${petObj.name}* milik mangsa memintas godaman anda!\n💸 Ganti Rugi Dipotong: *-RM 1,000*\n⏳ Cooldown Hack: 15 Minit.` });
-          }
-      }
-
-      const cyberEmojis = ["⚡", "💾", "🔓", "☣️", "👾", "📡", "🧩", "🗝️", "💎", "🛡️"]; const selectedPin = [...cyberEmojis].sort(() => 0.5 - Math.random()).slice(0, 4).join("");
-      if (!db.activeHacks) db.activeHacks = {}; db.activeHacks[cleanSender] = { target: cleanTarget, emojiPin: selectedPin, expires: now + 30000 }; saveDB(db);
-      return sock.sendMessage(from, { text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   ⚡ CYBER NEURAL HANDSHAKE ⚡\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n🎯 Sasaran: *${targetUser.name}*\n🔑 *KOD EMOJI PIN DIPERLUKAN:* ${selectedPin.split("").join("  ")}\n⏳ Tempoh: 30 Saat!\n👉 Taip: *.bypass ${selectedPin}*` });
+    if (cmd === "santau" || cmd === "santau_maya") {
+       const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+       if (!targetTag) return sock.sendMessage(from, { text: `❌ Tag mangsa: *.santau @user*` });
+       const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+       if (cleanTarget === cleanSender) return sock.sendMessage(from, { text: `❌ Nak santau diri sendiri buat apa?` });
+       if (user.cash < 2000) return sock.sendMessage(from, { text: `❌ Upah Dukun Siber (RM 2,000) tak cukup!` });
+       
+       user.cash -= 2000; 
+       const tUser = getUser(cleanTarget);
+       
+       if (Math.random() < 0.6) {
+           const curseLoss = Math.floor(tUser.cash * 0.15); 
+           tUser.cash -= curseLoss; 
+           updateUser(cleanSender, user); 
+           updateUser(cleanTarget, tUser);
+           return sock.sendMessage(from, { text: `💀 *ILMU HITAM BERJAYA!*\n\n${getRandomNarrative("SANTAU_SUCCESS")}\nWang mangsa merosot *-RM ${curseLoss.toLocaleString()}*!`, mentions: [cleanTarget] });
+       } else {
+           updateUser(cleanSender, user);
+           return sock.sendMessage(from, { text: `🛡️ *SANTAU DITEPIH!*\n\n${getRandomNarrative("SANTAU_FAIL")}\nRM 2,000 hangus bayar dukun siber.`, mentions: [cleanTarget] });
+       }
     }
 
-    if (cmd === "bypass") {
-      const activeHack = db.activeHacks?.[cleanSender];
-      if (!activeHack || now > activeHack.expires) { if (activeHack) { delete db.activeHacks[cleanSender]; saveDB(db); } return sock.sendMessage(from, { text: `❌ Tiada sesi godam aktif atau masa telah tamat!` }); }
-      const targetUser = getUser(activeHack.target);
-      if (args.join("").trim() === activeHack.emojiPin) {
-        delete db.activeHacks[cleanSender]; const stolen = Math.floor(targetUser.bank * 0.05); targetUser.bank -= stolen; user.cash += stolen; user.stats.bankHacks = (user.stats.bankHacks || 0) + 1; user.cooldowns.bankHack = now + (30 * 60 * 1000); 
-        saveDB(db); updateUser(cleanSender, user); updateUser(activeHack.target, targetUser);
-        return sock.sendMessage(from, { text: `🔓 *GODAM BERJAYA:* +RM ${stolen.toLocaleString()} disedut dari akaun bank mangsa!\n\n${getRandomNarrative("BANK_HACK_SUCCESS")}`, mentions: [activeHack.target] });
+    // =====================================================================
+    // 🎲 10 MINI-GAME KOMUNITI BAHARU (V4.0)
+    // =====================================================================
+    if (cmd === "bgk") {
+      const c = args[0]?.toLowerCase(); 
+      const bet = parseInt(args[1]);
+      if (!["batu", "gunting", "kertas"].includes(c) || isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `✊🖐✌️ Format: *.bgk [batu/gunting/kertas] [taruhan]*` });
+      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Tunai poket tak cukup untuk bertaruh! Semak baki guna *.bal*` });
+      
+      user.cash -= bet; 
+      const pilihan = ["batu", "gunting", "kertas"]; 
+      const botC = pilihan[Math.floor(Math.random() * 3)]; 
+      let res = ""; 
+      let p = 0;
+      
+      if (c === botC) { 
+        res = "SERI!"; p = bet; 
+      } else if ((c==="batu"&&botC==="gunting") || (c==="gunting"&&botC==="kertas") || (c==="kertas"&&botC==="batu")) { 
+        res = "MENANG!"; p = bet * 2; 
+      } else { 
+        res = "KALAH!"; p = 0; 
+      }
+      
+      user.cash += p; 
+      updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `✊🖐✌️ *OSOM!*\n\nAnda: ${c.toUpperCase()}\nAI: ${botC.toUpperCase()}\n\nKeputusan: *${res}*\n💸 ${p > 0 ? "+RM "+p : "-RM "+bet}` });
+    }
+
+    if (cmd === "gacha_mlbb") {
+      if (user.cash < 2000) return sock.sendMessage(from, { text: `❌ Spin *Mobile Legends* perlukan RM 2,000!` });
+      user.cash -= 2000; 
+      const rng = Math.random(); 
+      let prize = 0; 
+      let msg = "";
+      
+      if (rng < 0.01) { prize = 25000; msg = `🌟 *LEGENDARY SKIN!* Dapat Franco Legend! (Jual: +RM 25,000)`; }
+      else if (rng < 0.05) { prize = 8000; msg = `🔥 *EPIC SKIN!* Dapat Lancelot Dragon Tamer! (Jual: +RM 8,000)`; }
+      else if (rng < 0.20) { prize = 2500; msg = `✨ *ELITE SKIN!* Boleh tahan la. (Jual: +RM 2,500)`; }
+      else { prize = 0; msg = `🗑️ *MAGIC DUST x5!* Adoi rugi RM 2,000!`; }
+      
+      user.cash += prize; 
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `🎮 *GACHA MLBB*\n\n${msg}` });
+    }
+
+    if (cmd === "tiktok_affiliate") {
+      if (user.cash < 500) return sock.sendMessage(from, { text: `❌ Perlu RM 500 modal marketing (Ads) TikTok.` });
+      user.cash -= 500; 
+      const rng = Math.random(); 
+      let untung = 0; 
+      let msg = "";
+      
+      if (rng < 0.05) { untung = 15000; msg = `🚀 *FYP MELETUP!* Produk anda masuk di bawah beg kuning. Untung besar!`; }
+      else if (rng < 0.15) { untung = 3000; msg = `🔥 *VIRAL!* Jualan masuk bertalu-talu.`; }
+      else if (rng < 0.45) { untung = 600; msg = `👍 *BALIK MODAL.* Ada la sikit untung buat beli kopi.`; }
+      else { untung = 0; msg = `📉 *FLOP.* View sendu 20 orang je. Modal RM 500 lebur.`; }
+      
+      user.cash += untung; 
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `📱 *TIKTOK AFFILIATE*\n\n${msg}\n💵 Untung: +RM ${untung.toLocaleString()}` });
+    }
+
+    if (cmd === "sabung_ayam" || cmd === "ayam_sabung") {
+      const choice = args[0]?.toLowerCase(); 
+      const bet = parseInt(args[1]);
+      if (!["merah", "hitam"].includes(choice) || isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `🐔 Format: *.sabung_ayam [merah/hitam] [taruhan]*` });
+      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Duit tunai tak cukup!` });
+      
+      user.cash -= bet; 
+      const winner = Math.random() < 0.5 ? "merah" : "hitam";
+      
+      if (choice === winner) { 
+        user.cash += (bet * 2); 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🐔 *SABUNG AYAM*\n\nAyam ${winner.toUpperCase()} menang bertarung!\n💵 Anda menang: +RM ${(bet*2).toLocaleString()}!` }); 
+      } else { 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🐔 *SABUNG AYAM*\n\n❌ Ayam ${winner.toUpperCase()} yang menang. Rugi: -RM ${bet.toLocaleString()}` }); 
+      }
+    }
+
+    if (cmd === "teka_nombor") {
+      const guess = parseInt(args[0]); 
+      const bet = parseInt(args[1]);
+      if (isNaN(guess) || guess < 1 || guess > 10 || isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `🔢 Format: *.teka_nombor [1-10] [taruhan]*` });
+      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Duit tunai tak cukup!` });
+      
+      user.cash -= bet; 
+      const result = Math.floor(Math.random() * 10) + 1;
+      
+      if (guess === result) { 
+        user.cash += (bet * 10); 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🎉 *JACKPOT!* Nombor betul adalah ${result}! Menang 10X ganda!\n💵 +RM ${(bet*10).toLocaleString()}` }); 
+      } else { 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `❌ *SALAH!* Nombor rahsia adalah ${result}. Taruhan lebur.` }); 
+      }
+    }
+
+    if (cmd === "kotak_beracun") {
+      const pilihan = parseInt(args[0]);
+      if (isNaN(pilihan) || pilihan < 1 || pilihan > 3) return sock.sendMessage(from, { text: `📦 Main Kotak Beracun (Modal RM1000). Ada Bom, Kosong, & Emas!\nFormat: *.kotak_beracun [1/2/3]*` });
+      if (user.cash < 1000) return sock.sendMessage(from, { text: `❌ Anda perlukan RM 1,000 untuk main!` });
+      
+      user.cash -= 1000;
+      const hadiah = [ {n: "BOM! 💥", v: -5000}, {n: "Kosong 🕸️", v: 0}, {n: "Emas Tulen! 🪙", v: 10000} ].sort(() => Math.random() - 0.5);
+      const nasib = hadiah[pilihan - 1]; 
+      
+      user.cash += nasib.v; 
+      if (user.cash < 0) user.cash = 0; 
+      updateUser(cleanSender, user);
+      
+      return sock.sendMessage(from, { text: `📦 *KOTAK BERACUN*\n\nAnda membuka Kotak ${pilihan} dan isinya ialah... *${nasib.n}*\n\n💸 Impak: ${nasib.v > 0 ? "+RM "+nasib.v : nasib.v < 0 ? "-RM "+Math.abs(nasib.v) : "Tiada rugi/untung"}` });
+    }
+
+    if (cmd === "tarik_tali") {
+      const bet = parseInt(args[0]);
+      if (isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `🪢 Format: *.tarik_tali [taruhan]*` });
+      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Duit tunai tak cukup!` });
+      
+      user.cash -= bet; 
+      const pS = Math.random() * 100; 
+      const aS = Math.random() * 100;
+      
+      if (pS > aS) { 
+        user.cash += (bet * 2); 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🪢 *TARIK TALI*\n\n💪 Kuasa Anda: ${pS.toFixed(1)} | AI: ${aS.toFixed(1)}\n🎉 Anda tarik AI jatuh lumpur!\n💵 Menang: +RM ${(bet*2).toLocaleString()}` }); 
+      } else { 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🪢 *TARIK TALI*\n\n💪 Kuasa Anda: ${pS.toFixed(1)} | AI: ${aS.toFixed(1)}\n❌ Anda tersungkur ditarik AI! Rugi: RM ${bet.toLocaleString()}` }); 
+      }
+    }
+
+    if (cmd === "tembak_botol") {
+      if (user.cash < 500) return sock.sendMessage(from, { text: `🎯 Modal tembak botol RM 500.` });
+      
+      user.cash -= 500; 
+      const rng = Math.random(); 
+      let msg = ""; 
+      let win = 0;
+      
+      if (rng < 0.05) { win = 5000; msg = `🎯 *HEADSHOT!* Semua botol pecah berderai!`; } 
+      else if (rng < 0.3) { win = 800; msg = `💥 Kena 2 botol. Not bad.`; } 
+      else if (rng < 0.6) { win = 200; msg = `😅 Kena 1 botol je. Rugi sikit.`; } 
+      else { win = 0; msg = `🤡 Tembak ke laut! Kosong.`; }
+      
+      user.cash += win; 
+      updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `🎯 *TEMBAK BOTOL PESTA*\n\n${msg}\n💵 Tunai diterima: RM ${win}` });
+    }
+
+    if (cmd === "lumba_kuda") {
+      const k = parseInt(args[0]); 
+      const bet = parseInt(args[1]);
+      if (isNaN(k) || k < 1 || k > 5 || isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `🐎 Format: *.lumba_kuda [1-5] [taruhan]*` });
+      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Tunai tak cukup!` });
+      
+      user.cash -= bet; 
+      const winner = Math.floor(Math.random() * 5) + 1;
+      
+      if (k === winner) { 
+        user.cash += (bet * 5); 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🐎 *LUMBA KUDA*\n\nKuda nombor ${winner} menang lurus!\n💵 Menang 5X: +RM ${(bet*5).toLocaleString()}` }); 
+      } else { 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🐎 *LUMBA KUDA*\n\nKuda nombor ${winner} yang menang. Kuda ${k} kalah!\n❌ Lebur RM ${bet.toLocaleString()}` }); 
+      }
+    }
+
+    if (cmd === "tikam_nombor") {
+      const num = parseInt(args[0]);
+      if (isNaN(num) || num < 1 || num > 100) return sock.sendMessage(from, { text: `🎫 Tiket loteri bernilai RM 1000! Boleh menang RM 100,000.\nFormat: *.tikam_nombor [1-100]*` });
+      if (user.cash < 1000) return sock.sendMessage(from, { text: `❌ Anda tak cukup RM 1000.` });
+      
+      user.cash -= 1000; 
+      const rng = Math.floor(Math.random() * 100) + 1;
+      
+      if (num === rng) { 
+        user.cash += 100000; 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🎫 *CABUTAN BERTUAH*\n\nNombor anda: ${num} | Cabutan: ${rng}\n🎉 *JACKPOT GILA!* Anda menang +RM 100,000!` }); 
+      } else { 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🎫 *CABUTAN BERTUAH*\n\nNombor anda: ${num} | Cabutan: ${rng}\n❌ Nasib tak menyebelahi anda.` }); 
+      }
+    }
+
+    // =====================================================================
+    // 🛒 P2P MARKETPLACE
+    // =====================================================================
+    if (cmd === "jual_market") {
+      const type = args[0]?.toLowerCase(); 
+      const itemId = args[1]?.toLowerCase(); 
+      const price = parseInt(args[2]);
+      
+      if (!["kenderaan", "bm"].includes(type) || !itemId || isNaN(price) || price <= 0) {
+        return sock.sendMessage(from, { text: `❌ Format: *.jual_market [kenderaan/bm] [kod_item] [harga_jual]*` });
+      }
+      
+      let itemName = ""; 
+      if (type === "kenderaan") {
+         if (!user.vehicles.includes(itemId)) return sock.sendMessage(from, { text: `❌ Kenderaan tiada dalam garaj!` });
+         itemName = VEHICLES.find(v => v.id === itemId).name; 
+         user.vehicles = user.vehicles.filter(v => v !== itemId);
       } else {
-        delete db.activeHacks[cleanSender]; user.cash = Math.max(0, user.cash - 1500); user.cooldowns.jailUntil = now + (60 * 1000); user.cooldowns.bankHack = now + (15 * 60 * 1000); 
-        saveDB(db); updateUser(cleanSender, user);
-        return sock.sendMessage(from, { text: `🚨 *FIREWALL ALERT:* PIN Emoji salah! Denda RM 1,500 & masuk lokap 60s!` });
+         const idx = user.inventory.findIndex(i => i.id == itemId); 
+         if (idx === -1) return sock.sendMessage(from, { text: `❌ Barang tiada dalam beg!` });
+         itemName = user.inventory[idx].name; 
+         user.inventory.splice(idx, 1);
+      }
+      
+      const listingId = Math.random().toString(36).substring(2, 7).toUpperCase();
+      if (!db.p2pMarket) db.p2pMarket = []; 
+      db.p2pMarket.push({ 
+        listId: listingId, 
+        sellerId: cleanSender, 
+        sellerName: user.name, 
+        type: type, 
+        itemId: itemId, 
+        itemName: itemName, 
+        price: price 
+      });
+      
+      saveDB(db); 
+      updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `✅ *[P2P]* ${itemName} diletak di Pasaran Gelap!\n🔖 Kod Listing: *${listingId}* | Harga: RM ${price.toLocaleString()}` });
+    }
+
+    if (cmd === "pasar_pemain" || cmd === "p2p") {
+      if (!db.p2pMarket || db.p2pMarket.length === 0) return sock.sendMessage(from, { text: `🛒 Pasaran P2P sunyi sepi...` });
+      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🛒 PASARAN LELONGAN (P2P)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
+      db.p2pMarket.forEach(m => { 
+        ui += `🔖 *[${m.listId}]* ${m.itemName}\n👤 Penjual: ${m.sellerName}\n💰 Harga: RM ${m.price.toLocaleString()}\n\n`; 
+      });
+      ui += `👉 Beli: *.beli_market [Kod_Listing]*`; 
+      return sock.sendMessage(from, { text: ui });
+    }
+
+    if (cmd === "beli_market") {
+      const listId = args[0]?.toUpperCase(); 
+      if (!listId || !db.p2pMarket) return sock.sendMessage(from, { text: `❌ Masukkan Kod Listing dari *.pasar_pemain*!` });
+      
+      const itemIdx = db.p2pMarket.findIndex(m => m.listId === listId); 
+      if (itemIdx === -1) return sock.sendMessage(from, { text: `❌ Kod Listing tak wujud/dibeli orang lain.` });
+      
+      const itemData = db.p2pMarket[itemIdx]; 
+      if (itemData.sellerId === cleanSender) return sock.sendMessage(from, { text: `❌ Takkan nak beli barang sendiri bos?` });
+      if (user.cash < itemData.price) return sock.sendMessage(from, { text: `❌ Duit tunai poket tak cukup!` });
+
+      if (itemData.type === "kenderaan") {
+        user.vehicles.push(itemData.itemId); 
+      } else {
+        user.inventory.push({ id: itemData.itemId, name: itemData.itemName });
+      }
+      
+      user.cash -= itemData.price; 
+      const seller = getUser(itemData.sellerId); 
+      seller.cash += itemData.price;
+      
+      db.p2pMarket.splice(itemIdx, 1); 
+      saveDB(db); 
+      updateUser(cleanSender, user); 
+      updateUser(itemData.sellerId, seller);
+      
+      return sock.sendMessage(from, { text: `🤝 *TRANSAKSI P2P BERJAYA!*\n\nBeli *${itemData.itemName}* dengan harga RM ${itemData.price.toLocaleString()}.\nWang dipindahkan ke *${seller.name}*.` });
+    }
+
+    // =====================================================================
+    // 📈 INFO, PROFIL & ASET
+    // =====================================================================
+    if (cmd === "balance" || cmd === "bal") {
+      return sock.sendMessage(from, { text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   💳 AKAUN: @${user.name}\n┣━━━━━━━━━━━━━━━━━━━━━━━━━━┫\n💼 Tunai : RM ${user.cash.toLocaleString()}\n🏦 Bank  : RM ${user.bank.toLocaleString()}\n🪙 Emas  : ${(user.goldGrams||0).toFixed(2)}g\n₿ Kripto: ${(user.btcUnits||0).toFixed(4)} BTC\n📦 Besi  : ${user.scrapMetalKg} kg\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛` });
+    }
+    
+    if (cmd === "myid" || cmd === "ic") {
+      const totalWealth = user.cash + user.bank + Math.floor((user.goldGrams || 0) * (db.market?.gold || 350)) + Math.floor((user.btcUnits || 0) * (db.market?.btc || 280000));
+      const uRod = FISHING_SHOP.rods.find(r => r.id === user.fishingGear?.rod) || FISHING_SHOP.rods[0]; 
+      const uReel = FISHING_SHOP.reels.find(r => r.id === user.fishingGear?.reel) || FISHING_SHOP.reels[0];
+      return sock.sendMessage(from, { text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🪪 CYBER ID (S${db.season || 1})\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n👤 Nama: *${user.name}*\n🎖️ Gelaran: ${getTitle(user)}\n📱 Peranti: ${user.phoneName}\n🐕 Pengawal: ${user.pet ? CYBER_PETS.find(p=>p.id===user.pet)?.name : "Tiada"}\n💵 Tunai: RM ${user.cash.toLocaleString()} | 🏦 Bank: RM ${user.bank.toLocaleString()}\n💎 Nilai Harta: RM ${totalWealth.toLocaleString()}\n🏎️ Jentera: ${user.vehicles.length} | 🏢 Hartanah: ${user.properties.length}\n🎣 Gear: ${uRod.name} | ${uReel.name}` });
+    }
+    
+    if (cmd === "profile") {
+      const vL = user.vehicles.length ? user.vehicles.join(", ") : "Garaj kosong"; 
+      const iL = user.inventory.length ? user.inventory.map(i => i.name).join(", ") : "Beg kosong";
+      return sock.sendMessage(from, { text: `🎒 *PROFIL INVENTORI*\n\n🏎️ Jentera: ${vL}\n🏴‍☠️ Barang BM: ${iL}\n🎣 Joran: *${FISHING_SHOP.rods.find(r=>r.id===user.fishingGear?.rod)?.name||"Joran Buluh"}*\n🪱 Umpan: *${FISHING_SHOP.baits.find(b=>b.id===user.fishingGear?.bait)?.name||"Tiada"}*\n🧲 Magnet: *${user.magnetGear?.magnet ? MAGNET_SHOP.find(m=>m.id===user.magnetGear.magnet)?.name : "Tiada"}*\n📦 Besi: *${user.scrapMetalKg} KG*\n📦 Peti: *${user.misteryBoxes}*` });
+    }
+
+    if (cmd === "kerja" || cmd === "work") {
+      if (now < user.cooldowns.work && !isOwner) {
+        return sock.sendMessage(from, { text: `⚠️ Rehat *${Math.ceil((user.cooldowns.work - now) / 1000)} saat* lagi.` });
+      }
+      
+      const job = JOBS[Math.floor(Math.random() * JOBS.length)]; 
+      let pay = Math.floor(Math.random() * (job.maxPay - job.minPay + 1)) + job.minPay;
+      
+      if (activePhoneObj?.perk === "work" || activePhoneObj?.perk === "god") {
+        pay += Math.floor(pay * activePhoneObj.val);
+      }
+      
+      if (currentEvent?.jobMult) {
+        pay = Math.floor(pay * currentEvent.jobMult);
+      }
+      
+      if (user.pet) { 
+        const pObj = CYBER_PETS.find(p => p.id === user.pet); 
+        if (pObj && (pObj.perk === "work_boost" || pObj.perk === "dragon_god")) {
+          pay += Math.floor(pay * pObj.val); 
+        }
+      }
+      
+      user.cash += pay; 
+      user.stats.works += 1; 
+      user.cooldowns.work = now + 30000; 
+      updateUser(cleanSender, user);
+      
+      return sock.sendMessage(from, { text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   💼 SLIP GAJI HALAL\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n🏢 Tugasan: *${job.name}*\n💵 Upah: *+RM ${pay.toLocaleString()}*` });
+    }
+
+    // =====================================================================
+    // 🏎️ GARAJ & BENGKEL
+    // =====================================================================
+    if (cmd === "showroom") {
+      const page = parseInt(args[0]) || 1; 
+      const start = (page - 1) * 20; 
+      const pageV = VEHICLES.slice(start, start + 20);
+      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🏎️ SHOWROOM JENTERA (PAGE ${page}/4)\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
+      pageV.forEach(v => { 
+        ui += `• *[${v.id}]* ${v.name}\n  💰 RM ${v.price.toLocaleString()} | ⚡ ${v.speed} km/h\n\n`; 
+      });
+      ui += `💡 Beli: *.beli_kenderaan [id]* | Halaman: *.showroom 1*, *.showroom 2*`; 
+      return sock.sendMessage(from, { text: ui });
+    }
+    
+    if (cmd === "beli_kenderaan") {
+      const v = VEHICLES.find(x => x.id === args[0]?.toLowerCase()); 
+      if (!v) return sock.sendMessage(from, { text: `❌ Kod jentera tidak wujud!` });
+      if (user.cash < v.price) return sock.sendMessage(from, { text: `❌ Baki tunai tidak cukup!` }); 
+      if (user.vehicles.includes(v.id)) return sock.sendMessage(from, { text: `⚠️ Jentera ini sudah ada di garaj!` });
+      
+      user.cash -= v.price; 
+      user.vehicles.push(v.id); 
+      updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `🎉 Berjaya beli *${v.name}*!` });
+    }
+    
+    if (cmd === "bengkel") {
+      const vId = args[0]?.toLowerCase();
+      if (!vId) {
+        if (user.vehicles.length === 0) return sock.sendMessage(from, { text: `❌ Garaj kosong!` }); 
+        let gUI = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🔧 BENGKEL MODIFIKASI\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
+        user.vehicles.forEach((uVId, i) => { 
+          const vD = VEHICLES.find(v => v.id === uVId); 
+          if (vD) gUI += `${i + 1}. ${vD.name} ➔ Kod: *${vD.id}*\n`; 
+        });
+        gUI += `\n💡 Taip *.bengkel [kod_jentera]*`; 
+        return sock.sendMessage(from, { text: gUI });
+      }
+      
+      if (!user.vehicles.includes(vId)) return sock.sendMessage(from, { text: `❌ Jentera tiada dalam garaj!` });
+      
+      const v = VEHICLES.find(x => x.id === vId); 
+      const pAvail = MOD_PARTS[v.type] || []; 
+      const instMods = user.vehicleMods?.[vId] || [];
+      let mUI = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🛠️ MODIFIKASI : ${v.name}\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
+      
+      pAvail.forEach(p => { 
+        const isInst = instMods.includes(p.name); 
+        mUI += `• *[ID ${p.id}]* ${p.name} ➔ ${isInst ? "✅" : `RM ${p.price.toLocaleString()}`}\n  _${p.desc}_\n\n`; 
+      });
+      mUI += `💡 Taip *.pasang ${vId} [ID_Barang]*`; 
+      return sock.sendMessage(from, { text: mUI });
+    }
+    
+    if (cmd === "pasang") {
+      const vId = args[0]?.toLowerCase(); 
+      const partId = parseInt(args[1]); 
+      if (!vId || isNaN(partId) || !user.vehicles.includes(vId)) return sock.sendMessage(from, { text: `❌ Format: *.pasang [kod_jentera] [id_barang]*` });
+      
+      const vehicle = VEHICLES.find(v => v.id === vId); 
+      const part = MOD_PARTS[vehicle.type]?.find(p => p.id === partId); 
+      if (!part) return sock.sendMessage(from, { text: `❌ ID barang tidak sah!` });
+      
+      if (!user.vehicleMods) user.vehicleMods = {}; 
+      if (!user.vehicleMods[vId]) user.vehicleMods[vId] = [];
+      
+      if (user.vehicleMods[vId].includes(part.name)) return sock.sendMessage(from, { text: `⚠️ Dah terpasang!` });
+      if (user.cash < part.price) return sock.sendMessage(from, { text: `❌ Tunai tak cukup!` });
+      
+      user.cash -= part.price; 
+      user.vehicleMods[vId].push(part.name); 
+      updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `🔧 *${part.name}* dipasang pada *${vehicle.name}*!` });
+    }
+    
+    if (cmd === "lumba" || cmd === "race") {
+      const vId = args[0]?.toLowerCase(); 
+      if (!vId || !user.vehicles.includes(vId)) return sock.sendMessage(from, { text: `❌ Masukkan kod jentera! Contoh: *.lumba y15*` });
+      if (now < user.cooldowns.race && !isOwner) return sock.sendMessage(from, { text: `🏎️ Enjin panas! Tunggu *${Math.ceil((user.cooldowns.race - now) / 1000)} saat*.` });
+      
+      const vehicle = VEHICLES.find(v => v.id === vId); 
+      user.cooldowns.race = now + (90 * 1000);
+      let sBonus = 0; 
+      
+      (user.vehicleMods?.[vId] || []).forEach(mName => { 
+        const pObj = MOD_PARTS[vehicle.type]?.find(p => p.name === mName); 
+        if (pObj) sBonus += pObj.boostSpeed; 
+      });
+      
+      const tSpeed = vehicle.speed + sBonus; 
+      let wChance = tSpeed / 240; 
+      if (activePhoneObj?.perk === "race" || activePhoneObj?.perk === "god") wChance += activePhoneObj.val;
+      
+      if (Math.random() < wChance || isOwner) {
+        let rwd = Math.floor((vehicle.price * 0.05) + 500); 
+        if (currentEvent?.raceMult) rwd = Math.floor(rwd * currentEvent.raceMult);
+        user.cash += rwd; 
+        user.stats.racesWon += 1; 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🏁 *JUARA DRAG RACE!*\n\n${getRandomNarrative("RACE_WIN")}\n\n🏎️ Jentera: *${vehicle.name}*\n💰 Hadiah: *+RM ${rwd.toLocaleString()}*` });
+      } else {
+        const repCost = Math.floor(vehicle.price * 0.02); 
+        user.cash = Math.max(0, user.cash - repCost); 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `💥 *TERBABAS DI LITAR!*\n\n${getRandomNarrative("RACE_CRASH")}\n\n💸 Kos Baiki: *-RM ${repCost.toLocaleString()}*` });
       }
     }
 
     // =====================================================================
-    // 🎰 KASINO & AHLONG
+    // 🏢 HARTANAH
     // =====================================================================
-    if (cmd === "coinflip") {
-      const choice = args[0]?.toLowerCase(); const bet = parseInt(args[1]);
-      if (!["kepala", "bunga"].includes(choice) || isNaN(bet) || bet <= 0) return sock.sendMessage(from, { text: `Format: *.coinflip [kepala/bunga] [taruhan]*` });
-      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Tunai tak mencukupi!` });
-      user.cash -= bet; const isWin = Math.random() < 0.49 || isOwner;
-      if (isWin) { user.cash += (bet * 2); updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🪙 *MENANG:* Syiling ${choice.toUpperCase()}! (+RM ${(bet*2).toLocaleString()})` }); } 
-      else { updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🪙 *TEWAS:* Taruhan *-RM ${bet.toLocaleString()}* lesap!` }); }
+    if (cmd === "list_hartanah") { 
+      let ui = `🏢 HARTANAH:\n`; 
+      PROPERTIES.forEach(p => { 
+        ui += `• [${p.id}] ${p.name} (RM ${p.price.toLocaleString()})\n`; 
+      }); 
+      return sock.sendMessage(from, { text: ui + `\n👉 *.beli_rumah [id]*` }); 
     }
-
-    if (cmd === "slot") {
-      const bet = parseInt(args[0]); if (isNaN(bet) || bet < 10) return sock.sendMessage(from, { text: `❌ Min taruhan RM 10.` });
-      if (user.cash < bet) return sock.sendMessage(from, { text: `❌ Tunai tak mencukupi!` });
-      const icons = ["🍒", "🍋", "🍇", "💎", "7️⃣"]; const r1 = icons[Math.floor(Math.random() * icons.length)]; const r2 = icons[Math.floor(Math.random() * icons.length)]; const r3 = icons[Math.floor(Math.random() * icons.length)];
-      user.cash -= bet; let mult = (r1 === r2 && r2 === r3) ? (r1 === "7️⃣" ? 10 : 5) : ((r1 === r2 || r2 === r3 || r1 === r3) ? 1.5 : 0); if (isOwner && mult === 0) mult = 3;
-      if (mult > 0) { const reward = Math.floor(bet * mult); user.cash += reward; updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🎰 [ ${r1} | ${r2} | ${r3} ]\n🔥 *JACKPOT!* +RM ${reward.toLocaleString()}!` }); } 
-      else { updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🎰 [ ${r1} | ${r2} | ${r3} ]\n❌ Tiada padanan. Rugi -RM ${bet.toLocaleString()}.` }); }
+    
+    if (cmd === "beli_rumah") { 
+      const pr = PROPERTIES.find(x => x.id === parseInt(args[0])); 
+      if (!pr || user.cash < pr.price) return sock.sendMessage(from, { text: `❌ Batal! Semak kod dan duit.` }); 
+      
+      user.cash -= pr.price; 
+      user.properties.push(pr.id); 
+      updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `🏠 Dibeli! *${pr.name}* milik anda.` }); 
     }
-
-    if (cmd === "hutang_ahlong") {
-      const amt = parseInt(args[0]); if (isNaN(amt) || amt <= 0 || amt > 500000) return sock.sendMessage(from, { text: `❌ Had pinjaman: RM 1 - RM 500,000!` });
-      if (user.debt > 0) return sock.sendMessage(from, { text: `❌ Selesaikan baki hutang lama dahulu!` });
-      user.cash += amt; user.debt = Math.floor(amt * 1.25); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🦈 *PINJAMAN LULUS:* Tunai +RM ${amt.toLocaleString()} diterima. Baki bayaran: RM ${user.debt.toLocaleString()} (Faedah 25%).` });
-    }
-
-    if (cmd === "bayar_ahlong") {
-      if (user.debt <= 0) return sock.sendMessage(from, { text: `ℹ️ Tiada rekod hutang.` });
-      if (user.cash < user.debt) return sock.sendMessage(from, { text: `❌ Duit tunai tidak cukup bayar RM ${user.debt.toLocaleString()}!` });
-      user.cash -= user.debt; user.debt = 0; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🦈 *HUTANG LANGSAI:* Rumah anda selamat!` });
-    }
-
-    // =====================================================================
-    // 🏦 BANK
-    // =====================================================================
-    if (cmd === "deposit" || cmd === "dep") {
-      const amt = args[0] === "all" ? user.cash : parseInt(args[0]);
-      if (isNaN(amt) || amt <= 0) return sock.sendMessage(from, { text: `❌ Masukkan jumlah yang sah!` });
-      if (user.cash < amt) return sock.sendMessage(from, { text: `❌ Baki tunai tidak mencukupi!` });
-      user.cash -= amt; user.bank += amt; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `🏦 *DEPOSIT:* +RM ${amt.toLocaleString()} disimpan dalam bank!` });
-    }
-
-    if (cmd === "withdraw" || cmd === "wd") {
-      const amt = args[0] === "all" ? user.bank : parseInt(args[0]);
-      if (isNaN(amt) || amt <= 0) return sock.sendMessage(from, { text: `❌ Masukkan jumlah yang sah!` });
-      if (user.bank < amt) return sock.sendMessage(from, { text: `❌ Baki bank tidak mencukupi!` });
-      user.bank -= amt; user.cash += amt; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `💵 *WITHDRAW:* +RM ${amt.toLocaleString()} dikeluarkan ke poket!` });
-    }
-
-    if (cmd === "transfer" || cmd === "pay") {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; const amt = parseInt(args[1]);
-      if (!targetTag || isNaN(amt) || amt <= 0) return sock.sendMessage(from, { text: `❌ Format: *.transfer @user [jumlah]*` });
-      if (user.cash < amt) return sock.sendMessage(from, { text: `❌ Duit tunai tak cukup!` });
-      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net"; if (cleanTarget === cleanSender) return sock.sendMessage(from, { text: `❌ Tak boleh transfer duit kat diri sendiri bos!` });
-      const targetUser = getUser(cleanTarget); user.cash -= amt; targetUser.cash += amt; updateUser(cleanSender, user); updateUser(cleanTarget, targetUser);
-      return sock.sendMessage(from, { text: `💸 *TRANSFER:* RM ${amt.toLocaleString()} dihantar ke *${targetUser.name}*!` });
+    
+    if (cmd === "kutip_sewa") { 
+      if(now < user.cooldowns.rent && !isOwner) {
+        return sock.sendMessage(from,{text:`⏳ Sabar! Belum cukup tempoh.`}); 
+      }
+      user.cooldowns.rent = now + 86400000; 
+      let r = 0; 
+      user.properties.forEach(pid => { 
+        const p = PROPERTIES.find(x => x.id === pid); 
+        if(p) r += p.rent; 
+      }); 
+      
+      user.cash += r; 
+      updateUser(cleanSender,user); 
+      return sock.sendMessage(from,{text:`💵 Kutip Sewa: +RM ${r.toLocaleString()}`}); 
     }
 
     // =====================================================================
-    // 🍔 KEDAI MAKAN & PHONE
+    // 🏦 BANK, KASINO & KEDAI MAKAN / DEVICE
     // =====================================================================
-    if (cmd === "shop" || cmd === "warung") {
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🍔 WARUNG MAKANAN AIRI\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      FOOD_ITEMS.forEach(f => { ui += `• *[${f.id}]* ${f.name} ➔ RM ${f.price}\n  _${f.desc}_\n\n`; });
-      ui += `💡 Taip *.beli_makanan [id]* & *.makan [id]*`; return sock.sendMessage(from, { text: ui });
+    if (cmd === "deposit" || cmd === "dep") { 
+      const amt = args[0] === "all" ? user.cash : parseInt(args[0]); 
+      if (isNaN(amt) || amt <= 0 || user.cash < amt) return sock.sendMessage(from, { text: `❌ Baki tak cukup!` }); 
+      user.cash -= amt; user.bank += amt; updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `🏦 *DEPOSIT:* +RM ${amt.toLocaleString()}` }); 
+    }
+    
+    if (cmd === "withdraw" || cmd === "wd") { 
+      const amt = args[0] === "all" ? user.bank : parseInt(args[0]); 
+      if (isNaN(amt) || amt <= 0 || user.bank < amt) return sock.sendMessage(from, { text: `❌ Baki tak cukup!` }); 
+      user.bank -= amt; user.cash += amt; updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `💵 *WITHDRAW:* +RM ${amt.toLocaleString()}` }); 
+    }
+    
+    if (cmd === "transfer" || cmd === "pay") { 
+      const tgt = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; 
+      const amt = parseInt(args[1]); 
+      if (!tgt || isNaN(amt) || user.cash < amt) return sock.sendMessage(from, { text: `❌ Format: *.transfer @user [jumlah]*` }); 
+      const tUser = getUser(tgt.replace(/[^0-9]/g, "") + "@s.whatsapp.net"); 
+      user.cash -= amt; tUser.cash += amt; 
+      updateUser(cleanSender, user); 
+      updateUser(tgt.replace(/[^0-9]/g, "") + "@s.whatsapp.net", tUser); 
+      return sock.sendMessage(from, { text: `💸 *TRANSFER:* RM ${amt.toLocaleString()} dihantar!` }); 
     }
 
-    if (cmd === "beli_makanan") {
-      const f = FOOD_ITEMS.find(x => x.id === args[0]?.toLowerCase()); if (!f || user.cash < f.price) return sock.sendMessage(from, { text: `❌ Menu tidak sah atau duit tidak cukup!` });
-      user.cash -= f.price; user.food.push(f.id); updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🍽️ Berjaya order *${f.name}*!` });
+    if (cmd === "slot") { 
+      const bet = parseInt(args[0]); 
+      if (isNaN(bet) || bet < 10 || user.cash < bet) return sock.sendMessage(from, { text: `❌ Min taruhan RM 10 dan duit cukup!` }); 
+      const i = ["🍒", "🍋", "🍇", "💎", "7️⃣"]; 
+      const r1=i[Math.floor(Math.random()*5)], r2=i[Math.floor(Math.random()*5)], r3=i[Math.floor(Math.random()*5)]; 
+      user.cash -= bet; 
+      let mult = (r1===r2&&r2===r3)?(r1==="7️⃣"?10:5):((r1===r2||r2===r3||r1===r3)?1.5:0); 
+      if (isOwner && mult===0) mult=3; 
+      if (mult > 0) { 
+        const win = Math.floor(bet * mult); 
+        user.cash += win; updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🎰 [ ${r1} | ${r2} | ${r3} ]\n🔥 *JACKPOT!* +RM ${win.toLocaleString()}!` }); 
+      } else { 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🎰 [ ${r1} | ${r2} | ${r3} ]\n❌ Rugi -RM ${bet.toLocaleString()}` }); 
+      } 
+    }
+    
+    if (cmd === "coinflip") { 
+      const c = args[0]?.toLowerCase(); 
+      const bet = parseInt(args[1]); 
+      if (!["kepala", "bunga"].includes(c) || isNaN(bet) || user.cash < bet) return sock.sendMessage(from, { text: `Format: *.coinflip [kepala/bunga] [taruhan]*` }); 
+      user.cash -= bet; 
+      if (Math.random() < 0.49 || isOwner) { 
+        user.cash += (bet * 2); updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🪙 *MENANG!* (+RM ${(bet*2).toLocaleString()})` }); 
+      } else { 
+        updateUser(cleanSender, user); 
+        return sock.sendMessage(from, { text: `🪙 *TEWAS!*` }); 
+      } 
+    }
+    
+    if (cmd === "hutang_ahlong") { 
+      const amt = parseInt(args[0]); 
+      if (isNaN(amt) || amt <= 0 || amt > 500000 || user.debt > 0) return sock.sendMessage(from, { text: `❌ Maks RM500k & langsaikan hutang lama dulu!` }); 
+      user.cash += amt; user.debt = Math.floor(amt * 1.25); updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `🦈 Pinjaman Lulus! Baki bayar: RM ${user.debt.toLocaleString()}` }); 
+    }
+    
+    if (cmd === "bayar_ahlong") { 
+      if (user.debt <= 0 || user.cash < user.debt) return sock.sendMessage(from, { text: `❌ Duit tak cukup bayar RM ${user.debt.toLocaleString()}!` }); 
+      user.cash -= user.debt; user.debt = 0; updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `🦈 Langsai!` }); 
     }
 
-    if (cmd === "makan") {
-      const idx = user.food.indexOf(args[0]?.toLowerCase()); if (idx === -1) return sock.sendMessage(from, { text: `❌ Makanan tiada dalam beg!` });
-      const fId = user.food.splice(idx, 1)[0]; let resText = `😋 Kenyang padu!`;
-      if (fId === "nasilemak") { user.cooldowns.work = 0; resText += ` Tenaga penuh, boleh kerja sekarang!`; }
-      else if (fId === "roticanai") { user.cooldowns.work = Math.max(0, user.cooldowns.work - 20000); resText += ` Cooldown kerja dipendekkan 20s.`; }
-      else if (fId === "tehtarik") { user.cooldowns.work = Math.max(0, user.cooldowns.work - 10000); resText += ` Cooldown kerja dipendekkan 10s.`; }
-      else if (fId === "burger") { if (user.cooldowns.jailUntil > now) { const timeJail = user.cooldowns.jailUntil - now; user.cooldowns.jailUntil = now + (timeJail * 0.90); resText += ` Denda lokap dikurangkan 10%!`; } else { resText += ` Makanan simpanan sahaja.`; } }
-      updateUser(cleanSender, user); return sock.sendMessage(from, { text: resText });
+    if (cmd === "shop" || cmd === "warung") { 
+      let ui = `🍔 WARUNG AIRI:\n`; 
+      FOOD_ITEMS.forEach(f => { ui += `• [${f.id}] ${f.name} ➔ RM ${f.price}\n`; }); 
+      return sock.sendMessage(from, { text: ui + `\n👉 *.beli_makanan [id]* & *.makan [id]*` }); 
+    }
+    
+    if (cmd === "beli_makanan") { 
+      const f = FOOD_ITEMS.find(x => x.id === args[0]?.toLowerCase()); 
+      if (!f || user.cash < f.price) return; 
+      user.cash -= f.price; user.food.push(f.id); updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `🍽️ Order ${f.name} berjaya!` }); 
+    }
+    
+    if (cmd === "makan") { 
+      const idx = user.food.indexOf(args[0]?.toLowerCase()); 
+      if (idx === -1) return; 
+      user.food.splice(idx, 1); 
+      user.cooldowns.work = 0; 
+      updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `😋 Kenyang padu! CD Kerja Reset.` }); 
+    }
+    
+    if (cmd === "device") { 
+      let ui = `📱 KEDAI TELEFON:\n`; 
+      PHONE_DEVICES.forEach(p => { ui += `• [${p.id}] ${p.name} ➔ RM ${p.price}\n`; }); 
+      return sock.sendMessage(from, { text: ui + `\n👉 *.beli_phone [id]*` }); 
+    }
+    
+    if (cmd === "beli_phone") { 
+      const p = PHONE_DEVICES.find(x => x.id === args[0]?.toLowerCase()); 
+      if (!p || user.cash < p.price) return; 
+      user.cash -= p.price; user.phoneDevice = p.id; user.phoneName = p.name; updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `📱 Dibeli!` }); 
+    }
+    
+    if (cmd === "upah_lawyer") { 
+      if (now >= user.cooldowns.jailUntil && !isOwner) return; 
+      if (user.cash < 500 && !isOwner) return; 
+      if (!isOwner) user.cash -= 500; 
+      user.cooldowns.jailUntil = 0; 
+      updateUser(cleanSender, user); 
+      return sock.sendMessage(from, { text: `⚖️ Anda bebas!` }); 
     }
 
-    if (cmd === "device") {
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   📱 KEDAI TELEFON PINTAR\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      PHONE_DEVICES.forEach(p => { ui += `• *[${p.id}]* ${p.name}\n  💰 RM ${p.price.toLocaleString()} | _${p.bonus}_\n\n`; });
-      ui += `💡 Taip *.beli_phone [id]*`; return sock.sendMessage(from, { text: ui });
+    // =====================================================================
+    // 🎣 SISTEM MEMANCING & AKUARIUM (YANG TERCICIR)
+    // =====================================================================
+    if (cmd === "kedai_pancing" || cmd === "tackleshop") {
+      const subCategory = args[0];
+      if (!subCategory) return sock.sendMessage(from, { text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   🎣 KEDAI PANCING AIRI\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n1️⃣ Joran\n2️⃣ Kekili\n3️⃣ Umpan\n4️⃣ Akuarium\n\n👉 Contoh: *.kedai_pancing 1*` });
+      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   KEDAI KATEGORI ${subCategory}\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
+      if (subCategory === "1") FISHING_SHOP.rods.forEach(r => { ui += `• *[${r.id}]* ${r.name}\n  💰 RM ${r.price.toLocaleString()} | _${r.desc}_\n\n`; });
+      else if (subCategory === "2") FISHING_SHOP.reels.forEach(re => { ui += `• *[${re.id}]* ${re.name}\n  💰 RM ${re.price.toLocaleString()} | _${re.desc}_\n\n`; });
+      else if (subCategory === "3") FISHING_SHOP.baits.forEach(b => { ui += `• *[${b.id}]* ${b.name}\n  💰 RM ${b.price.toLocaleString()} | _${b.desc}_\n\n`; });
+      else if (subCategory === "4") FISHING_SHOP.tanks.forEach(t => { ui += `• *[${t.id}]* ${t.name}\n  💰 RM ${t.price.toLocaleString()} | _${t.desc}_\n\n`; });
+      else return sock.sendMessage(from, { text: `❌ Nombor 1-4 sahaja.` });
+      return sock.sendMessage(from, { text: ui + `👉 Beli: *.beli_pancing [id]*` });
     }
+    if (cmd === "beli_pancing") {
+      const itemCode = args[0]?.toLowerCase(); if (!itemCode) return sock.sendMessage(from, { text: `❌ Masukkan kod barang!` });
+      const item = [...FISHING_SHOP.rods, ...FISHING_SHOP.reels, ...FISHING_SHOP.baits, ...FISHING_SHOP.tanks].find(i => i.id === itemCode);
+      if (!item) return sock.sendMessage(from, { text: `❌ Kod tidak wujud!` });
+      if (user.cash < item.price) return sock.sendMessage(from, { text: `❌ Tunai tak cukup!` });
+      user.cash -= item.price;
+      if (item.luckBonus) user.fishingGear.rod = item.id; else if (item.cdReduction) user.fishingGear.reel = item.id; else if (item.priceMult) user.fishingGear.bait = item.id; else user.fishingGear.tank = item.id;
+      updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🎉 Berjaya membeli *${item.name}*!` });
+    }
+    if (cmd === "mancing" || cmd === "fish") {
+      const uReel = FISHING_SHOP.reels.find(r => r.id === user.fishingGear?.reel) || FISHING_SHOP.reels[0];
+      if (now < user.cooldowns.fish && !isOwner) return sock.sendMessage(from, { text: `🎣 Sabar, tunggu ${Math.ceil((user.cooldowns.fish-now)/1000)}s.` });
+      const uRod = FISHING_SHOP.rods.find(r => r.id === user.fishingGear?.rod) || FISHING_SHOP.rods[0];
+      user.cooldowns.fish = now + Math.max(15000, 60000 - uReel.cdReduction);
+      let caught = generateFishInstance(uRod);
+      if (caught.isDangerous && Math.random() < 0.35) {
+        user.cooldowns.hospitalUntil = now + 300000; user.cash = Math.max(0, user.cash - 1500); updateUser(cleanSender, user);
+        return sock.sendMessage(from, { text: `🚨 *TRAGEDI!*\n${caught.name} mengganas! Masuk Wad 5 min.\n💸 Bil: *-RM 1,500*` });
+      }
+      let fPrice = caught.price; const uBait = FISHING_SHOP.baits.find(b => b.id === user.fishingGear?.bait);
+      if (uBait && fPrice > 0) fPrice = Math.floor(fPrice * uBait.priceMult);
+      if (currentEvent?.fishMult) fPrice = Math.floor(fPrice * currentEvent.fishMult);
+      caught.price = fPrice; db.pendingFish = db.pendingFish || {}; db.pendingFish[cleanSender] = { fish: caught, finalPrice: fPrice };
+      saveDB(db); updateUser(cleanSender, user);
+      if (fPrice === 0) { delete db.pendingFish[cleanSender]; saveDB(db); return sock.sendMessage(from, { text: `🎣 ${caught.name} ditarik. (Sampah dibuang)` }); }
+      return sock.sendMessage(from, { text: `🎣 *TANGKAPAN BERJAYA!*\n🐟: *${caught.name}* (${caught.weightKg}kg)\n💰: *RM ${fPrice.toLocaleString()}*\n👉 *.jual_ikan* atau *.bela_ikan*` });
+    }
+    if (cmd === "jual_ikan") { const p = db.pendingFish?.[cleanSender]; if (!p) return sock.sendMessage(from, { text: `❌ Tiada ikan.` }); user.cash += p.finalPrice; user.stats.fishes++; delete db.pendingFish[cleanSender]; saveDB(db); updateUser(cleanSender, user); return sock.sendMessage(from, { text: `💵 Jual ikan: +RM ${p.finalPrice.toLocaleString()}` }); }
+    if (cmd === "bela_ikan") { const p = db.pendingFish?.[cleanSender]; if (!p) return sock.sendMessage(from, { text: `❌ Tiada ikan.` }); const cT = FISHING_SHOP.tanks.find(t => t.id === user.fishingGear?.tank) || FISHING_SHOP.tanks[0]; if (user.aquarium.length >= cT.capacity) return sock.sendMessage(from, { text: `❌ Akuarium penuh!` }); user.aquarium.push(p.fish); user.stats.fishes++; delete db.pendingFish[cleanSender]; saveDB(db); updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🐠 Ikan dimasukkan ke Akuarium!` }); }
+    if (cmd === "akuarium") { if (!user.aquarium || user.aquarium.length === 0) return sock.sendMessage(from, { text: `🐠 Akuarium kosong!` }); let ui = `🐠 AKUARIUM:\n`; user.aquarium.forEach((f, i) => { ui += `${i+1}. ${f.name} (RM ${f.price.toLocaleString()})\n`; }); return sock.sendMessage(from, { text: ui + `👉 *.jual_akuarium*` }); }
+    if (cmd === "jual_akuarium") { if (!user.aquarium || user.aquarium.length === 0) return; let t = 0; user.aquarium.forEach(f => { t += f.price; }); user.cash += t; user.aquarium = []; updateUser(cleanSender, user); return sock.sendMessage(from, { text: `💵 Jual semua: +RM ${t.toLocaleString()}` }); }
 
-    if (cmd === "beli_phone") {
-      const phone = PHONE_DEVICES.find(p => p.id === args[0]?.toLowerCase()); if (!phone) return sock.sendMessage(from, { text: `❌ Kod telefon tidak wujud!` });
-      if (user.cash < phone.price) return sock.sendMessage(from, { text: `❌ Tunai tidak cukup!` });
-      user.cash -= phone.price; user.phoneDevice = phone.id; user.phoneName = phone.name; updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `📱 Berjaya beli *${phone.name}*!` });
-    }
+    // =====================================================================
+    // 🧲 MAGNET, BESI & PETI MISTERI
+    // =====================================================================
+    if (cmd === "kedai_magnet") { let ui = `🧲 KEDAI MAGNET:\n`; MAGNET_SHOP.forEach(m => { ui += `• [${m.id}] ${m.name} (RM ${m.price.toLocaleString()})\n`; }); return sock.sendMessage(from, { text: ui + `👉 *.beli_magnet [id]*` }); }
+    if (cmd === "beli_magnet") { const m = MAGNET_SHOP.find(x => x.id === args[0]); if (!m || user.cash < m.price) return sock.sendMessage(from, { text: `❌ Batal.` }); user.cash -= m.price; user.magnetGear.magnet = m.id; updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🧲 Berjaya beli ${m.name}!` }); }
+    if (cmd === "baling_magnet") { if (!user.magnetGear.magnet) return sock.sendMessage(from, { text: `❌ Tiada magnet!` }); if (now < user.cooldowns.magnet && !isOwner) return sock.sendMessage(from, { text: `⏳ Lenguh!` }); user.cooldowns.magnet = now + 45000; const m = MAGNET_SHOP.find(x => x.id === user.magnetGear.magnet); const kg = (Math.floor(Math.random() * 5) + 1) * m.pullPower; user.scrapMetalKg += kg; let ex = ""; if (Math.random() < m.pullPower * 0.02) { const l = [...MAGNET_LOOT].sort(() => 0.5 - Math.random())[0]; if (l.type === "box") { user.misteryBoxes++; ex = `\n🎁 Dapat Peti Misteri! (*.buka_peti*)`; } else { user.cash += l.price; ex = `\n💎 Jumpa ${l.name} (RM ${l.price.toLocaleString()})!`; } } updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🧲 Tarik +${kg} KG Besi!${ex}` }); }
+    if (cmd === "jual_besi") { if (user.scrapMetalKg <= 0) return sock.sendMessage(from, { text: `❌ Tiada besi!` }); const p = user.scrapMetalKg * (db.market?.scrap || 5); user.cash += p; user.scrapMetalKg = 0; updateUser(cleanSender, user); return sock.sendMessage(from, { text: `⚙️ Jual besi: +RM ${p.toLocaleString()}` }); }
+    if (cmd === "buka_peti") { if (user.misteryBoxes <= 0) return sock.sendMessage(from, { text: `❌ Tiada peti!` }); user.misteryBoxes--; if (Math.random() < 0.4) { updateUser(cleanSender, user); return sock.sendMessage(from, { text: `📦 Peti kosong!` }); } else { const r = Math.floor(Math.random() * 50000) + 5000; user.cash += r; updateUser(cleanSender, user); return sock.sendMessage(from, { text: `📦 Jackpot! +RM ${r.toLocaleString()}` }); } }
 
-    if (cmd === "upah_lawyer") {
-      if (now >= user.cooldowns.jailUntil && !isOwner) return sock.sendMessage(from, { text: `ℹ️ Anda bukan dalam tahanan lokap!` });
-      if (user.cash < 500 && !isOwner) return sock.sendMessage(from, { text: `❌ Sediakan RM 500 tunai!` });
-      if (!isOwner) user.cash -= 500; user.cooldowns.jailUntil = 0; user.stars = Math.max(0, user.stars - 1); updateUser(cleanSender, user);
-      return sock.sendMessage(from, { text: `⚖️ *IKAT JAMIN:* Peguam selesaikan kes. Anda bebas!` });
+    // =====================================================================
+    // 💻 GODAM BANK & BOUNTY
+    // =====================================================================
+    if (cmd === "hackbank" || cmd === "godam_bank") {
+      const tgt = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; if (!tgt) return sock.sendMessage(from, { text: `❌ *.hackbank @user*` });
+      const cTgt = tgt.replace(/[^0-9]/g, "") + "@s.whatsapp.net"; if (cTgt === cleanSender) return;
+      if (now < user.cooldowns.bankHack && !isOwner) return sock.sendMessage(from, { text: `⏳ Bersembunyi dari Cyber-Sec: ${Math.ceil((user.cooldowns.bankHack-now)/60000)} min.` });
+      const hD = user.inventory.some(i => [11, 2, 5].includes(i.id)); if (!hD && !isOwner) return sock.sendMessage(from, { text: `❌ Perlukan Cyber Dongle (ID 11)!` });
+      const tU = getUser(cTgt); if (tU.bank < 1000) return sock.sendMessage(from, { text: `😅 Bank mangsa sikit sangat.` });
+      let pObj = tU.pet ? CYBER_PETS.find(p => p.id === tU.pet) : null;
+      if (pObj && ["anti_hack", "dual_def", "dragon_god"].includes(pObj.perk)) {
+          if (Math.random() < pObj.val) { user.cash = Math.max(0, user.cash - 1000); user.cooldowns.bankHack = now + 900000; updateUser(cleanSender, user); return sock.sendMessage(from, { text: `🛡️ Firewall pintas! -RM 1000` }); }
+      }
+      const pin = ["⚡", "💾", "🔓", "☣️", "👾", "📡", "💎", "🛡️"].sort(()=>0.5-Math.random()).slice(0,4).join("");
+      db.activeHacks = db.activeHacks || {}; db.activeHacks[cleanSender] = { target: cTgt, pin: pin, expires: now + 30000 }; saveDB(db);
+      return sock.sendMessage(from, { text: `⚡ *CYBER HANDSHAKE*\nSasaran: *${tU.name}*\n🔑 PIN: ${pin}\nMasa: 30s! 👉 *.bypass ${pin}*` });
     }
+    if (cmd === "bypass") {
+      const aH = db.activeHacks?.[cleanSender]; if (!aH || now > aH.expires) { if(aH){delete db.activeHacks[cleanSender]; saveDB(db);} return sock.sendMessage(from, { text: `❌ Sesi tamat!` }); }
+      const tU = getUser(aH.target);
+      if (args.join("").trim() === aH.pin) {
+        delete db.activeHacks[cleanSender]; const st = Math.floor(tU.bank * 0.05); tU.bank -= st; user.cash += st; user.stats.bankHacks++; user.cooldowns.bankHack = now + 1800000; saveDB(db); updateUser(cleanSender, user); updateUser(aH.target, tU);
+        return sock.sendMessage(from, { text: `🔓 GODAM BERJAYA! +RM ${st.toLocaleString()}`, mentions: [aH.target] });
+      } else {
+        delete db.activeHacks[cleanSender]; user.cash = Math.max(0, user.cash - 1500); user.cooldowns.jailUntil = now + 60000; user.cooldowns.bankHack = now + 900000; saveDB(db); updateUser(cleanSender, user);
+        return sock.sendMessage(from, { text: `🚨 PIN Salah! Denda RM1500 & lokap 60s!` });
+      }
+    }
+    if (cmd === "bounty") {
+      const tg = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; const amt = parseInt(args[1]); if (!tg || isNaN(amt) || amt < 5000) return sock.sendMessage(from, { text: `❌ *.bounty @user [rm]* (Min 5k)` });
+      if (user.cash < amt) return sock.sendMessage(from, { text: `❌ Tunai tak cukup!` });
+      const cTg = tg.replace(/[^0-9]/g, "") + "@s.whatsapp.net"; if (cTg === cleanSender) return;
+      user.cash -= amt; db.bounties = db.bounties || {}; db.bounties[cTg] = (db.bounties[cTg] || 0) + amt; saveDB(db); updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `🎯 Kepala diletakkan harga RM ${db.bounties[cTg].toLocaleString()}!`, mentions: [cTg] });
+    }
+    if (cmd === "list_bounty") {
+      if (!db.bounties || Object.keys(db.bounties).length === 0) return sock.sendMessage(from, { text: `📜 Tiada buronan aktif.` });
+      let ui = `🎯 PAPAN BURONAN:\n`; for (const id in db.bounties) { ui += `• *${getUser(id).name}* ➔ RM ${db.bounties[id].toLocaleString()}\n`; } return sock.sendMessage(from, { text: ui });
+    }
+    
 
     // =====================================================================
     // 📖 MENU UTAMA
@@ -1684,7 +1791,7 @@ async function startBotEngine() {
 • .airi [soalan], .santau @user
 • .split_bil [rm] [pax]
 
-🎮 *[2. MINI-GAMES KOMUNITI]*
+🎮 *[2. MINI-GAMES BARU!]*
 • .gacha_mlbb, .tiktok_affiliate
 • .sabung_ayam [merah/hitam] [bet]
 • .teka_nombor [1-10] [bet], .tarik_tali [bet]
@@ -1697,14 +1804,13 @@ async function startBotEngine() {
 • .pasar_pemain, .beli_market [Kod]
 
 📈 *[4. EKONOMI & PASARAN]*
-• .kerja, .pasaran, .daily, .balance
+• .kerja, .pasaran, .daily
 • .beli_emas, .jual_emas, .beli_btc, .jual_btc
 • .jual_besi
 
 🎣 *[5. JETI & MAGNET]*
 • .kedai_pancing, .beli_pancing [id]
 • .mancing, .jual_ikan, .bela_ikan
-• .akuarium, .jual_akuarium
 • .kedai_magnet, .beli_magnet [id]
 • .baling_magnet, .buka_peti
 
