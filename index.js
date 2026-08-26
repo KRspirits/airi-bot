@@ -35,7 +35,7 @@ let globalChatActivity = 0;
 // =========================================================================
 // 🤖 1. ENJIN AI SHADOW AIRI (GROQ API - LLAMA 3) - UPDATE 3.0
 // =========================================================================
-const GROQ_API_KEY = (process.env.GROQ_API_KEY || "LETAK_API_KEY_GROQ_DI_SINI").trim();
+const GROQ_API_KEY = (process.env.GROQ_API_KEY || "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").trim();
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
 async function askAiriAI(promptText, userName = "Warga Cyber") {
