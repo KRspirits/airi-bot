@@ -90,10 +90,23 @@ function getUser(userId, pushName = "") {
   }
   const u = db.users[userId];
   if (pushName && pushName !== "Warga Cyber" && u.name !== pushName) { u.name = pushName; saveDB(db); }
-  if (!u.aquarium) u.aquarium = []; if (u.magnetGear === undefined) u.magnetGear = { magnet: null }; if (u.scrapMetalKg === undefined) u.scrapMetalKg = 0; 
-  if (u.misteryBoxes === undefined) u.misteryBoxes = 0; if (u.cooldowns.hospitalUntil === undefined) u.cooldowns.hospitalUntil = 0;
+  
+  // 💉 AUTO-FIX LEGACY ACCOUNTS MIGRATION (Ubat Akaun Lama)
+  if (!u.stars) u.stars = 0;
+  if (!u.stats) u.stats = { works: 0, crimes: 0, racesWon: 0, fishes: 0, bankHacks: 0 };
+  if (!u.cooldowns) u.cooldowns = { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, magnet: 0, rent: 0, bankHack: 0, aiAsk: 0, hospitalUntil: 0 };
+  if (!u.cooldowns.crime) u.cooldowns.crime = 0;
+  if (!u.cooldowns.bankHack) u.cooldowns.bankHack = 0;
+  if (!u.cooldowns.race) u.cooldowns.race = 0;
+  if (!u.aquarium) u.aquarium = []; 
+  if (!u.magnetGear) u.magnetGear = { magnet: null }; 
+  if (!u.scrapMetalKg) u.scrapMetalKg = 0; 
+  if (!u.misteryBoxes) u.misteryBoxes = 0; 
+  if (!u.cooldowns.hospitalUntil) u.cooldowns.hospitalUntil = 0;
+  
   return u;
 }
+
 function updateUser(userId, userData) { const db = loadDB(); db.users[userId] = userData; saveDB(db); }
 
 function getTitle(user) {
@@ -1440,19 +1453,24 @@ async function startBotEngine() {
       }
     }
 
-    if (cmd === "jenayah") {
-      let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   💀 DARKWEB CRIME NETWORK\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-      CRIMES.forEach(c => {
-        const reqObj = c.reqItem ? BLACKMARKET_ITEMS.find(i => i.id === c.reqItem) : null;
-        let rMin = currentEvent?.rewardMult ? Math.floor(c.rewardMin * currentEvent.rewardMult) : c.rewardMin;
-        let rMax = currentEvent?.rewardMult ? Math.floor(c.rewardMax * currentEvent.rewardMult) : c.rewardMax;
-        ui += `• *[ID ${c.id}]* ${c.name}\n  💵 Loot: RM ${rMin.toLocaleString()} - ${rMax.toLocaleString()} | 🔒 ${reqObj ? reqObj.name : "Bebas"}\n\n`;
-      });
-      ui += `💡 Taip *.buat_jenayah [ID]*`; return sock.sendMessage(from, { text: ui });
-    }
+    if (cmd === "jenayah" || cmd === "buat_jenayah") {
+      const crimeId = parseInt(args[0]);
+      
+      // Jika pengguna taip .jenayah tanpa nombor, papar menu
+      if (isNaN(crimeId)) {
+        let ui = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   💀 DARKWEB CRIME NETWORK\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
+        CRIMES.forEach(c => {
+          const reqObj = c.reqItem ? BLACKMARKET_ITEMS.find(i => i.id === c.reqItem) : null;
+          let rMin = currentEvent?.rewardMult ? Math.floor(c.rewardMin * currentEvent.rewardMult) : c.rewardMin;
+          let rMax = currentEvent?.rewardMult ? Math.floor(c.rewardMax * currentEvent.rewardMult) : c.rewardMax;
+          ui += `• *[ID ${c.id}]* ${c.name}\n  💵 Loot: RM ${rMin.toLocaleString()} - ${rMax.toLocaleString()} | 🔒 ${reqObj ? reqObj.name : "Bebas"}\n\n`;
+        });
+        ui += `💡 Taip *.jenayah [ID]*`; return sock.sendMessage(from, { text: ui });
+      }
 
-    if (cmd === "buat_jenayah") {
-      const c = CRIMES.find(x => x.id === parseInt(args[0])); if (!c) return sock.sendMessage(from, { text: `❌ ID jenayah tidak sah!` });
+      // Jika ada nombor, terus laksanakan jenayah
+      const c = CRIMES.find(x => x.id === crimeId); 
+      if (!c) return sock.sendMessage(from, { text: `❌ ID jenayah tidak sah!` });
       if (c.reqItem && !user.inventory.some(i => i.id === c.reqItem)) return sock.sendMessage(from, { text: `❌ Perlukan alat dari *.bm*!` });
       if (now < user.cooldowns.crime && !isOwner) return sock.sendMessage(from, { text: `⏳ Polis meronda! Tunggu *${Math.ceil((user.cooldowns.crime - now) / 1000)} saat* lagi.` });
 
@@ -1476,9 +1494,15 @@ async function startBotEngine() {
     }
 
     if (cmd === "rompak") {
-      const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; if (!targetTag) return sock.sendMessage(from, { text: `❌ Tag mangsa: *.rompak @user*` });
-      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net"; if (cleanTarget === cleanSender) return sock.sendMessage(from, { text: `❌ Takkan nak samun diri sendiri?` });
-      const targetUser = getUser(cleanTarget); if (targetUser.cash < 100) return sock.sendMessage(from, { text: `😅 Mangsa poket kempis bawah RM100.` });
+      let targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; 
+      if (!targetTag && args[0]?.startsWith("@")) targetTag = args[0].replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+      if (!targetTag) return sock.sendMessage(from, { text: `❌ Sila tag mangsa dengan betul: *.rompak @user*` });
+      
+      const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net"; 
+      if (cleanTarget === cleanSender) return sock.sendMessage(from, { text: `❌ Takkan nak samun diri sendiri?` });
+      
+      const targetUser = getUser(cleanTarget); 
+      if (targetUser.cash < 100) return sock.sendMessage(from, { text: `😅 Mangsa poket kempis bawah RM100.` });
       if (now < user.cooldowns.crime && !isOwner) return sock.sendMessage(from, { text: `⏳ Anda sedang menyorok dari polis! Tunggu *${Math.ceil((user.cooldowns.crime - now) / 1000)} saat* lagi.` });
 
       let petObj = null; if (targetUser.pet) petObj = CYBER_PETS.find(p => p.id === targetUser.pet);
@@ -1491,7 +1515,8 @@ async function startBotEngine() {
 
       user.cooldowns.crime = now + (180 * 1000);
       if (Math.random() < 0.50 || isOwner) {
-        const stolen = Math.floor(targetUser.cash * 0.10); targetUser.cash -= stolen; user.cash += stolen; user.stars = Math.min(5, user.stars + 1);
+        const stolen = Math.floor(targetUser.cash * 0.10); targetUser.cash -= stolen; user.cash += stolen; 
+        user.stars = Math.min(5, user.stars + 1);
         let bountyNotice = ""; if (db.bounties && db.bounties[cleanTarget]) { const claimed = db.bounties[cleanTarget]; user.cash += claimed; delete db.bounties[cleanTarget]; saveDB(db); bountyNotice = `\n🎯 *BOUNTY CLAIMED:* Wang tebusan kepala +RM ${claimed.toLocaleString()}!`; }
         updateUser(cleanSender, user); updateUser(cleanTarget, targetUser);
         return sock.sendMessage(from, { text: `🥷 *ROMPAKAN BERJAYA!*\n\n${getRandomNarrative("ROB_SUCCESS")}\n\n💵 Hasil: *+RM ${stolen.toLocaleString()}* dari *${targetUser.name}*!${bountyNotice}`, mentions: [cleanTarget] });
@@ -1500,6 +1525,7 @@ async function startBotEngine() {
         return sock.sendMessage(from, { text: `🚨 *KANTOI SAMUN SIBER!* \n\n${getRandomNarrative("ROB_FAIL_ROAST")}\n\n💸 Denda: *-RM 500* & Lokap 60 saat!`, mentions: [cleanTarget] });
       }
     }
+    
 
     if (cmd === "hackbank" || cmd === "godam_bank") {
       const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0]; if (!targetTag) return sock.sendMessage(from, { text: `❌ Tag mangsa: *.hackbank @user*` });
