@@ -14,7 +14,7 @@ import pino from "pino";
 import fs from "fs";
 import http from "http";
 import QRCode from "qrcode";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk"; // 🔥 UPDATE 3.0: TUKAR KE GROQ API
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 dotenv.config();
@@ -33,25 +33,29 @@ let isConnected = false;
 let globalChatActivity = 0;
 
 // =========================================================================
-// 🤖 1. ENJIN AI SHADOW AIRI (GOOGLE GEMINI 2.5 FLASH)
+// 🤖 1. ENJIN AI SHADOW AIRI (GROQ API - LLAMA 3) - UPDATE 3.0
 // =========================================================================
-const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || "AQ.Ab8RN6L93ijIy-kYAJuvFh0DoaG9rL0PBmGgmkt3-l7JLz4PGA").trim();
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const GROQ_API_KEY = (process.env.GROQ_API_KEY || "LETAK_API_KEY_GROQ_DI_SINI").trim();
+const groq = new Groq({ apiKey: GROQ_API_KEY });
 
 async function askAiriAI(promptText, userName = "Warga Cyber") {
   try {
     const currentTimeMY = new Date().toLocaleString("ms-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "full", timeStyle: "medium" });
-    const systemInstruction = `
-Nama kau ialah Airi, maskot AI dan pembantu pintar rasmi bagi komuniti siber "Airi's Corner".
-Pengasas dan ketua mutlak kau ialah Bos Amar (Shadow Legacy).
-Waktu semasa MYT: ${currentTimeMY}
-Personaliti: Ceria, comel, santai Melayu. Panggil pengguna dengan nama mereka (${userName}). Jawab ringkas.`;
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction: systemInstruction });
-    const result = await model.generateContent({ contents: [{ role: "user", parts: [{ text: promptText }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 400 } });
-    const response = await result.response;
-    return response.text()?.trim() || "Airi tak pasti nak jawab macam mana hehe~ 💙";
+    const systemInstruction = `Nama kau ialah Airi, maskot AI dan pembantu pintar rasmi bagi komuniti siber "Airi's Corner". Pengasas dan ketua mutlak kau ialah Bos Amar (Shadow Legacy). Waktu semasa MYT: ${currentTimeMY}. Personaliti: Ceria, comel, santai Melayu, kuat bergurau, guna dialek tempatan kadang-kadang (macam 'weh', 'kot', 'lah'). Panggil pengguna dengan nama mereka (${userName}). Jawab ringkas dan padat.`;
+    
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: systemInstruction },
+        { role: "user", content: promptText }
+      ],
+      model: "llama3-8b-8192", 
+      temperature: 0.8,
+      max_tokens: 400,
+    });
+    
+    return chatCompletion.choices[0]?.message?.content || "Airi tak pasti nak jawab macam mana hehe~ 💙";
   } catch (err) {
-    return "Aduh... modul neural Airi tengah recharge sekejap hehe~ 🧠 Cuba jap lagi ya!";
+    return "Aduh... sistem LPU Airi tengah overheat sekejap hehe~ 🧠 Cuba jap lagi ya!";
   }
 }
 
@@ -66,7 +70,9 @@ const NARRATIVE_BANKS = {
   BANK_HACK_SUCCESS: ["Firewall bank runtuh sekelip mata, duit mangsa disedut bersih!"],
   ROB_SUCCESS: ["Acukan tepat sasaran, mangsa gigil serah duit!", "Rembatan pantas di lorong gelap! dompet mangsa licin."],
   ROB_FAIL_ROAST: ["Niat merompak tapi tangan gigil dompet sendiri tercicir!", "Terpijak kulit pisang masa nak samun, terlentang adeh!"],
-  PET_DEFEND: ["Pengawal haiwan melompat terkam perompak sampai koyak seluar!"]
+  PET_DEFEND: ["Pengawal haiwan melompat terkam perompak sampai koyak seluar!"],
+  SANTAU_SUCCESS: ["Jampi mantera siber berjaya meresap! Mangsa muntah paku digital.", "Santau Maya masuk tepat ke dalam sistem mangsa!"],
+  SANTAU_FAIL: ["Mantera melantun balik! Firewall mangsa kebal berselawat.", "Dukun siber scam, santau tak jalan!"]
 };
 function getRandomNarrative(bankKey, fallback = "Aksi selesai.") {
   const bank = NARRATIVE_BANKS[bankKey];
@@ -81,7 +87,7 @@ const PORT = process.env.PORT || 3000;
 const server = http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/html" });
   if (isConnected) {
-    res.end(`<div style="text-align:center;margin-top:60px;font-family:sans-serif;background:#0f172a;color:#f8fafc;padding:30px;"><h2>⚡ AIRI'S CORNER CYBER OS V2.7 ONLINE! ⚡</h2><p>Sistem kebal berjalan mantap.</p></div>`);
+    res.end(`<div style="text-align:center;margin-top:60px;font-family:sans-serif;background:#0f172a;color:#f8fafc;padding:30px;"><h2>⚡ AIRI'S CORNER CYBER OS V3.0 ONLINE! ⚡</h2><p>Sistem kebal berjalan mantap.</p></div>`);
   } else if (currentQR) {
     QRCode.toDataURL(currentQR).then(img => {
       res.end(`<div style="text-align:center;margin-top:40px;font-family:sans-serif;background:#0a0f1d;color:#fff;padding:25px;"><h2>⚡ IMBAS KOD QR AIRI ⚡</h2><img src="${img}" style="width:280px;height:280px;border-radius:16px;"/></div>`);
@@ -95,7 +101,7 @@ server.listen(PORT, "0.0.0.0", () => { console.log(`🌐 Server aktif pada port 
 // =========================================================================
 // 💾 4. MONGODB CLOUD & FALLBACK LOCAL DB
 // =========================================================================
-let localDB = { users: {}, groups: [], market: { gold: 350, btc: 280000, lastUpdate: Date.now() }, season: 1, auction: null, hallOfFame: [] };
+let localDB = { users: {}, groups: [], market: { gold: 350, btc: 280000, scrap: 5, lastUpdate: Date.now() }, season: 1, auction: null, hallOfFame: [] };
 const MONGO_URI = process.env.MONGO_URI || "";
 let mongoCollection = null;
 
@@ -134,18 +140,31 @@ function getUser(userId, pushName = "") {
   if (!db.users[userId]) {
     db.users[userId] = {
       name: pushName || "Warga Cyber", bio: "", cash: 500, bank: 0, debt: 0, goldGrams: 0, btcUnits: 0,
-      phoneDevice: null, phoneName: "Public Phone Awam 📟", fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" },
+      phoneDevice: null, phoneName: "Public Phone Awam 📟", 
+      fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" },
+      magnetGear: { magnet: null },
+      scrapMetalKg: 0, 
+      misteryBoxes: 0, 
       inventory: [], vehicles: [], vehicleMods: {}, food: [], properties: [], pet: null, aquarium: [], stars: 0, badges: ["🌱 [COMMON] Warga Baru"],
       stats: { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0, eventsWon: 0, bankHacks: 0 },
-      cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, rent: 0, bankHack: 0, aiAsk: 0 }
+      cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, magnet: 0, rent: 0, bankHack: 0, aiAsk: 0, hospitalUntil: 0 }
     };
     saveDB(db);
   }
   const u = db.users[userId];
   if (pushName && pushName !== "Warga Cyber" && u.name !== pushName) { u.name = pushName; saveDB(db); }
+  
   if (!u.aquarium) u.aquarium = [];
   if (u.pet && typeof u.pet === 'object' && u.pet.id) { u.pet = u.pet.id; saveDB(db); } 
   if (u.nosStock) { delete u.nosStock; saveDB(db); }
+
+  // Migrasi Update 3.0 Data Baru
+  if (u.magnetGear === undefined) u.magnetGear = { magnet: null };
+  if (u.scrapMetalKg === undefined) u.scrapMetalKg = 0;
+  if (u.misteryBoxes === undefined) u.misteryBoxes = 0;
+  if (u.cooldowns.magnet === undefined) u.cooldowns.magnet = 0;
+  if (u.cooldowns.hospitalUntil === undefined) u.cooldowns.hospitalUntil = 0;
+  
   return u;
 }
 
@@ -154,15 +173,21 @@ function updateUser(userId, userData) {
 }
 
 // =========================================================================
-// 📈 5. UPDATE PASARAN EMAS & BITCOIN SETIAP 10 MINIT
+// 📈 5. UPDATE PASARAN (TERMASUK HARGA BESI BURUK UPDATE 3.0)
 // =========================================================================
 setInterval(() => {
   const db = loadDB();
-  if (!db.market) db.market = { gold: 350, btc: 280000, lastUpdate: Date.now() };
+  if (!db.market) db.market = { gold: 350, btc: 280000, scrap: 5, lastUpdate: Date.now() };
+  
   const goldChange = (Math.random() * 0.12) - 0.05;
   db.market.gold = Math.max(150, Math.floor(db.market.gold * (1 + goldChange)));
+  
   const btcChange = (Math.random() * 0.27) - 0.12;
   db.market.btc = Math.max(80000, Math.floor(db.market.btc * (1 + btcChange)));
+  
+  const scrapChange = (Math.random() * 0.40) - 0.20;
+  db.market.scrap = Math.max(3, Math.min(15, Math.floor(db.market.scrap * (1 + scrapChange))));
+  
   db.market.lastUpdate = Date.now(); saveDB(db);
 }, 10 * 60 * 1000);
 
@@ -193,7 +218,26 @@ const SEASON_EVENTS = {
 };
 
 // =========================================================================
-// 🎣 7. KEDAI PERALATAN MEMANCING (UMPAN UNLIMITED)
+// 🧲 6.5 UPDATE 3.0: SISTEM MAGNET FISHING
+// =========================================================================
+const MAGNET_SHOP = [
+  { id: "mag_speaker", name: "Magnet Speaker Radio Asas 📻", price: 500, pullPower: 1, desc: "Sesuai tarik tin kosong je" },
+  { id: "mag_kuat", name: "Magnet Kuat Neodymium 🧲", price: 2500, pullPower: 3, desc: "+Peluang tarik rim lajak" },
+  { id: "mag_industri", name: "Magnet Industri Padu 🏗️", price: 12000, pullPower: 6, desc: "+Peluang tarik tong gas & peti" },
+  { id: "mag_gergasi", name: "Magnet Gergasi Rare 🛸", price: 45000, pullPower: 12, desc: "Tarikan super, besi sekerap banyak" },
+  { id: "mag_elektro", name: "Kren Elektromagnet Pelabuhan 🏗️⚡", price: 150000, pullPower: 25, desc: "Sapu habis dasar sungai! Rate barang rare tinggi" }
+];
+
+const MAGNET_LOOT = [
+  { name: "Peti Besi Misteri 📦", type: "box", chance: 0.05 },
+  { name: "Jam Tangan Shadow Eclipse ⌚", type: "valuable", price: 15000, chance: 0.01 },
+  { name: "Smartphone iQOO 12 5G Berkarat 📱", type: "valuable", price: 8500, chance: 0.02 },
+  { name: "Gelang Emas Putus 💍", type: "valuable", price: 3500, chance: 0.05 },
+  { name: "Kunci Kereta Pendrive 🔑", type: "valuable", price: 500, chance: 0.1 }
+];
+
+// =========================================================================
+// 🎣 7. KEDAI PERALATAN MEMANCING & DATABASE IKAN (TERMASUK MONSTER V3)
 // =========================================================================
 const FISHING_SHOP = {
   rods: [
@@ -226,25 +270,38 @@ const FISHING_SHOP = {
 };
 
 const FISH_DATABASE = [
-  { id: "f1", name: "Kasut But Getah Koyak 🥾", basePrice: 0, tier: "🗑️ [JUNK]", weightKg: 1.2, dropRate: 15.0, baseBuff: "Tiada buff", isJunk: true },
-  { id: "f2", name: "Tayar Kereta Buruk Berlumut 🛞", basePrice: 0, tier: "🗑️ [JUNK]", weightKg: 8.5, dropRate: 10.0, baseBuff: "Tiada buff", isJunk: true },
-  { id: "f3", name: "Ikan Kembung Segar Pasar 🐟", basePrice: 50, tier: "🌱 [COMMON]", weightKg: 0.4, dropRate: 20.0, baseBuff: "Gaji kerja +2%" },
-  { id: "f4", name: "Ikan Gelama Muara 🐟", basePrice: 50, tier: "🌱 [COMMON]", weightKg: 0.6, dropRate: 18.0, baseBuff: "Gaji kerja +3%" },
-  { id: "f5", name: "Ikan Keli Afrika Bersaiz L 🐡", basePrice: 50, tier: "🌱 [COMMON]", weightKg: 2.1, dropRate: 15.0, baseBuff: "Potong 5s cooldown kerja" },
-  { id: "f6", name: "Udang Galah Sungai Bernilai 🦐", basePrice: 150, tier: "🌿 [UNCOMMON]", weightKg: 0.8, dropRate: 12.0, baseBuff: "Gaji kerja +5%" },
-  { id: "f7", name: "Sotong Kurita Mini 🐙", basePrice: 150, tier: "🌿 [UNCOMMON]", weightKg: 1.5, dropRate: 10.0, baseBuff: "Menang Drag Race +3%" },
-  { id: "f8", name: "Ketam Bunga Segar 🦀", basePrice: 150, tier: "🌿 [UNCOMMON]", weightKg: 0.9, dropRate: 9.0, baseBuff: "Potong 8s cooldown kerja" },
-  { id: "f9", name: "Ikan Siakap Muara Padu 🐠", basePrice: 1000, tier: "⭐ [RARE]", weightKg: 3.8, dropRate: 6.0, baseBuff: "Gaji kerja +8%" },
-  { id: "f10", name: "Ikan Jenahak Merah Laut Dalam 🐡", basePrice: 1000, tier: "⭐ [RARE]", weightKg: 5.2, dropRate: 5.0, baseBuff: "Diskaun denda lokap 10%" },
-  { id: "f11", name: "Pari Gergasi Layang-Layang 🦈", basePrice: 1000, tier: "⭐ [RARE]", weightKg: 14.5, dropRate: 4.0, baseBuff: "Menang Drag Race +6%" },
-  { id: "f12", name: "Ikan Kerapu Bara Monster 🦈", basePrice: 10000, tier: "💼 [EPIC]", weightKg: 18.0, dropRate: 2.5, baseBuff: "Gaji kerja +12%" },
-  { id: "f13", name: "Tuna Sirip Kuning Gred A 🐟", basePrice: 10000, tier: "💼 [EPIC]", weightKg: 35.4, dropRate: 2.0, baseBuff: "Hasil kutipan sewa +10%" },
-  { id: "f14", name: "Ketam Raja Alaska King Crab 🦀", basePrice: 10000, tier: "💼 [EPIC]", weightKg: 8.2, dropRate: 1.5, baseBuff: "Menang Coinflip/Slot +5%" },
-  { id: "f15", name: "Jerung Tukul Pesisir Pantai 🦈", basePrice: 100000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 65.0, dropRate: 0.8, baseBuff: "Loot rompakan PvP +15%" },
-  { id: "f16", name: "Sotong Gergasi Kraken Rahsia 🐙", basePrice: 100000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 110.0, dropRate: 0.5, baseBuff: "Kebal 20% daripada godaman bank" },
-  { id: "f17", name: "Raja Ikan Temoleh Sungai Perak 👑", basePrice: 100000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 42.5, dropRate: 0.3, baseBuff: "Hasil kutipan sewa +20%" },
-  { id: "f18", name: "Ikan Purba Coelacanth Emas 🌟", basePrice: 1500000, tier: "👑 [MYTHIC]", weightKg: 78.0, dropRate: 0.1, baseBuff: "+15% Semua Gaji & Menang Lumba" },
-  { id: "f19", name: "Naga Laut Megalodon Siber 🐉", basePrice: 3500000, tier: "👑 [MYTHIC]", weightKg: 450.0, dropRate: 0.05, baseBuff: "Dewa Laut! +25% Semua Gaji & Sewa" }
+  { id: "f1", name: "Kasut But Getah Koyak 🥾", basePrice: 0, tier: "🗑️ [JUNK]", weightKg: 1.2, dropRate: 15.0, baseBuff: "Tiada buff", isJunk: true, isDangerous: false },
+  { id: "f2", name: "Tayar Kereta Buruk Berlumut 🛞", basePrice: 0, tier: "🗑️ [JUNK]", weightKg: 8.5, dropRate: 10.0, baseBuff: "Tiada buff", isJunk: true, isDangerous: false },
+  { id: "f3", name: "Ikan Kembung Segar Pasar 🐟", basePrice: 50, tier: "🌱 [COMMON]", weightKg: 0.4, dropRate: 20.0, baseBuff: "Gaji kerja +2%", isDangerous: false },
+  { id: "f4", name: "Ikan Gelama Muara 🐟", basePrice: 50, tier: "🌱 [COMMON]", weightKg: 0.6, dropRate: 18.0, baseBuff: "Gaji kerja +3%", isDangerous: false },
+  { id: "f5", name: "Ikan Keli Afrika Bersaiz L 🐡", basePrice: 50, tier: "🌱 [COMMON]", weightKg: 2.1, dropRate: 15.0, baseBuff: "Potong 5s cooldown kerja", isDangerous: false },
+  { id: "f6", name: "Udang Galah Sungai Bernilai 🦐", basePrice: 150, tier: "🌿 [UNCOMMON]", weightKg: 0.8, dropRate: 12.0, baseBuff: "Gaji kerja +5%", isDangerous: false },
+  { id: "f7", name: "Sotong Kurita Mini 🐙", basePrice: 150, tier: "🌿 [UNCOMMON]", weightKg: 1.5, dropRate: 10.0, baseBuff: "Menang Drag Race +3%", isDangerous: false },
+  { id: "f8", name: "Ketam Bunga Segar 🦀", basePrice: 150, tier: "🌿 [UNCOMMON]", weightKg: 0.9, dropRate: 9.0, baseBuff: "Potong 8s cooldown kerja", isDangerous: false },
+  { id: "f9", name: "Ikan Siakap Muara Padu 🐠", basePrice: 1000, tier: "⭐ [RARE]", weightKg: 3.8, dropRate: 6.0, baseBuff: "Gaji kerja +8%", isDangerous: false },
+  { id: "f10", name: "Ikan Jenahak Merah Laut Dalam 🐡", basePrice: 1000, tier: "⭐ [RARE]", weightKg: 5.2, dropRate: 5.0, baseBuff: "Diskaun denda lokap 10%", isDangerous: false },
+  { id: "f11", name: "Pari Gergasi Layang-Layang 🦈", basePrice: 1000, tier: "⭐ [RARE]", weightKg: 14.5, dropRate: 4.0, baseBuff: "Menang Drag Race +6%", isDangerous: false },
+  { id: "f12", name: "Ikan Kerapu Bara Monster 🦈", basePrice: 10000, tier: "💼 [EPIC]", weightKg: 18.0, dropRate: 2.5, baseBuff: "Gaji kerja +12%", isDangerous: false },
+  { id: "f13", name: "Tuna Sirip Kuning Gred A 🐟", basePrice: 10000, tier: "💼 [EPIC]", weightKg: 35.4, dropRate: 2.0, baseBuff: "Hasil kutipan sewa +10%", isDangerous: false },
+  { id: "f14", name: "Ketam Raja Alaska King Crab 🦀", basePrice: 10000, tier: "💼 [EPIC]", weightKg: 8.2, dropRate: 1.5, baseBuff: "Menang Coinflip/Slot +5%", isDangerous: false },
+  { id: "f15", name: "Jerung Tukul Pesisir Pantai 🦈", basePrice: 100000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 65.0, dropRate: 0.8, baseBuff: "Loot rompakan PvP +15%", isDangerous: true },
+  { id: "f16", name: "Sotong Gergasi Kraken Rahsia 🐙", basePrice: 100000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 110.0, dropRate: 0.5, baseBuff: "Kebal 20% daripada godaman bank", isDangerous: true },
+  { id: "f17", name: "Raja Ikan Temoleh Sungai Perak 👑", basePrice: 100000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 42.5, dropRate: 0.3, baseBuff: "Hasil kutipan sewa +20%", isDangerous: false },
+  { id: "f18", name: "Ikan Purba Coelacanth Emas 🌟", basePrice: 1500000, tier: "👑 [MYTHIC]", weightKg: 78.0, dropRate: 0.1, baseBuff: "+15% Semua Gaji & Menang Lumba", isDangerous: false },
+  { id: "f19", name: "Naga Laut Megalodon Siber 🐉", basePrice: 3500000, tier: "👑 [MYTHIC]", weightKg: 450.0, dropRate: 0.05, baseBuff: "Dewa Laut! +25% Semua Gaji & Sewa", isDangerous: true },
+  
+  // UPDATE 3.0 LOCAL SPECIES (COMMON/UNCOMMON)
+  { id: "f_puyu", name: "Ikan Puyu Sawah 🐟", basePrice: 60, tier: "🌱 [COMMON]", weightKg: 0.2, dropRate: 20.0, baseBuff: "Gaji kerja +2%", isDangerous: false },
+  { id: "f_haruan", name: "Ikan Haruan Penyembuh 🐟", basePrice: 180, tier: "🌿 [UNCOMMON]", weightKg: 1.5, dropRate: 12.0, baseBuff: "Kurang risiko lokap 5%", isDangerous: false },
+  { id: "f_toman", name: "Toman Bunga Ganas 🐠", basePrice: 1200, tier: "⭐ [RARE]", weightKg: 4.5, dropRate: 6.0, baseBuff: "Gaji kerja +10%", isDangerous: false },
+  
+  // EPIC / LEGENDARY LOCAL
+  { id: "f_kelah", name: "Kelah Merah Mahkota Sungai 🐡", basePrice: 15000, tier: "💼 [EPIC]", weightKg: 6.0, dropRate: 2.0, baseBuff: "Hasil kutipan sewa +12%", isDangerous: false },
+  { id: "f_kelisa", name: "Kelisa Emas Arowana 🌟", basePrice: 85000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 2.5, dropRate: 0.8, baseBuff: "Loot rompakan PvP +15%", isDangerous: false },
+  
+  // MONSTER / MYTHIC (WITH RISKS)
+  { id: "f_buaya", name: "Buaya Tembaga Sesat 🐊", basePrice: 120000, tier: "🏴‍☠️ [LEGENDARY]", weightKg: 250.0, dropRate: 0.5, baseBuff: "Kebal 20% rompak", isDangerous: true },
+  { id: "f_naga", name: "Naga Tasik Chini 🐉", basePrice: 4000000, tier: "👑 [MYTHIC]", weightKg: 850.0, dropRate: 0.02, baseBuff: "Dewa Tasik! +25% Semua Gaji", isDangerous: true }
 ];
 
 function generateFishInstance(userRodObj) {
@@ -271,7 +328,7 @@ function generateFishInstance(userRodObj) {
   const finalKg = selectedBase.isJunk ? (selectedBase.weightKg || 1) : Number(((selectedBase.weightKg || 2) * chosenSize.kgMult).toFixed(1));
   const finalName = `${selectedBase.name} (${chosenSize.name})`;
 
-  return { id: selectedBase.id, name: finalName, price: finalPrice, tier: selectedBase.tier, buff: selectedBase.baseBuff, isJunk: selectedBase.isJunk, weightKg: finalKg };
+  return { id: selectedBase.id, name: finalName, price: finalPrice, tier: selectedBase.tier, buff: selectedBase.baseBuff, isJunk: selectedBase.isJunk, weightKg: finalKg, isDangerous: selectedBase.isDangerous };
 }
 
 // =========================================================================
@@ -301,7 +358,7 @@ const PHONE_DEVICES = [
 ];
 
 // =========================================================================
-// 💼 10. SEKTOR 50 KERJAYA HALAL LENGKAP (LOGIK NERFED RM100 - RM400)
+// 💼 10. SEKTOR KERJAYA HALAL LENGKAP
 // =========================================================================
 const JOBS = [
   { id: 1, name: "Pekerja Am Majlis", minPay: 100, maxPay: 180 }, { id: 2, name: "Pencuci Pinggan Kedai Tomyam", minPay: 105, maxPay: 185 },
@@ -328,11 +385,16 @@ const JOBS = [
   { id: 43, name: "Juruaudit Forensik SPRM", minPay: 235, maxPay: 325 }, { id: 44, name: "Kontraktor Bina Banglo", minPay: 245, maxPay: 335 },
   { id: 45, name: "Ahli Farmasi Berdaftar", minPay: 240, maxPay: 330 }, { id: 46, name: "Pakar Psikologi Kaunseling", minPay: 230, maxPay: 320 },
   { id: 47, name: "Penganalisis Keselamatan Siber", minPay: 255, maxPay: 345 }, { id: 48, name: "Pakar Ekonomi Negara", minPay: 270, maxPay: 365 },
-  { id: 49, name: "Pelabur Saham Bursa Malaysia", minPay: 280, maxPay: 380 }, { id: 50, name: "CEO Konglomerat Korporat", minPay: 300, maxPay: 400 }
+  { id: 49, name: "Pelabur Saham Bursa Malaysia", minPay: 280, maxPay: 380 }, { id: 50, name: "CEO Konglomerat Korporat", minPay: 300, maxPay: 400 },
+  // 🔥 UPDATE 3.0: NEW JOBS
+  { id: 101, name: "Pomen Bawah Pokok Ceri 🔧", minPay: 130, maxPay: 240 },
+  { id: 102, name: "Founder Skincare Timbang Kilo 🧴", minPay: 200, maxPay: 350 },
+  { id: 103, name: "Tauke Bundle Seluar Koyak 👖", minPay: 150, maxPay: 280 },
+  { id: 104, name: "Flipper Tiket Konsert 🎫", minPay: 180, maxPay: 310 }
 ];
 
 // =========================================================================
-// 🏎️ 11. SHOWROOM 60 KENDERAAN LENGKAP
+// 🏎️ 11. SHOWROOM JENTERA
 // =========================================================================
 const VEHICLES = [
   { id: "ex5", name: "Honda EX5 High Power 🛵", price: 3000, type: "Motor", speed: 50, desc: "Lagenda sejati, minyak jimat" },
@@ -394,11 +456,16 @@ const VEHICLES = [
   { id: "bugatti_voiture", name: "Bugatti La Voiture Noire 🖤", price: 95000000, type: "Kereta", speed: 260, desc: "Hiperkar hitam paling ikonik dan eksklusif di dunia" },
   { id: "rolls_boat_tail", name: "Rolls-Royce Boat Tail Yacht 🛥️", price: 140000000, type: "Kereta", speed: 130, desc: "Kapal layar darat dengan suite hos champagne terbina" },
   { id: "rolls_droptail", name: "Rolls-Royce La Rose Noire Droptail 🌹", price: 180000000, type: "Kereta", speed: 135, desc: "Kemuncak kemewahan kereta baharu termahal di bumi" },
-  { id: "mercedes_300slr", name: "Mercedes-Benz 300 SLR Uhlenhaut 👑", price: 650000000, type: "Kereta", speed: 200, desc: "Kereta termahal sepanjang zaman bernilai warisan muzium" }
+  { id: "mercedes_300slr", name: "Mercedes-Benz 300 SLR Uhlenhaut 👑", price: 650000000, type: "Kereta", speed: 200, desc: "Kereta termahal sepanjang zaman bernilai warisan muzium" },
+  // 🔥 UPDATE 3.0: NEW VEHICLES
+  { id: "rxz", name: "Yamaha RXZ Catalyzer Hantu 🏍️", price: 18000, type: "Motor", speed: 95, desc: "Raja highway, bunyi zass zass!" },
+  { id: "kelisa", name: "Perodua Kelisa Convert Gino 🚗", price: 22000, type: "Kereta", speed: 85, desc: "Kecil-kecil cili padi L2" },
+  { id: "wira_evo", name: "Wira Evo 3 Convert 🚗", price: 45000, type: "Kereta", speed: 110, desc: "Ekzos tembak-tembak" },
+  { id: "lori_hantu", name: "Lori Hantu Balak 🚚", price: 85000, type: "Kereta", speed: 70, desc: "Takde brek redah je!" }
 ];
 
 // =========================================================================
-// 🏢 12. SEKTOR 22 HARTANAH PASIF (ROI NERFED 7 HARI)
+// 🏢 12. SEKTOR HARTANAH PASIF
 // =========================================================================
 const PROPERTIES = [
   { id: 1, name: "Flat PPR Lembah Subang 🏢", price: 35000, rent: 5000 },
@@ -422,7 +489,11 @@ const PROPERTIES = [
   { id: 19, name: "Mega-Kasino Bawah Laut Pulau Tioman 🎰", price: 25000000000, rent: 3571428000 },
   { id: 20, name: "Pangkalan Pelancaran Roket Angkasa Cyber 🚀", price: 50000000000, rent: 7142857000 },
   { id: 21, name: "Koloni Dom Bawah Tanah Bulan Lunar Alpha 🌕", price: 100000000000, rent: 14285714000 },
-  { id: 22, name: "Stesen Angkasa Mega Orbital Airi Prime 🌌", price: 250000000000, rent: 35714285000 }
+  { id: 22, name: "Stesen Angkasa Mega Orbital Airi Prime 🌌", price: 250000000000, rent: 35714285000 },
+  // 🔥 UPDATE 3.0: NEW PROPERTIES
+  { id: 101, name: "Warung Tomyam Kelantan 🍲", price: 180000, rent: 25000 },
+  { id: 102, name: "Tapak Carwash 24 Jam 🧽", price: 350000, rent: 48000 },
+  { id: 103, name: "Kebun Musang King Raub 🌳", price: 1200000, rent: 175000 }
 ];
 
 const MOD_PARTS = {
@@ -457,9 +528,6 @@ const BLACKMARKET_ITEMS = [
   { id: 12, name: "Alat Penggodam Kuantum (PvE) 🧬", price: 150000, desc: "Pecah masuk firewall keselamatan bank pusat. Risiko 40% hancur!" }
 ];
 
-// =========================================================================
-// 💀 NERF: HASIL JENAYAH DIKURANGKAN AGAR LEBIH MENCABAR
-// =========================================================================
 const CRIMES = [
   { id: 1, name: "Ragut Beg Tepi Jalan 👜", rewardMin: 500, rewardMax: 1500, fine: 1000, stars: 1, cd: 120 },
   { id: 2, name: "Rompak Kedai Runcit Acheh 🏪", rewardMin: 800, rewardMax: 2000, fine: 2000, stars: 1, cd: 120 },
@@ -522,7 +590,7 @@ const VETO_CEO_LIST = `
 • *.give_cash @user [jumlah]* ➔ Suntikan dana tunai
 • *.give_gold @user [gram]* ➔ Berikan emas fizikal 999
 • *.give_btc @user [unit]* ➔ Berikan baki Bitcoin
-• *.set_market [gold/btc] [harga]* ➔ Ubah harga pasaran bursa
+• *.set_market [gold/btc/scrap] [harga]* ➔ Ubah harga pasaran bursa
 • *.jail_user @user [saat]* ➔ Sumbat pemain ke lokap paksa
 • *.free_user @user* ➔ Bebaskan pemain dari lokap
 • *.clear_bounty @user* ➔ Padamkan rekod buronan
@@ -602,13 +670,12 @@ async function startBotEngine() {
              const randomId = activeIds[Math.floor(Math.random() * activeIds.length)];
              const u = db.users[randomId];
              
-             // PET BUFF: Kucing Jalanan
              let untungRate = 0.50;
              if (u.pet === "kucing_jalanan") untungRate = 0.65;
 
              if (Math.random() < untungRate) {
                 let untung = Math.floor(Math.random() * 2000) + 500;
-                if (u.pet === "kucing_jalanan") untung = Math.floor(untung * 1.15); // Bonus duit extra
+                if (u.pet === "kucing_jalanan") untung = Math.floor(untung * 1.15); 
 
                 u.cash += untung;
                 updateUser(randomId, u);
@@ -636,7 +703,7 @@ async function startBotEngine() {
       }
     } else if (connection === "open") {
       isConnected = true; currentQR = "";
-      console.log("✅ BOT AIRI'S CORNER TELAH BERSAMBUNG KE WHATSAPP 24/7!");
+      console.log("✅ BOT AIRI'S CORNER V3.0 TELAH BERSAMBUNG KE WHATSAPP 24/7!");
     }
   });
 
@@ -672,6 +739,11 @@ async function startBotEngine() {
     const db = loadDB();
     const currentSeasonEvent = db.active_event_data ? SEASON_EVENTS[db.active_event_data.type] : null;
 
+    if (now < user.cooldowns.hospitalUntil && !isOwner) {
+      const remSec = Math.ceil((user.cooldowns.hospitalUntil - now) / 1000);
+      return sock.sendMessage(from, { text: `🚑 Anda sedang dirawat di hospital. Baki: ${remSec}s.` });
+    }
+
     if (now < user.cooldowns.jailUntil && cmd !== "upah_lawyer" && cmd !== "myid" && !isOwner) {
       const remSec = Math.ceil((user.cooldowns.jailUntil - now) / 1000);
       return sock.sendMessage(from, { text: `🚨 Anda dalam tahanan lokap! Baki: ${remSec}s. Taip *.upah_lawyer* (RM 500)` });
@@ -691,7 +763,7 @@ async function startBotEngine() {
       diagUI += `✅ [MODUL] Kerjaya: ${JOBS?.length || 0} Kod\n`;
       diagUI += `✅ [MODUL] Hartanah: ${PROPERTIES?.length || 0} Kod\n`;
       diagUI += `✅ [MODUL] Jenayah: ${CRIMES?.length || 0} Kod\n`;
-      diagUI += `✅ [STATUS] AI Shadow Airi: AKTIF\n`;
+      diagUI += `✅ [STATUS] AI Shadow Airi (Groq LPU): AKTIF\n`;
       const memoryUsage = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
       diagUI += `📈 [SISTEM] Penggunaan RAM: ${memoryUsage} MB\n`;
       return sock.sendMessage(from, { text: diagUI });
@@ -750,10 +822,11 @@ async function startBotEngine() {
     if (cmd === "set_market" && isOwner) {
       const type = args[0]?.toLowerCase();
       const price = parseInt(args[1]);
-      if (!["gold", "btc", "emas"].includes(type) || isNaN(price) || price <= 0) return sock.sendMessage(from, { text: `❌ Format: *.set_market [gold/btc] [harga]*` });
-      if (!db.market) db.market = { gold: 350, btc: 280000, lastUpdate: now };
+      if (!["gold", "btc", "emas", "scrap"].includes(type) || isNaN(price) || price <= 0) return sock.sendMessage(from, { text: `❌ Format: *.set_market [gold/btc/scrap] [harga]*` });
+      if (!db.market) db.market = { gold: 350, btc: 280000, scrap: 5, lastUpdate: now };
       if (type === "gold" || type === "emas") db.market.gold = price;
       if (type === "btc") db.market.btc = price;
+      if (type === "scrap") db.market.scrap = price;
       db.market.lastUpdate = now; saveDB(db);
       return sock.sendMessage(from, { text: `👑 Veto Bursa: Harga ${type.toUpperCase()} diubah ke RM ${price.toLocaleString()}!` });
     }
@@ -778,17 +851,19 @@ async function startBotEngine() {
       if (!targetTag) return sock.sendMessage(from, { text: `❌ Format: *.reset_user @user*` });
       db.users[targetTag] = {
         name: getUser(targetTag).name, bio: "", cash: 500, bank: 0, debt: 0, goldGrams: 0, btcUnits: 0,
-        phoneDevice: null, phoneName: "Public Phone Awam 📟", fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" },
+        phoneDevice: null, phoneName: "Public Phone Awam 📟", 
+        fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" },
+        magnetGear: { magnet: null }, scrapMetalKg: 0, misteryBoxes: 0,
         inventory: [], vehicles: [], vehicleMods: {}, food: [], properties: [], pet: null, aquarium: [], stars: 0,
         badges: ["🌱 [COMMON] Warga Baru"], stats: { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0, eventsWon: 0, bankHacks: 0 },
-        cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, rent: 0, bankHack: 0, aiAsk: 0 }
+        cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, magnet: 0, rent: 0, bankHack: 0, aiAsk: 0, hospitalUntil: 0 }
       };
       saveDB(db);
       return sock.sendMessage(from, { text: `👑 Veto Wipe: Akaun diset semula!`, mentions: [targetTag] });
     }
 
     // =====================================
-    // ARAHAN: HACKBANK (DENGAN COOLDOWN & ANTI-SPAM)
+    // ARAHAN: HACKBANK
     // =====================================
     if (cmd === "hackbank" || cmd === "godam_bank") {
       const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
@@ -811,7 +886,7 @@ async function startBotEngine() {
       if (petObj && (petObj.perk === "anti_hack" || petObj.perk === "dual_def" || petObj.perk === "dragon_god")) {
           if (Math.random() < petObj.val) {
               user.cash = Math.max(0, user.cash - 1000);
-              user.cooldowns.bankHack = now + (15 * 60 * 1000); // 15 minit lari
+              user.cooldowns.bankHack = now + (15 * 60 * 1000); 
               updateUser(cleanSender, user);
               return sock.sendMessage(from, { text: `🛡️ *FIREWALL DISEKAT AI!*\n\nPengawal *${petObj.name}* milik mangsa telah mengesan dan memintas godaman anda!\n💸 Ganti Rugi Dipotong: *-RM 1,000*\n⏳ Cooldown Hack: 15 Minit.` });
           }
@@ -835,11 +910,11 @@ async function startBotEngine() {
       const targetUser = getUser(activeHack.target);
       if (args.join("").trim() === activeHack.emojiPin) {
         delete db.activeHacks[cleanSender];
-        const stolen = Math.floor(targetUser.bank * 0.05); // Nerf 5%
+        const stolen = Math.floor(targetUser.bank * 0.05); 
         targetUser.bank -= stolen;
         user.cash += stolen;
         user.stats.bankHacks = (user.stats.bankHacks || 0) + 1;
-        user.cooldowns.bankHack = now + (30 * 60 * 1000); // 30 Minit Cooldown selepas berjaya curi
+        user.cooldowns.bankHack = now + (30 * 60 * 1000); 
         saveDB(db); updateUser(cleanSender, user); updateUser(activeHack.target, targetUser);
         const narrative = getRandomNarrative("BANK_HACK_SUCCESS");
         return sock.sendMessage(from, { text: `🔓 *GODAM BERJAYA:* +RM ${stolen.toLocaleString()} disedut dari akaun bank mangsa!\n\n${narrative}`, mentions: [activeHack.target] });
@@ -847,7 +922,7 @@ async function startBotEngine() {
         delete db.activeHacks[cleanSender];
         user.cash = Math.max(0, user.cash - 1500);
         user.cooldowns.jailUntil = now + (60 * 1000);
-        user.cooldowns.bankHack = now + (15 * 60 * 1000); // 15 Minit Cooldown selepas gagal
+        user.cooldowns.bankHack = now + (15 * 60 * 1000); 
         saveDB(db); updateUser(cleanSender, user);
         return sock.sendMessage(from, { text: `🚨 *FIREWALL ALERT:* PIN Emoji salah! Denda RM 1,500 & masuk lokap 60s!` });
       }
@@ -884,11 +959,13 @@ async function startBotEngine() {
 
         db.users[uid] = {
           name: u.name, bio: u.bio || "", isOwner: u.isOwner, cash: starterCash, bank: 0, debt: 0, goldGrams: 0, btcUnits: 0,
-          phoneDevice: null, phoneName: "Public Phone Awam 📟", fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" },
+          phoneDevice: null, phoneName: "Public Phone Awam 📟", 
+          fishingGear: { rod: "rod_buluh", reel: "reel_plastik", bait: null, tank: "tank_balang" },
+          magnetGear: { magnet: null }, scrapMetalKg: 0, misteryBoxes: 0,
           inventory: [], vehicles: [], vehicleMods: {}, food: [], properties: [], pet: null, aquarium: [], stars: 0,
           badges: legacyBadges.length > 0 ? legacyBadges : ["🌱 [COMMON] Warga Baru"],
           stats: { works: 0, crimes: 0, bails: 0, racesWon: 0, casinoWon: 0, fishes: 0, eventsWon: 0, bankHacks: 0 },
-          cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, rent: 0, bankHack: 0, aiAsk: 0 }
+          cooldowns: { work: 0, crime: 0, jailUntil: 0, daily: 0, race: 0, fish: 0, magnet: 0, rent: 0, bankHack: 0, aiAsk: 0, hospitalUntil: 0 }
         };
       }
       saveDB(db);
@@ -898,21 +975,85 @@ async function startBotEngine() {
       return;
     }
 
-    // 🤖 SHADOW AIRI AI (.airi)
+    // 🤖 SHADOW AIRI AI (.airi) - UPDATE 3.0 GROQ
     if (cmd === "airi" || cmd === "ai" || cmd === "tanya") {
       const query = args.join(" ").trim();
-      if (!query) return sock.sendMessage(from, { text: `Hai ${user.name}! 💙 Airi ada kat sini~ Taip: *.airi [soalan/sembang]* hehe~ ✨` });
+      if (!query) return sock.sendMessage(from, { text: `Hai ${user.name}! 💙 Airi ada kat sini~ Taip: *.airi [borak]* hehe~ ✨` });
 
       if (now < (user.cooldowns.aiAsk || 0) && !isOwner) {
-        const rem = Math.ceil(((user.cooldowns.aiAsk || 0) - now) / 1000);
-        return sock.sendMessage(from, { text: `⏳ Otak Airi tengah proses data jap~ Tunggu *${rem} saat* lagi ya!` });
+        return sock.sendMessage(from, { text: `⏳ Sabar weh, Airi tengah proses data jap!` });
       }
 
-      user.cooldowns.aiAsk = now + (10 * 1000);
+      user.cooldowns.aiAsk = now + (8 * 1000); 
       updateUser(cleanSender, user);
 
       const reply = await askAiriAI(query, user.name);
-      return sock.sendMessage(from, { text: `╔═══════════════════════════╗\n   💠 AIRI CYBER RESPONSE 💠\n╚═══════════════════════════╝\n❓ *Soalan:* ${query}\n\n${reply}\n\n✨ _Dikuasakan oleh Enjin Shadow Airi_` });
+      return sock.sendMessage(from, { text: `💠 *AIRI (Groq LPU)* 💠\n\n${reply}` });
+    }
+    
+    // 🎲 UPDATE 3.0 MINI-GAMES
+    if (cmd === "gacha_calc" || cmd === "pity") {
+      const pulls = parseInt(args[0]);
+      if (isNaN(pulls)) return sock.sendMessage(from, { text: `🧮 Guna: *.pity [jumlah_pull_sekarang]*\nContoh: *.pity 45*` });
+      const needed = 90 - pulls;
+      const costGems = needed * 160;
+      return sock.sendMessage(from, { text: `🎮 *KALKULATOR PITY GACHA*\n\nPull Semasa: ${pulls}/90\nPull ke Hard Pity: ${needed} lagi\n💎 Anggaran Primogems/Kuarza Diperlukan: *${costGems}*` });
+    }
+
+    if (cmd === "split_bil") {
+      const amount = parseFloat(args[0]);
+      const pax = parseInt(args[1]);
+      if (isNaN(amount) || isNaN(pax) || pax < 2) return sock.sendMessage(from, { text: `🧮 Guna: *.split_bil [jumlah_RM] [bil_orang]*\nContoh: *.split_bil 125.50 4*` });
+      const split = (amount / pax).toFixed(2);
+      return sock.sendMessage(from, { text: `💸 *PEMBAHAGI BIL TOMYAM*\n\nJumlah: RM ${amount}\nAhli: ${pax} Orang\n\n👉 *RM ${split} seorang!* Bayar cepat, jangan buat-buat lupa!` });
+    }
+
+    if (cmd === "lumba_siput") {
+       const color = args[0]?.toLowerCase();
+       const bet = parseInt(args[1]);
+       const validColors = ["merah", "biru", "hijau", "kuning"];
+       if (!validColors.includes(color) || isNaN(bet) || user.cash < bet) {
+           return sock.sendMessage(from, { text: `🐌 Guna: *.lumba_siput [merah/biru/hijau/kuning] [taruhan]*` });
+       }
+       
+       user.cash -= bet;
+       const winner = validColors[Math.floor(Math.random() * validColors.length)];
+       
+       if (winner === color) {
+           const winAmt = bet * 3; 
+           user.cash += winAmt;
+           updateUser(cleanSender, user);
+           return sock.sendMessage(from, { text: `🏁 *LUMBA SIPUT BABI!*\n\nSiput *${winner.toUpperCase()}* potong line kat selekoh akhir dan MENANG!\n💸 Anda untung +RM ${winAmt.toLocaleString()}!` });
+       } else {
+           updateUser(cleanSender, user);
+           return sock.sendMessage(from, { text: `🏁 *LUMBA SIPUT BABI!*\n\nSiput *${winner.toUpperCase()}* menang! Siput ${color.toUpperCase()} anda asyik makan daun je tertinggal kat belakang.\n❌ Taruhan RM ${bet.toLocaleString()} lebur.` });
+       }
+    }
+
+    if (cmd === "santau" || cmd === "santau_maya") {
+       const targetTag = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+       if (!targetTag) return sock.sendMessage(from, { text: `❌ Tag mangsa: *.santau @user*` });
+       const cleanTarget = targetTag.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+       if (cleanTarget === cleanSender) return sock.sendMessage(from, { text: `❌ Nak santau diri sendiri buat apa?` });
+       
+       if (user.cash < 2000) return sock.sendMessage(from, { text: `❌ Upah Dukun Siber (RM 2,000) tak cukup!` });
+       
+       user.cash -= 2000;
+       const targetUser = getUser(cleanTarget);
+       const isSuccess = Math.random() < 0.6; 
+       
+       if (isSuccess) {
+           const curseLoss = Math.floor(targetUser.cash * 0.15); 
+           targetUser.cash -= curseLoss;
+           updateUser(cleanSender, user);
+           updateUser(cleanTarget, targetUser);
+           const nar = getRandomNarrative("SANTAU_SUCCESS");
+           return sock.sendMessage(from, { text: `💀 *ILMU HITAM BERJAYA!*\n\n${nar}\nWang mangsa merosot sebanyak *-RM ${curseLoss.toLocaleString()}*!`, mentions: [cleanTarget] });
+       } else {
+           updateUser(cleanSender, user);
+           const nar = getRandomNarrative("SANTAU_FAIL");
+           return sock.sendMessage(from, { text: `🛡️ *SANTAU DITEPIH!*\n\n${nar}\nRM 2,000 hangus bayar dukun siber.`, mentions: [cleanTarget] });
+       }
     }
 
     // 💰 UI BALANCE (.balance)
@@ -998,12 +1139,13 @@ async function startBotEngine() {
       return sock.sendMessage(from, { text: `╔═══════════════════════════╗\n   🌐 STATUS MUSIM AIRI'S CORNER\n╚═══════════════════════════╝\n📅 *Musim Semasa:* Musim Ke-${db.season || 1}\n🔥 *Acara Musim:* ${evText}` });
     }
 
-    // 🪙 TRADING EMAS & BITCOIN
+    // 🪙 TRADING EMAS, BITCOIN & BESI BURUK
     if (cmd === "pasaran" || cmd === "crypto" || cmd === "gold") {
       const goldPrice = db.market?.gold || 350;
       const btcPrice = db.market?.btc || 280000;
+      const scrapPrice = db.market?.scrap || 5;
       return sock.sendMessage(from, { 
-        text: `╔═══════════════════════════╗\n   📈 BURSA SIBER & KOMODITI\n╚═══════════════════════════╝\n🪙 *EMAS 999 FIZIKAL:*\n• Harga Semasa: *RM ${goldPrice.toLocaleString()} / g*\n• Simpanan Anda: *${(user.goldGrams || 0).toFixed(2)} g*\n\n₿ *BITCOIN (BTC/MYR):*\n• Harga Semasa: *RM ${btcPrice.toLocaleString()} / BTC*\n• Simpanan Anda: *${(user.btcUnits || 0).toFixed(4)} BTC*\n\n💡 *.beli_emas*, *.jual_emas*, *.beli_btc*, *.jual_btc*` 
+        text: `╔═══════════════════════════╗\n   📈 BURSA SIBER & KOMODITI\n╚═══════════════════════════╝\n🪙 *EMAS 999 FIZIKAL:*\n• Harga Semasa: *RM ${goldPrice.toLocaleString()} / g*\n• Simpanan Anda: *${(user.goldGrams || 0).toFixed(2)} g*\n\n₿ *BITCOIN (BTC/MYR):*\n• Harga Semasa: *RM ${btcPrice.toLocaleString()} / BTC*\n• Simpanan Anda: *${(user.btcUnits || 0).toFixed(4)} BTC*\n\n⚙️ *BESI BURUK:*\n• Harga Semasa: *RM ${scrapPrice.toLocaleString()} / kg*\n• Simpanan Anda: *${user.scrapMetalKg} kg*\n\n💡 *.beli_emas*, *.jual_emas*, *.beli_btc*, *.jual_btc*, *.jual_besi*` 
       });
     }
 
@@ -1120,6 +1262,86 @@ async function startBotEngine() {
     }
 
     // =====================================================================
+    // 🧲 UPDATE 3.0 : KEDAI & MAGNET FISHING 
+    // =====================================================================
+    if (cmd === "kedai_magnet") {
+      let ui = `╔═══════════════════════════╗\n   🧲 KEDAI MAGNET SIBER\n╚═══════════════════════════╝\n`;
+      MAGNET_SHOP.forEach(m => { ui += `• *[${m.id}]* ${m.name}\n  💰 RM ${m.price.toLocaleString()} | Kuasa: ${m.pullPower}x\n  _${m.desc}_\n\n`; });
+      ui += `💡 Beli: *.beli_magnet [id]*\n🎣 Baling: *.baling_magnet*`;
+      return sock.sendMessage(from, { text: ui });
+    }
+
+    if (cmd === "beli_magnet") {
+      const magId = args[0]?.toLowerCase();
+      const mag = MAGNET_SHOP.find(m => m.id === magId);
+      if (!mag) return sock.sendMessage(from, { text: `❌ ID magnet tidak wujud!` });
+      if (user.cash < mag.price) return sock.sendMessage(from, { text: `❌ Tunai tak cukup!` });
+      
+      user.cash -= mag.price;
+      user.magnetGear.magnet = mag.id;
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `🧲 Berjaya membeli *${mag.name}*!` });
+    }
+
+    if (cmd === "baling_magnet") {
+      if (!user.magnetGear.magnet) return sock.sendMessage(from, { text: `❌ Anda tiada magnet! Beli di *.kedai_magnet*` });
+      if (now < user.cooldowns.magnet && !isOwner) {
+        const rem = Math.ceil((user.cooldowns.magnet - now) / 1000);
+        return sock.sendMessage(from, { text: `⏳ Lengan lenguh! Tunggu ${rem} saat sebelum baling lagi.` });
+      }
+
+      user.cooldowns.magnet = now + 45000; 
+      const magEquipped = MAGNET_SHOP.find(m => m.id === user.magnetGear.magnet);
+      
+      const pull = magEquipped.pullPower;
+      const baseKg = Math.floor(Math.random() * 5) + 1;
+      const totalKg = baseKg * pull;
+      user.scrapMetalKg += totalKg;
+      
+      let extraText = "";
+      const rareChance = pull * 0.02; 
+      if (Math.random() < rareChance) {
+         const loot = [...MAGNET_LOOT].sort(() => 0.5 - Math.random())[0];
+         if (loot.type === "box") {
+             user.misteryBoxes += 1;
+             extraText = `\n🎁 *RARE PULL!* Anda menarik *Peti Besi Misteri* berlumut dari dasar! Buka dengan *.buka_peti*`;
+         } else {
+             user.cash += loot.price;
+             extraText = `\n💎 *JACKPOT!* Anda terjumpa *${loot.name}* bernilai RM ${loot.price.toLocaleString()}!`;
+         }
+      }
+      
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `🧲 *TARIKAN BERJAYA!*\n\nAnda menggunakan ${magEquipped.name} dan berjaya menarik:\n⚙️ *${totalKg} KG Besi Buruk*\n📦 Jumlah Besi Anda: ${user.scrapMetalKg} KG\n${extraText}\n\n💡 Taip *.jual_besi* untuk tukar ke tunai.` });
+    }
+    
+    if (cmd === "jual_besi") {
+      if (user.scrapMetalKg <= 0) return sock.sendMessage(from, { text: `❌ Anda tiada besi buruk untuk dijual!` });
+      const scrapPrice = db.market?.scrap || 5;
+      const payout = user.scrapMetalKg * scrapPrice;
+      user.cash += payout;
+      const soldKg = user.scrapMetalKg;
+      user.scrapMetalKg = 0;
+      updateUser(cleanSender, user);
+      return sock.sendMessage(from, { text: `⚙️ *TIMBANG KILO:* Anda menjual ${soldKg} KG besi pada harga pasaran RM ${scrapPrice}/KG.\n💵 Tunai diterima: *+RM ${payout.toLocaleString()}*` });
+    }
+
+    if (cmd === "buka_peti") {
+      if (user.misteryBoxes <= 0) return sock.sendMessage(from, { text: `❌ Anda tiada Peti Besi Misteri!` });
+      user.misteryBoxes -= 1;
+      const isZonk = Math.random() < 0.4; 
+      if (isZonk) {
+         updateUser(cleanSender, user);
+         return sock.sendMessage(from, { text: `📦 *PETI DIBUKA:* Alamak! Dalam peti cuma ada surat khabar lama basah. (Tiada nilai)` });
+      } else {
+         const reward = Math.floor(Math.random() * 50000) + 5000;
+         user.cash += reward;
+         updateUser(cleanSender, user);
+         return sock.sendMessage(from, { text: `📦 *PETI DIBUKA:* Jackpot! Anda menemui jongkong perak & wang kertas lama bernilai *RM ${reward.toLocaleString()}*!` });
+      }
+    }
+
+    // =====================================================================
     // 🎣 18. KEDAI PANCING & MEMANCING 
     // =====================================================================
     if (cmd === "kedai_pancing" || cmd === "tackleshop") {
@@ -1182,13 +1404,25 @@ async function startBotEngine() {
       user.cooldowns.fish = now + actualCd;
       let caughtInstance = generateFishInstance(userRod);
       
+      // RISIKO MEKANIK UPDATE 3.0
+      if (caughtInstance.isDangerous && Math.random() < 0.35) {
+          user.cooldowns.hospitalUntil = now + (300 * 1000); 
+          user.cash = Math.max(0, user.cash - 1500); 
+          
+          if (db.pendingFish?.[cleanSender]) delete db.pendingFish[cleanSender];
+          saveDB(db);
+          updateUser(cleanSender, user);
+          
+          return sock.sendMessage(from, { text: `🚨 *TRAGEDI JETI!*\n\nAnda cuba menaikkan *${caughtInstance.name}* tetapi ia mengganas dan menyerang anda!\n🚑 Dihantar ke Hospital (5 minit).\n💸 Bil Perubatan: *-RM 1,500*` });
+      }
+
       let fPrice = caughtInstance.price;
       if (userBait && fPrice > 0) {
         fPrice = Math.floor(fPrice * userBait.priceMult);
       }
       if (currentSeasonEvent?.fishMult) fPrice = Math.floor(fPrice * currentSeasonEvent.fishMult);
 
-      caughtInstance.price = fPrice; // Simpan harga buff sebelum masuk akuarium!
+      caughtInstance.price = fPrice; 
 
       if (!db.pendingFish) db.pendingFish = {};
       db.pendingFish[cleanSender] = { fish: caughtInstance, finalPrice: fPrice };
@@ -1310,7 +1544,7 @@ async function startBotEngine() {
       const page = parseInt(args[0]) || 1;
       const start = (page - 1) * 20;
       const pageVehicles = VEHICLES.slice(start, start + 20);
-      let ui = `╔═══════════════════════════╗\n   🏎️ SHOWROOM JENTERA (PAGE ${page}/3)\n╚═══════════════════════════╝\n`;
+      let ui = `╔═══════════════════════════╗\n   🏎️ SHOWROOM JENTERA (PAGE ${page}/4)\n╚═══════════════════════════╝\n`;
       pageVehicles.forEach(v => { ui += `• *[${v.id}]* ${v.name} (${v.type})\n  💰 RM ${v.price.toLocaleString()} | ⚡ ${v.speed} km/h\n\n`; });
       ui += `💡 Taip *.beli_kenderaan [id]* | Halaman: *.showroom 1*, *.showroom 2*, *.showroom 3*`;
       return sock.sendMessage(from, { text: ui });
@@ -1507,7 +1741,7 @@ async function startBotEngine() {
     }
 
     if (cmd === "list_hartanah") {
-      let ui = `╔═══════════════════════════╗\n   🏢 PASARAN HARTANAH AIRI (22 ASET)\n╚═══════════════════════════╝\n`;
+      let ui = `╔═══════════════════════════╗\n   🏢 PASARAN HARTANAH AIRI (25 ASET)\n╚═══════════════════════════╝\n`;
       PROPERTIES.forEach(p => { ui += `• *[ID ${p.id}]* ${p.name}\n  💰 RM ${p.price.toLocaleString()} | 💵 Sewa: RM ${p.rent.toLocaleString()}/hari\n\n`; });
       return sock.sendMessage(from, { text: ui });
     }
@@ -1659,7 +1893,7 @@ async function startBotEngine() {
 
       user.cooldowns.crime = now + (180 * 1000);
       if (Math.random() < 0.50 || isOwner) {
-        const stolen = Math.floor(targetUser.cash * 0.10); // Curik 10% cash sahaja
+        const stolen = Math.floor(targetUser.cash * 0.10); 
         targetUser.cash -= stolen;
         user.cash += stolen;
         user.stars = Math.min(5, user.stars + 1);
@@ -1714,7 +1948,7 @@ async function startBotEngine() {
       else if (fId === "burger") {
         if (user.cooldowns.jailUntil > now) {
            const timeJail = user.cooldowns.jailUntil - now;
-           user.cooldowns.jailUntil = now + (timeJail * 0.90); // Kurang 10%
+           user.cooldowns.jailUntil = now + (timeJail * 0.90); 
            resText += ` Denda lokap dikurangkan 10%!`;
         } else {
            resText += ` Makanan simpanan sahaja.`;
@@ -1773,6 +2007,7 @@ async function startBotEngine() {
       const userReel = FISHING_SHOP.reels.find(r => r.id === user.fishingGear?.reel)?.name || "Kekili Plastik";
       const userBait = FISHING_SHOP.baits.find(b => b.id === user.fishingGear?.bait)?.name || "Tiada Umpan";
       const userTank = FISHING_SHOP.tanks.find(t => t.id === user.fishingGear?.tank)?.name || "Balang Kaca";
+      const magName = user.magnetGear?.magnet ? (MAGNET_SHOP.find(m => m.id === user.magnetGear.magnet)?.name) : "Tiada Magnet";
 
       return sock.sendMessage(from, { 
         text: `🎒 *PROFIL INVENTORI & PERALATAN:*
@@ -1783,7 +2018,10 @@ async function startBotEngine() {
 • Joran: *${userRod}*
 • Kekili: *${userReel}*
 • Umpan: *${userBait}*
-• Akuarium: *${userTank}* (${user.aquarium.length} ekor ikan)` 
+• Akuarium: *${userTank}* (${user.aquarium.length} ekor ikan)
+🧲 Alat Magnet: *${magName}*
+📦 Besi Buruk: *${user.scrapMetalKg} KG*
+📦 Peti Misteri: *${user.misteryBoxes}*` 
       });
     }
 
@@ -1800,40 +2038,48 @@ async function startBotEngine() {
 
     if (cmd === "menu" || cmd === "help") {
       const evStatus = currentSeasonEvent ? `🔥 *[EVENT]:* ${currentSeasonEvent.name}` : "🌱 *[EVENT]:* Tiada event aktif";
-      let menuText = `╔═══════════════════════════╗\n   🖥️ AIRI'S CORNER CYBER OS (S${db.season || 1})\n╚═══════════════════════════╝\n${evStatus}
+      let menuText = `╔═══════════════════════════╗\n   🖥️ AIRI'S CORNER CYBER OS V3.0\n╚═══════════════════════════╝\n${evStatus}
 
-🤖 *[1. SHADOW AIRI AI]*
+🤖 *[1. SHADOW AIRI AI (Groq LPU)]*
 • *.airi [soalan]* ➔ Tanya & sembang AI
 
 🏆 *[2. SISTEM MUSIM & RANKING]*
-• *.ranking* ➔ Papan pendahulu nilai bersih Top 10
-• *.halloffame* ➔ Dewan kejuaraan musim lepas
-• *.season_info* ➔ Status musim & acara aktif
+• *.ranking*, *.halloffame*, *.season_info*
 
 💼 *[3. KERJAYA & PASARAN]*
 • *.kerja* (CD: 30s), *.daily*, *.pasaran*
 • *.beli_emas*, *.jual_emas*, *.beli_btc*, *.jual_btc*
+• *.jual_besi* ➔ Jual besi sekerap magnet
 
 🐕 *[4. PENGAWAL & BOUNTY]*
-• *.kedai_pet*, *.beli_pet [id]*, *.bounty @user [jumlah]*, *.list_bounty*
+• *.kedai_pet*, *.beli_pet [id]*, *.beli_telur*, *.tetas_telur*
+• *.bounty @user [jumlah]*, *.list_bounty*
 
 🎣 *[5. JETI & KEDAI PANCING]*
 • *.kedai_pancing* ➔ Nombor 1-4
 • *.beli_pancing [id]* ➔ Beli & pasang gear
 • *.mancing*, *.jual_ikan*, *.bela_ikan*, *.akuarium*, *.jual_akuarium*
 
-🏎️ *[6. GARAJ & SEWA]*
-• *.showroom [1/2/3]*, *.beli_kenderaan [id]*, *.bengkel*, *.pasang*
+🧲 *[6. MAGNET FISHING]*
+• *.kedai_magnet*, *.beli_magnet [id]*
+• *.baling_magnet*, *.buka_peti*
+
+🏎️ *[7. GARAJ & SEWA]*
+• *.showroom [1/2/3/4]*, *.beli_kenderaan [id]*, *.bengkel*, *.pasang*
 • *.lumba* (CD: 90s), *.list_hartanah*, *.beli_rumah [id]*, *.kutip_sewa*
 • *.device*, *.beli_phone [id]*
 
-🏴‍☠️ *[7. UNDERWORLD & KASINO]*
+🏴‍☠️ *[8. UNDERWORLD & KASINO]*
 • *.bm*, *.beli_bm*, *.jenayah*, *.buat_jenayah* (CD: 120s)
 • *.rompak* (CD: 180s), *.bida [harga]* (Lelongan Misteri)
 • *.coinflip*, *.slot*, *.hutang_ahlong*, *.bayar_ahlong*
 • *.hackbank @user*, *.bypass*
 
-🏦 *[8. BANK & IDENTITI]*
+🎮 *[9. MINI-GAMES KOMUNITI]*
+• *.santau @user*, *.lumba_siput [warna] [bet]*
+• *.pity [pulls]*, *.split_bil [rm] [pax]*
+
+🏦 *[10. BANK & IDENTITI]*
 • *.deposit*, *.withdraw*, *.transfer*, *.shop*, *.beli_makanan*, *.makan*
 • *.myid*, *.balance*, *.profile*, *.top*`;
 
