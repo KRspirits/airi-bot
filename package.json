@@ -1,18 +1,21 @@
 {
-  "name": "airi-bot",
-  "version": "2.7.0",
-  "description": "Airi's Corner WhatsApp RPG Bot",
+  "name": "airi-corner-bot",
+  "version": "3.0.0",
+  "description": "Enjin AI Shadow Airi V3.0 (Groq LPU)",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.17.0",
     "@whiskeysockets/baileys": "^6.7.0",
     "dotenv": "^16.4.5",
-    "mongodb": "^6.8.0",
-    "pino": "^9.0.0",
+    "groq-sdk": "^0.3.3",
+    "mongodb": "^6.5.0",
+    "pino": "^8.20.0",
     "qrcode": "^1.5.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
