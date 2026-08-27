@@ -1271,10 +1271,12 @@ async function startBotEngine() {
                 });
             }
             
-            return sock.sendMessage(from, { text: `🎣 TANGKAPAN BERJAYA! [Cuaca: ${wObj.n}]\n🐟 Hasil: *${caughtInstance.name}* (${caughtInstance.weightKg} kg)\n✨ Buff: *${caughtInstance.baseBuff}*\n💰 Nilai: *RM ${fPrice.toLocaleString()}*\n\n👉 Taip: *.jual_ikan* ATAU *.bela_ikan*` });
+            
+           return sock.sendMessage(from, { text: `🎣 TANGKAPAN BERJAYA! [Cuaca: ${wObj.n}]\n🐟 Hasil: *${caughtInstance.name}* (${caughtInstance.weightKg} kg)\n✨ Buff: *${caughtInstance.baseBuff}*\n💰 Nilai: *RM ${fPrice.toLocaleString()}*\n\n👉 Taip: *.jual_ikan* ATAU *.bela_ikan*` });
+        } // 👈 SILA TAMBAH KURUNGAN INI
 
         if (cmd === "jual_ikan") { 
-            const pData = db.pendingFish?.[cleanSender]; 
+            const pData = db.pendingFish?.[cleanSender];
             if (!pData) return sock.sendMessage(from, { text: `❌ Tiada ikan menunggu!` }); 
             user.cash += pData.finalPrice; 
             delete db.pendingFish[cleanSender]; 
