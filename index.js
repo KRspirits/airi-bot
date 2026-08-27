@@ -1249,7 +1249,7 @@ async function startBotEngine() {
             }
           
 
-            let fPrice = Math.floor(caughtInstance.price * wObj.m);
+           let fPrice = Math.floor(caughtInstance.basePrice * wObj.m);
             if (userBait && fPrice > 0) fPrice = Math.floor(fPrice * userBait.priceMult);
             if (currentEvent?.fishMult) fPrice = Math.floor(fPrice * currentEvent.fishMult);
             caughtInstance.price = fPrice; 
@@ -1262,18 +1262,16 @@ async function startBotEngine() {
             if (fPrice === 0) {
                 return sock.sendMessage(from, { text: `🎣 *${user.name}* menaikkan ${caughtInstance.name} masa cuaca ${wObj.n}.\n(Sampah dibuang!)` });
             }
-            
-            if (caughtInstance.tier.includes("MYTHIC") || caughtInstance.tier.includes("LEGENDARY")) {
+    if (caughtInstance.tier.includes("MYTHIC") || caughtInstance.tier.includes("LEGENDARY")) {
                 const fishPrompt = encodeURIComponent(`giant fantasy glowing ${caughtInstance.name.split(" ")[0]}, underwater deep sea, hyperrealistic, 4k`);
                 const fishImg = `https://image.pollinations.ai/prompt/${fishPrompt}?width=512&height=512&nologo=true`;
                 return sock.sendMessage(from, { 
                     image: { url: fishImg }, 
-                    caption: `🎣 *TANGKAPAN RARE!* [Cuaca: ${wObj.n}]\n🐟 Hasil: *${caughtInstance.name}* (${caughtInstance.weightKg} kg)\n💰 Nilai: *RM ${fPrice.toLocaleString()}*\n\n👉 Taip: *.jual_ikan* ATAU *.bela_ikan*` 
+                    caption: `🎣 *TANGKAPAN RARE!* [Cuaca: ${wObj.n}]\n🐟 Hasil: *${caughtInstance.name}* (${caughtInstance.weightKg} kg)\n✨ Buff: *${caughtInstance.baseBuff}*\n💰 Nilai: *RM ${fPrice.toLocaleString()}*\n\n👉 Taip: *.jual_ikan* ATAU *.bela_ikan*` 
                 });
             }
             
-            return sock.sendMessage(from, { text: `🎣 TANGKAPAN BERJAYA! [Cuaca: ${wObj.n}]\n🐟 Hasil: *${caughtInstance.name}* (${caughtInstance.weightKg} kg)\n💰 Nilai: *RM ${fPrice.toLocaleString()}*\n\n👉 Taip: *.jual_ikan* ATAU *.bela_ikan*` });
-        }
+            return sock.sendMessage(from, { text: `🎣 TANGKAPAN BERJAYA! [Cuaca: ${wObj.n}]\n🐟 Hasil: *${caughtInstance.name}* (${caughtInstance.weightKg} kg)\n✨ Buff: *${caughtInstance.baseBuff}*\n💰 Nilai: *RM ${fPrice.toLocaleString()}*\n\n👉 Taip: *.jual_ikan* ATAU *.bela_ikan*` });
 
         if (cmd === "jual_ikan") { 
             const pData = db.pendingFish?.[cleanSender]; 
