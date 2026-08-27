@@ -380,6 +380,17 @@ const FISH_DATABASE = [
   { id: "f_naga", name: "Naga Tasik Chini 🐉", basePrice: 4000000, tier: "👑 MYTHIC", weightKg: 850.0, dropRate: 0.02, baseBuff: "Gaji +25%", isJunk: false, isDangerous: true }
 ];
 
+function generateFishInstance(rod) {
+    let pool = FISH_DATABASE.map(f => ({ ...f, chance: f.dropRate * (rod ? rod.luckBonus : 1) }));
+    let tot = pool.reduce((s, i) => s + i.chance, 0), r = Math.random() * tot;
+    for (const item of pool) { 
+        if (r < item.chance) return { ...item }; 
+        r -= item.chance; 
+    }
+    return { ...FISH_DATABASE[0] };
+}
+
+
 const PHONE_DEVICES = [
   { id: "nokia3310", name: "Nokia 3310 Sabun 🧱", price: 150, bonus: "Potong 15% denda polis", perk: "def", val: 0.15 },
   { id: "redmi12", name: "Redmi Note 12 5G 📲", price: 750, bonus: "Gaji kerja +5%", perk: "work", val: 0.05 },
@@ -1349,14 +1360,17 @@ async function startBotEngine() {
       for (const item of pool) { if (r < item.chance) { sel = item; break; } r -= item.chance; }
       
       let extra = ""; // 👉 Wajib tambah baris ni supaya tak crash!
-      if (sel.type === "scrap") { user.scrapMetalKg += sel.weightKg; extra = `⚙️ Anda dapat +${sel.weightKg} KG Besi!`; }
-            } else if (sel.type === "box") { 
-                user.misteryBoxes += 1; 
-                extra = `📦 Rare pull! Peti Misteri.`; 
-            } else { 
-                user.cash += sel.basePrice; 
-                extra = `💎 Jackpot! Jual terus ke Black Market +RM ${sel.basePrice.toLocaleString()}`; 
-            }
+     if (sel.type === "scrap") { 
+    user.scrapMetalKg += sel.weightKg; 
+    extra = `⚙️ Anda dapat +${sel.weightKg} KG Besi!`; 
+} else if (sel.type === "box") {
+    user.misteryBoxes += 1;
+    extra = `📦 Rare pull! Peti Misteri.`;
+} else {
+    user.cash += sel.basePrice;
+    extra = `💎 Jackpot! Jual terus ke Black Market +RM ${sel.basePrice.toLocaleString()}`;
+}
+            
             
             updateUser(cleanSender, user); 
             return sock.sendMessage(from, { text: `🧲 *MAGNET!*\nAnda tarik: *${sel.name}*\n${extra}` });
