@@ -71,9 +71,9 @@ export default {
 🏴‍☠️ *[ 𝗭𝗢𝗡 𝟱: 𝗨𝗡𝗗𝗘𝗥𝗪𝗢𝗥𝗟𝗗 & 𝗠𝗔𝗛𝗞𝗔𝗠𝗔𝗛 ]*
 ╟ ✧ .curi_kereta ︲ .ketuk_chassis ︲ .jenayah [id]
 ╟ ✧ .rompak @user ︲ .santau @user ︲ .hackbank @user
-╟ ✧ .rayu [alasan] ︲ .ikat_jamin @user
-╟ ✧ .undi_hukum @user ︲ .upah_lawyer
-╟ ✧ .hutang_ahlong ︲ .bayar_ahlong ︲ .bounty @user
+╟ ✧ .cuci_duit [jumlah] ︲ .rayu [alasan]
+╟ ✧ .ikat_jamin @user ︲ .undi_hukum @user
+╟ ✧ .upah_lawyer ︲ .hutang_ahlong ︲ .bayar_ahlong ︲ .bounty @user
 
 🛡️ *[ 𝗭𝗢𝗡 𝟲: 𝗚𝗔𝗗𝗚𝗘𝗧, 𝗣𝗘𝗧 & 𝗪𝗔𝗥𝗨𝗡𝗚 ]*
 ╟ ✧ .device ︲ .beli_phone [id] ︲ .shop (Warung)
