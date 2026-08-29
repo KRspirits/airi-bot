@@ -64,19 +64,26 @@ async function startAiri() {
         if (jid?.endsWith('@g.us')) activeGroups.add(jid);
     });
 
-    setInterval(async () => {
+  setInterval(async () => {
         if (activeGroups.size === 0) return;
 
         const groupList = Array.from(activeGroups);
         const targetGroup = groupList[Math.floor(Math.random() * groupList.length)];
 
-        // 25% Peluang Lelongan Kontena, 75% Peluang 100 Random Events
-        const isAuction = Math.random() < 0.25;
+        const rng = Math.random();
 
-        if (isAuction) {
+        // 20% Peluang: Trak Duit Terbalik (Event Kilat .kutip)
+        if (rng < 0.20) {
+            const { triggerSpeedDrop } = await import('./plugins/kutip.js');
+            await triggerSpeedDrop(sock, targetGroup);
+        }
+        // 20% Peluang: Lelongan Kontena Misteri (.bida)
+        else if (rng < 0.40) {
             const { triggerRandomAuction } = await import('./plugins/bida.js');
             await triggerRandomAuction(sock, targetGroup);
-        } else {
+        }
+        // 60% Peluang: 100 Random Events Tempatan
+        else {
             const { RANDOM_EVENTS } = await import('./lib/randomEvents.js');
             const allUsers = await db.getAllUsers();
             if (allUsers.length === 0) return;
@@ -104,7 +111,7 @@ async function startAiri() {
             }
         }
     }, 12 * 60 * 1000);
-
+    
     // 4. Pengendali Mesej (Message Handler)
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify') return;
