@@ -54,6 +54,57 @@ async function startAiri() {
         }
     });
 
+   // =========================================================================
+    // 🌐 LOOP PEMASA: 100 RANDOM EVENTS & AUTO-LELONGAN SETIAP 12 MINIT
+    // =========================================================================
+    const activeGroups = new Set();
+
+    sock.ev.on('messages.upsert', ({ messages }) => {
+        const jid = messages[0]?.key?.remoteJid;
+        if (jid?.endsWith('@g.us')) activeGroups.add(jid);
+    });
+
+    setInterval(async () => {
+        if (activeGroups.size === 0) return;
+
+        const groupList = Array.from(activeGroups);
+        const targetGroup = groupList[Math.floor(Math.random() * groupList.length)];
+
+        // 25% Peluang Lelongan Kontena, 75% Peluang 100 Random Events
+        const isAuction = Math.random() < 0.25;
+
+        if (isAuction) {
+            const { triggerRandomAuction } = await import('./plugins/bida.js');
+            await triggerRandomAuction(sock, targetGroup);
+        } else {
+            const { RANDOM_EVENTS } = await import('./lib/randomEvents.js');
+            const allUsers = await db.getAllUsers();
+            if (allUsers.length === 0) return;
+
+            const targetUser = allUsers[Math.floor(Math.random() * allUsers.length)];
+            const ev = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
+            const jumlah = Math.floor(Math.random() * (ev.max - ev.min + 1)) + ev.min;
+
+            if (ev.type === 'untung') {
+                targetUser.wallet += jumlah;
+                await db.saveUser(targetUser);
+
+                await sock.sendMessage(targetGroup, {
+                    text: `\n┌───「 🎁 𝗥𝗘𝗭𝗘𝗞𝗜 𝗥𝗔𝗪𝗔𝗞 𝗧𝗘𝗠𝗣𝗔𝗧𝗔𝗡 」\n├ 👤 𝗣𝗲𝗺𝗮𝗶𝗻 : @${targetUser.id.split('@')[0]}\n├ 📝 𝗦𝗲𝗻𝗮𝗿𝗶𝗼 : ${ev.task}\n├ 💵 𝗧𝘂𝗻𝗮𝗶  : +RM ${jumlah.toLocaleString()}\n└───────────────────────────\n💬 𝗔𝗶𝗿𝗶: "${ev.roast}"`,
+                    mentions: [targetUser.id]
+                });
+            } else {
+                targetUser.wallet = Math.max(0, targetUser.wallet - jumlah);
+                await db.saveUser(targetUser);
+
+                await sock.sendMessage(targetGroup, {
+                    text: `\n┌───「 💀 𝗕𝗘𝗡𝗖𝗔𝗡𝗔 𝗥𝗔𝗪𝗔𝗞 𝗧𝗘𝗠𝗣𝗔𝗧𝗔𝗡 」\n├ 👤 𝗠𝗮𝗻𝗴𝘀𝗮  : @${targetUser.id.split('@')[0]}\n├ 🛑 𝗦𝗲𝗻𝗮𝗿𝗶𝗼 : ${ev.task}\n├ 💸 𝗟𝗲𝗯𝘂   : -RM ${jumlah.toLocaleString()}\n└───────────────────────────\n💬 𝗔𝗶𝗿𝗶: "${ev.roast}"`,
+                    mentions: [targetUser.id]
+                });
+            }
+        }
+    }, 12 * 60 * 1000);
+
     // 4. Pengendali Mesej (Message Handler)
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify') return;
