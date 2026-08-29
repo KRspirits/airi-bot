@@ -235,7 +235,7 @@ async function startAiriBot() {
             // Airi menyampuk jika namanya disebut ATAU (ada drama panas & 6% peluang rawak)
             if (teksLower.includes('airi') || (adaIsuPanas && Math.random() < 0.06 && teks.length > 5)) {
                 try {
-                    const { askAiri } = await import('./lib/groqAI.js');
+                   const { askAiri } = await import('./lib/geminiAI.js');
                     const situasi = adaIsuPanas 
                         ? `Pemain bernama ${senderName} tengah sembang pasal isu sensitif: "${teks}". Sampuk secara comel, ceria tapi ada unsur menyakat kelakar!` 
                         : `Pemain bernama ${senderName} panggil nama kau dalam sembang: "${teks}". Jawab dengan nada periang dan manja!`;
