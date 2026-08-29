@@ -36,6 +36,9 @@ export default {
         const jenteraNama = user?.vehicle?.name ? String(user.vehicle.name).split(' ')[0] : 'Tiada';
         const statusPlat = user?.vehicle?.plate ? `[${user.vehicle.plate}]` : '';
 
+        // Bahagian kawalan owner (VETO disembunyikan daripada teks menu biasa)
+        const ownerControlText = isOwner ? `╟ 👑 𝗖𝗢𝗡𝗧𝗥𝗢𝗟: .set_income ︲ .give_cash ︲ .jail_user ︲ .syscheck\n` : '';
+
         const menuText = `
 ╔═════════════════════════════╗
     🌸 𝐀𝐈𝐑𝐈 𝐂𝐎𝐑𝐍𝐄𝐑 𝐎𝐒 𝐕𝟒.𝟐 🌸
@@ -80,16 +83,15 @@ export default {
 ╟ ✧ .makan [id] ︲ .kedai_pet ︲ .beli_pet [id]
 ╟ ✧ .beli_telur ︲ .tetas_telur
 
-🎲 *[ 𝗭𝗢𝗡 𝟳: 𝗞𝗔𝗦𝗜𝗡𝗢 & 𝗠𝗜𝗡𝗜-𝗚𝗔𝗠𝗘𝗦 ]*
+🎲 *[ 𝗭𝗢𝗡 ७: 𝗞𝗔𝗦𝗜𝗡𝗢 & 𝗠𝗜𝗡𝗜-𝗚𝗔𝗠𝗘𝗦 ]*
 ╟ ✧ .serang_boss ︲ .bgk ︲ .coinflip ︲ .slot
 ╟ ✧ .tarik_tali ︲ .teka_nombor ︲ .kotak_beracun
 ╟ ✧ .tembak_botol ︲ .lumba_kuda ︲ .tikam_nombor
 ╟ ✧ .gacha_mlbb ︲ .tiktok_affiliate ︲ .split_bil
 
-🌐 *[ 𝗭𝗢𝗡 𝟴: 𝗜𝗡𝗙𝗢, 𝗚𝗘𝗟𝗔𝗥𝗔𝗡 & 𝗩𝗘𝗧𝗢 ]*
+🌐 *[ 𝗭𝗢𝗡 𝟴: 𝗜𝗡𝗙𝗢 & 𝗚𝗘𝗟𝗔𝗥𝗔𝗡 ]*
 ╟ ✧ .myid ︲ .profile ︲ .badge ︲ .top ︲ .musim
-${isOwner ? `╟ 
-─────────────────────────────
+${ownerControlText}─────────────────────────────
 💬 𝗔𝗶𝗿𝗶: "Jangan lupa solat & makan ya, jangan asyik lumba haram je hehe~ 😋🤍"
 `.trim();
 
