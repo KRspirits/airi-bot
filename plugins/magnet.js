@@ -1,131 +1,128 @@
+const MAGNET_TIERS = {
+    1: { name: 'Magnet Speaker Radio Asas', price: 0, mult: 1.0, maxTier: 1 },
+    2: { name: 'Magnet Kuat Neodymium', price: 5000, mult: 1.5, maxTier: 2 },
+    3: { name: 'Magnet Industri Kilang', price: 20000, mult: 2.2, maxTier: 3 },
+    4: { name: 'Magnet Gergasi Sungai', price: 65000, mult: 3.5, maxTier: 4 },
+    5: { name: 'Kren Elektromagnet Pelabuhan', price: 250000, mult: 5.0, maxTier: 5 }
+};
+
 const cooldownMagnet = new Map();
 
 export default {
     name: 'baling_magnet',
-    alias: ['magnet', 'jual_besi', 'buka_peti'],
+    alias: ['magnet', 'upgrade_magnet', 'jual_besi', 'buka_peti'],
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid;
-        const senderId = m.key.participant || m.key.remoteJid;
+        const senderId = m.key.participant || jid;
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
+        const args = teks.trim().split(' ').slice(1);
         const commandUsed = teks.slice(1).trim().split(' ')[0].toLowerCase();
         const now = Date.now();
 
-        // 1. JUAL BESI BURUK (.jual_besi)
-        if (commandUsed === 'jual_besi') {
-            const beratBesi = user.inventory.scrap_metal || 0;
-            if (beratBesi <= 0) {
+        // 1. UPGRADE MAGNET
+        if (commandUsed === 'upgrade_magnet') {
+            const nextTier = (user.magnet?.tier || 1) + 1;
+            const targetGear = MAGNET_TIERS[nextTier];
+
+            if (!targetGear) {
+                return sock.sendMessage(jid, { text: '⚡ Magnet kau dah max level (Kren Elektromagnet Pelabuhan)!' }, { quoted: m });
+            }
+
+            if (user.wallet < targetGear.price) {
                 return sock.sendMessage(jid, { 
-                    text: '❌ Kau takde besi buruk pun! Pergi baling magnet kat dasar sungai dulu.' 
+                    text: `❌ Duit poket tak cukup! Upgrade ke *${targetGear.name}* perlu RM ${targetGear.price.toLocaleString()}` 
                 }, { quoted: m });
             }
 
-            const hargaSekilo = 15; // RM15 per KG
-            const jumlahTunai = beratBesi * hargaSekilo;
-
-            user.wallet += jumlahTunai;
-            user.inventory.scrap_metal = 0;
+            user.wallet -= targetGear.price;
+            user.magnet.tier = nextTier;
+            user.magnet.name = targetGear.name;
             await db.saveUser(user);
 
-            const responJualBesi = `
-┌───「 🏗️ 𝗞𝗜𝗟𝗔𝗡𝗚 𝗕𝗘𝗦𝗜 𝗕𝗨𝗥𝗨𝗞 𝗞𝗟𝗔𝗡𝗚 」
-├ ⚖️ 𝗕𝗲𝗿𝗮𝘁 𝗗𝗶𝘁𝗶𝗺𝗯𝗮𝗻𝗴 : ${beratBesi} KG
-├ 💵 𝗛𝗮𝗿𝗴𝗮 𝗦𝗲𝗺𝗮𝘀𝗮   : RM ${hargaSekilo} / KG
-├ 💰 𝗧𝘂𝗻𝗮𝗶 𝗗𝗶𝘁𝗲𝗿𝗶𝗺𝗮  : +RM ${jumlahTunai.toLocaleString()}
-└───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Fuh mantap tokey besi buruk! Banyak modal nak modified kereta lepas ni."`;
-
-            return sock.sendMessage(jid, { text: responJualBesi }, { quoted: m });
-        }
-
-        // 2. BUKA PETI MISTERI (.buka_peti)
-        if (commandUsed === 'buka_peti') {
-            const petiAda = user.inventory.mystery_box || 0;
-            if (petiAda <= 0) {
-                return sock.sendMessage(jid, { 
-                    text: '❌ Kau takde Peti Besi Misteri! Tarik magnet kat jeti dulu mana tau ada rezeki tersangkut.' 
-                }, { quoted: m });
-            }
-
-            user.inventory.mystery_box -= 1;
-
-            // Hadiah rawak dalam peti
-            const isiPeti = [
-                { item: "Seguni Duit Syiling Lama 50 Sen Belah", cash: 3500, desc: "Syiling lama zaman kolonial bernilai tinggi." },
-                { item: "Ketulan Emas Padu Dasar Sungai", cash: 8000, desc: "Ketulan emas berkilau tak berkarat langsung!" },
-                { item: "Pistol Revolver Karat & Peluru Basah", cash: 800, desc: "Senjata terbuang kes rompakan zaman 90-an." },
-                { item: "Sampah Lumpur & Kulit Kerang", cash: 50, desc: "Takde apa bernilai, sekadar lumpur hitam masin." }
-            ];
-
-            const loot = isiPeti[Math.floor(Math.random() * isiPeti.length)];
-            user.wallet += loot.cash;
-            await db.saveUser(user);
-
-            const responPeti = `
-┌───「 🔓 𝗞𝗨𝗡𝗖𝗜 𝗣𝗘𝗧𝗜 𝗕𝗘𝗦𝗜 𝗗𝗜𝗕𝗨𝗞𝗔 」
-├ 📦 𝗜𝘀𝗶 𝗣𝗲𝘁𝗶  : ${loot.item}
-├ 💵 𝗡𝗶𝗹𝗮𝗶     : +RM ${loot.cash.toLocaleString()}
-├ 📝 𝗞𝗲𝘁𝗲𝗿𝗮𝗻𝗴𝗮𝗻: ${loot.desc}
-└───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Wahh nasib kau baik bukak peti ni! Ingat ada bom tadi."`;
-
-            return sock.sendMessage(jid, { text: responPeti }, { quoted: m });
-        }
-
-        // 3. AKTIVITI BALING MAGNET (.baling_magnet)
-        if (user.jail?.status && now < user.jail.release_at) {
-            return sock.sendMessage(jid, { text: '⛓️ Kau dalam lokap! Jangan nak baling besi merata.' }, { quoted: m });
-        }
-
-        const COOLDOWN_MAGNET = 45 * 1000; // 45 saat
-        const lastMagnet = cooldownMagnet.get(senderId) || 0;
-        if (now - lastMagnet < COOLDOWN_MAGNET) {
-            const bakiSaat = Math.ceil((COOLDOWN_MAGNET - (now - lastMagnet)) / 1000);
-            return sock.sendMessage(jid, { 
-                text: `⏳ Tali magnet tengah basah kuyup! Jemur dulu lagi ${bakiSaat} saat.` 
+            return sock.sendMessage(jid, {
+                text: `🧲 *UPGRADE BERJAYA!* Sekarang kau guna *${targetGear.name}* (Multiplier Khazanah: x${targetGear.mult})!`
             }, { quoted: m });
         }
 
-        cooldownMagnet.set(senderId, now);
+        // 2. TIMBANG BESI BURUK KILO
+        if (commandUsed === 'jual_besi') {
+            const scrap = user.inventory.scrap_metal || 0;
+            if (scrap <= 0) return sock.sendMessage(jid, { text: '❌ Tiada besi buruk untuk ditimbang.' }, { quoted: m });
 
-        // Peluang dapat peti misteri (15%)
-        const dapatPeti = Math.random() < 0.15;
-
-        if (dapatPeti) {
-            user.inventory.mystery_box = (user.inventory.mystery_box || 0) + 1;
+            const hargaPerKg = 25; // RM25/KG
+            const total = scrap * hargaPerKg;
+            user.wallet += total;
+            user.inventory.scrap_metal = 0;
             await db.saveUser(user);
 
-            const responPetiDapat = `
-┌───「 🧲 𝗧𝗔𝗥𝗜𝗞𝗔𝗡 𝗠𝗔𝗚𝗡𝗘𝗧: 𝗝𝗔𝗖𝗞𝗣𝗢𝗧! 」
-├ 📦 𝗛𝗮𝘀𝗶𝗹  : 1x Peti Besi Misteri Air Masin!
-├ 🔒 𝗦𝘁𝗮𝘁𝘂𝘀 : Terkunci Rapat
-└───────────────────────────
-Guna arahan \`.buka_peti\` untuk umpil kunci peti ni!
-💬 𝗔𝗶𝗿𝗶: "Wehh berat gila benda melekat kat magnet kau tu! Buka cepat tengok apa kat dalam!"`;
-
-            return sock.sendMessage(jid, { text: responPetiDapat }, { quoted: m });
+            return sock.sendMessage(jid, {
+                text: `⚖️ *KILANG BESI BURUK*\nDitimbang: *${scrap} KG*\nHasil: *+RM ${total.toLocaleString()}* masuk wallet!`
+            }, { quoted: m });
         }
 
-        // Tarikan biasa (Besi Buruk)
-        const kutipBesi = [
-            { item: "Sport Rim Motosikal EX5 Bengkok", kg: 8 },
-            { item: "Pintu Peti Ais Lama Karat", kg: 25 },
-            { item: "Rangka Basikal Chopper Patah", kg: 14 },
-            { item: "Tin Minyak Pelincir Hitam", kg: 3 }
-        ];
+        // 3. BUKA PETI MISTERI
+        if (commandUsed === 'buka_peti') {
+            if ((user.inventory.mystery_boxes || 0) <= 0) {
+                return sock.sendMessage(jid, { text: '❌ Kau tiada Peti Besi Misteri!' }, { quoted: m });
+            }
+            user.inventory.mystery_boxes -= 1;
 
-        const besi = kutipBesi[Math.floor(Math.random() * kutipBesi.length)];
-        user.inventory.scrap_metal = (user.inventory.scrap_metal || 0) + besi.kg;
+            const ganjaran = [
+                { loot: "Ketulan Jongkong Emas Sungai", val: 50000 },
+                { loot: "Smartwatch Shadow Eclipse", val: 35000, item: 'smartwatch' },
+                { loot: "Telefon Pintar iQOO 12 5G (Kalis Air)", val: 45000, item: 'phone_iqoo' },
+                { loot: "Kunci Bilik Rahsia Ah Long", val: 15000 }
+            ];
+            const hadiah = ganjaran[Math.floor(Math.random() * ganjaran.length)];
+            user.wallet += hadiah.val;
+            if (hadiah.item) user.inventory[hadiah.item] = true;
+            await db.saveUser(user);
+
+            return sock.sendMessage(jid, {
+                text: `🔓 *PETI BESI DIBUKA!*\nKhazanah: *${hadiah.loot}*\nNilai Tunai: *+RM ${hadiah.val.toLocaleString()}*`
+            }, { quoted: m });
+        }
+
+        // 4. BALING MAGNET DASAR SUNGAI
+        if (user.jail?.status && now < user.jail.release_at) {
+            return sock.sendMessage(jid, { text: '⛓️ Kau dalam lokap, tak boleh baling magnet!' }, { quoted: m });
+        }
+
+        const cd = 40 * 1000;
+        const lastRun = cooldownMagnet.get(senderId) || 0;
+        if (now - lastRun < cd) {
+            return sock.sendMessage(jid, { text: `⏳ Tali sangkut lumpur! Tunggu ${Math.ceil((cd - (now - lastRun)) / 1000)} saat lagi.` }, { quoted: m });
+        }
+        cooldownMagnet.set(senderId, now);
+
+        const currentTier = user.magnet?.tier || 1;
+        const roll = Math.random();
+
+        // Peluang Peti Misteri mengikut tier
+        if (roll < (0.10 * currentTier)) {
+            user.inventory.mystery_boxes = (user.inventory.mystery_boxes || 0) + 1;
+            await db.saveUser(user);
+            return sock.sendMessage(jid, {
+                text: `🧲 *JACKPOT DASAR AIR!*\nMagnet kau melekat pada sebuah *Peti Besi Misteri*!\nTaip \`.buka_peti\` untuk membukanya!`
+            }, { quoted: m });
+        }
+
+        // Loot Besi Buruk Kilo
+        const kutipanKg = Math.floor((Math.random() * 20 + 5) * currentTier);
+        user.inventory.scrap_metal = (user.inventory.scrap_metal || 0) + kutipanKg;
         await db.saveUser(user);
 
-        const responBesi = `
-┌───「 🧲 𝗧𝗔𝗥𝗜𝗞𝗔𝗡 𝗠𝗔𝗚𝗡𝗘𝗧: 𝗕𝗘𝗥𝗝𝗔𝗬𝗔 」
-├ 🔩 𝗕𝗮𝗿𝗮𝗻𝗴 : ${besi.item}
-├ ⚖️ 𝗕𝗲𝗿𝗮𝘁  : +${besi.kg} KG Besi Buruk
-├ 📊 𝗧𝗼𝘁𝗮𝗹  : ${(user.inventory.scrap_metal).toLocaleString()} KG Dalam Simpanan
-└───────────────────────────
-Guna arahan \`.jual_besi\` untuk timbang kat kilang besi.
-💬 𝗔𝗶𝗿𝗶: "Kemas bro, kutip besi banyak-banyak boleh tolong bersihkan sungai sekali."`;
+        const barangRawak = ['Rim Basikal Lajak', 'Tong Gas Hijau Karat', 'Tin Biskut Kemek', 'Pagar Besi Buruk'];
+        const brg = barangRawak[Math.floor(Math.random() * barangRawak.length)];
 
-        return sock.sendMessage(jid, { text: responBesi }, { quoted: m });
+        return sock.sendMessage(jid, {
+            text: `
+┌───「 🧲 𝗧𝗔𝗥𝗜𝗞𝗔𝗡 𝗠𝗔𝗚𝗡𝗘𝗧 」
+├ ⚙️ 𝗚𝗲𝗮𝗿  : ${MAGNET_TIERS[currentTier].name}
+├ 🔩 𝗕𝗮𝗿𝗮𝗻𝗴 : ${brg}
+├ ⚖️ 𝗕𝗲𝗿𝗮𝘁  : +${kutipanKg} KG Besi Buruk
+└───────────────────────────
+Taip \`.jual_besi\` untuk timbang atau \`.upgrade_magnet\`!`
+        }, { quoted: m });
     }
 };
