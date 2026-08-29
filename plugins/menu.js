@@ -1,7 +1,7 @@
 import { config } from '../config.js';
 
 function formatCompactNumber(number) {
-    if (isNaN(number) || number === 0 || !number) return '0';
+    if (isNaN(number) || !number) return '0';
     const absVal = Math.abs(number);
     if (absVal >= 1e12) return (number / 1e12).toFixed(1).replace(/\.0$/, '') + 'T';
     if (absVal >= 1e9) return (number / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
@@ -18,29 +18,17 @@ export default {
             const jid = m.key.remoteJid;
             const senderJid = m.key.participant || jid || '';
             const cleanSender = String(senderJid).replace(/@.*$/, '').replace(/:.*$/, '').replace(/[^0-9]/g, '');
-            const senderTag = `@${cleanSender}`;
-
-            const ownersList = Array.isArray(config.ownerNumbers) 
-                ? config.ownerNumbers 
-                : (config.owner ? [config.owner] : []);
-
-            const isOwner = ownersList.some(ownerNum => {
-                const cleanOwner = String(ownerNum).replace(/[^0-9]/g, '');
-                return cleanSender.includes(cleanOwner) || cleanOwner.includes(cleanSender);
-            });
 
             const cashRingkas = formatCompactNumber(user?.wallet || 0);
             const bankRingkas = formatCompactNumber(user?.bank || 0);
             const jenteraNama = user?.vehicle?.name ? String(user.vehicle.name).split(' ')[0] : 'Tiada';
             const statusPlat = user?.vehicle?.plate ? `[${user.vehicle.plate}]` : '';
 
-            const ownerControlText = isOwner ? `╟ 👑 𝗖𝗢𝗡𝗧𝗥𝗢𝗟: .set_income ︲ .give_cash ︲ .jail_user ︲ .syscheck\n` : '';
-
             const menuText = `
 ╔═════════════════════════════╗
     🌸 𝐀𝐈𝐑𝐈 𝐂𝐎𝐑𝐍𝐄𝐑 𝐎𝐒 𝐕𝟒.𝟐 🌸
 ╠═════════════════════════════╣
-║ 👤 𝗪𝗮𝗿𝗴𝗮 : ${senderTag}
+║ 👤 𝗪𝗮𝗿𝗴𝗮 : @${cleanSender}
 ║ 💵 𝗧𝘂𝗻𝗮𝗶 : RM ${cashRingkas} ︲ 🏦 RM ${bankRingkas}
 ║ 🚗 𝗚𝗮𝗿𝗮𝗷 : ${jenteraNama} ${statusPlat}
 ╚═════════════════════════════╝
@@ -88,14 +76,11 @@ export default {
 
 🌐 *[ 𝗭𝗢𝗡 𝟴: 𝗜𝗡𝗙𝗢 & 𝗚𝗘𝗟𝗔𝗥𝗔𝗡 ]*
 ╟ ✧ .myid ︲ .profile ︲ .badge ︲ .top ︲ .musim
-${ownerControlText}─────────────────────────────
+─────────────────────────────
 💬 𝗔𝗶𝗿𝗶: "Jangan lupa solat & makan ya, jangan asyik lumba haram je hehe~ 😋🤍"
 `.trim();
 
-            return sock.sendMessage(jid, {
-                text: menuText,
-                mentions: [senderJid]
-            }, { quoted: m });
+            return sock.sendMessage(jid, { text: menuText, mentions: [senderJid] }, { quoted: m });
         } catch (err) {
             console.error("Menu Error:", err);
         }
