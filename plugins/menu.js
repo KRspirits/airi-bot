@@ -2,7 +2,7 @@ import { config } from '../config.js';
 
 // Fungsi memendekkan format angka besar (1,000 -> 1K, 1,000,000 -> 1M, dll)
 function formatCompactNumber(number) {
-    if (isNaN(number) || number === 0) return '0';
+    if (isNaN(number) || number === 0 || !number) return '0';
     const absVal = Math.abs(number);
     if (absVal >= 1e12) return (number / 1e12).toFixed(1).replace(/\.0$/, '') + 'T';
     if (absVal >= 1e9) return (number / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
@@ -16,15 +16,25 @@ export default {
     alias: ['help', 'senarai'],
     execute: async ({ sock, m, user }) => {
         const jid = m.key.remoteJid;
-        const senderJid = m.key.participant || jid;
-        const senderTag = `@${senderJid.split('@')[0]}`;
-        const isOwner = senderJid.replace(/[^0-9]/g, '') === config.owner.replace(/[^0-9]/g, '');
+        const senderJid = m.key.participant || jid || '';
+        const cleanSender = String(senderJid).replace(/@.*$/, '').replace(/:.*$/, '').replace(/[^0-9]/g, '');
+        const senderTag = `@${cleanSender}`;
+
+        // Semak status pengasas menggunakan array ownerNumbers secara selamat
+        const ownersList = Array.isArray(config.ownerNumbers) 
+            ? config.ownerNumbers 
+            : (config.owner ? [config.owner] : []);
+
+        const isOwner = ownersList.some(ownerNum => {
+            const cleanOwner = String(ownerNum).replace(/[^0-9]/g, '');
+            return cleanSender.includes(cleanOwner) || cleanOwner.includes(cleanSender);
+        });
 
         // Ringkasan baki kewangan pemain
-        const cashRingkas = formatCompactNumber(user.wallet || 0);
-        const bankRingkas = formatCompactNumber(user.bank || 0);
-        const jenteraNama = user.vehicle?.name ? user.vehicle.name.split(' ')[0] : 'Tiada';
-        const statusPlat = user.vehicle?.plate ? `[${user.vehicle.plate}]` : '';
+        const cashRingkas = formatCompactNumber(user?.wallet || 0);
+        const bankRingkas = formatCompactNumber(user?.bank || 0);
+        const jenteraNama = user?.vehicle?.name ? String(user.vehicle.name).split(' ')[0] : 'Tiada';
+        const statusPlat = user?.vehicle?.plate ? `[${user.vehicle.plate}]` : '';
 
         const menuText = `
 ╔═════════════════════════════╗
