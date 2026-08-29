@@ -1,4 +1,4 @@
-import { askAiri, judgeCourtAppeal, appraiseItem, verifyPantun } from '../lib/groqAI.js';
+import { askAiri, judgeCourtAppeal, appraiseItem, verifyPantun } from '../lib/geminiAI.js';
 
 export default {
     name: 'airi',
