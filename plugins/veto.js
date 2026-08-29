@@ -98,11 +98,44 @@ export default {
             return;
         }
 
-        // 5. EVENT GLOBAL & BLESSING
-        if (cmd === 'list_event') {
-            return sock.sendMessage(jid, {
-                text: `📜 *SENARAI ACARA GLOBAL (VETO)*\n1. CRIME_BOOM (Hasil jenayah x2)\n2. GOLD_RUSH (Harga emas & ikan x3)\n3. TECH_SURGE (Diskaun BM 40%)\n4. *AMAR_BLESSING* (100x ganda SEMUA hasil pendapatan!)\n\nGuna: \`.start_event [KOD] [HARI]\``
-            }, { quoted: m });
+        // 5. EVENT GLOBAL & 20 SENARAI EKSKLUSIF AMAR (DIKEMASKINI)
+        if (cmd === 'veto' || cmd === 'list_event') {
+            const targetEvent = args.join(' ').trim();
+            
+            const eventList = [
+                "1. Kejohanan E-Sports Shadow Legion X Open 2026",
+                "2. Pelancaran Rasmi Produk & Roadmap Shadow Legacy Co.",
+                "3. Sesi Kalibrasi DPI Gaming Mouse & Macro Pro",
+                "4. Pertandingan Memancing Extreme Fishing Planet Cup",
+                "5. Kejohanan Ranking Global Mobile Legends: Bang Bang",
+                "6. Kempen Eksklusif Genshin Impact Versi Shadow_Legacy",
+                "7. Perlumbaan Musim Baharu Racing Master NetEase",
+                "8. Sesi Live & Affiliate TikTok Shop Flash Sale",
+                "9. Ujian Penilaian Rasmi E-Pengambilan PDRM",
+                "10. Pelancaran Sistem Automasi WhatsApp Bot 'Shadow Nicole'",
+                "11. Kemaskini E-Invoicing & Korporat Enterprise",
+                "12. Sesi Reka Bentuk & Rendering Logo Peribadi Wolf",
+                "13. Pertandingan Kelajuan Menaip Kod Node.js",
+                "14. Ujian Sistem Sekuriti Steam Guard & kr_legacy",
+                "15. Projek Grafik Digital Portal SIS Kitchen",
+                "16. Sesi Pengurusan Kredit Media Harian Pippit",
+                "17. Konvensyen Teknologi AI & Cloud Bersama SheerID",
+                "18. Pertandingan Custom Wallpaper Desktop 2026",
+                "19. Sesi Pemindahan Fail Smash & Arkib Data",
+                "20. Sidang Kemuncak Khas Pemegang Saham Shadow Legacy"
+            ];
+
+            if (targetEvent) {
+                return sock.sendMessage(jid, { 
+                    text: `🛡️ *SISTEM VETO RASMI AMAR* 🛡️\n\nPerintah Veto berjaya diaktifkan untuk event: *"${targetEvent}"*!\n\n✨ Status: *VETO DITERIMA & DILULUSKAN* oleh Boss Besar Amar! 🚀` 
+                }, { quoted: m });
+            } else {
+                return sock.sendMessage(jid, {
+                    text: `📋 *SENARAI 20 EVENT EKSKLUSIF AMAR (VETO)* 📋\n───────────────────────────\n` + 
+                          eventList.join('\n') + 
+                          `\n───────────────────────────\n💡 *Tip:* Taip \`.veto [nama/nombor event]\` untuk mengenakan kuasa veto mutlak! ✨`
+                }, { quoted: m });
+            }
         }
 
         if (cmd === 'start_event') {
@@ -118,7 +151,7 @@ export default {
         if (cmd === 'spawn_boss') {
             return sock.sendMessage(jid, {
                 text: `🚨 *AMARAN KRITIKAL! BOSS DUNIA DILEPASKAN!*\n👾 *AI Rogue Titan-X*\n🩸 HP: 500,000 HP\n💰 Ganjaran Kongsi: RM 1,000,000\n\nSemua pemain, taip *.serang_boss* sekarang!`
-            });
+            }, { quoted: m });
         }
 
         // 7. DIAGNOSTIK KESIHATAN BOT
