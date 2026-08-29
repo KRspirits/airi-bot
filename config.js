@@ -8,7 +8,7 @@ export const config = {
         '1166533534',
         '38956007690292'
     ],
-    // Baca daripada pemboleh ubah persekitaran atau fallback
-    groqKey: process.env.GROQ_API_KEY || process.env.GROQ_KEY || '',
+    // Baca API Key Gemini dan MongoDB
+    geminiKey: process.env.GEMINI_API_KEY || '',
     mongoUri: process.env.MONGO_URI || ''
 };
