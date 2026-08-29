@@ -1,11 +1,11 @@
-import qrcodeTerminal from 'qrcode-terminal';
-import QRCode from 'qrcode';
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import qrcodeTerminal from 'qrcode-terminal';
+import QRCode from 'qrcode';
 import { config } from './config.js';
 import { db } from './lib/database.js';
 
@@ -13,14 +13,43 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // =========================================================================
-// 🌐 1. PELAYAN WEB RINGAN (KEEPALIVE UNTUK RENDER / UPTIMEROBOT)
+// 🌐 1. PELAYAN WEB RINGAN (KEEPALIVE & QR SCANNER WEB UNTUK RENDER)
 // =========================================================================
+let currentQR = "";
+let isConnected = false;
+
 const app = express();
-app.get('/', (req, res) => res.send('✨ Airi Bot Cyber OS Beroperasi Secara 24/7! 🌸'));
+
+app.get('/', async (req, res) => {
+    if (isConnected) {
+        return res.send(`
+            <div style="text-align:center;margin-top:60px;font-family:sans-serif;background:#0f172a;color:#fff;padding:30px;border-radius:12px;max-width:500px;margin-left:auto;margin-right:auto;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+                <h2>✨ AIRI CORNER CYBER OS V4.2 ✨</h2>
+                <p style="color:#38bdf8;">🟢 Status: Bot sedang aktif 24/7 dan sedia beroperasi.</p>
+            </div>
+        `);
+    } else if (currentQR) {
+        const qrImage = await QRCode.toDataURL(currentQR);
+        return res.send(`
+            <div style="text-align:center;margin-top:40px;font-family:sans-serif;background:#0a0f1d;color:#fff;padding:25px;border-radius:12px;max-width:450px;margin-left:auto;margin-right:auto;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+                <h2>⚡ IMBAS KOD QR AIRI ⚡</h2>
+                <p style="color:#94a3b8;font-size:14px;">Buka WhatsApp ➜ Linked Devices ➜ Link a Device</p>
+                <img src="${qrImage}" style="width:280px;height:280px;border-radius:16px;background:#fff;padding:12px;margin-top:10px;"/>
+            </div>
+        `);
+    } else {
+        return res.send(`
+            <div style="text-align:center;margin-top:60px;font-family:sans-serif;color:#334155;">
+                <h2>⏳ Menjana Kod QR... Sila muat semula (refresh) halaman sebentar lagi.</h2>
+            </div>
+        `);
+    }
+});
+
 app.listen(config.port, () => console.log(`[HTTP] Server aktif di port ${config.port}`));
 
 // =========================================================================
-// 🧩 2. ENJIN AUTO-LOADER PLUGINS (BACA SEMUA FAIL DALAM plugins/)
+// 🧩 2. ENJIN AUTO-LOADER PLUGINS (FOLDER plugins/)
 // =========================================================================
 const commands = new Map();
 
@@ -58,19 +87,31 @@ async function startAiriBot() {
 
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
         logger: pino({ level: 'silent' }),
         browser: ['Airi OS', 'Safari', '1.0.0']
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', ({ connection, lastDisconnect }) => {
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
+
+        // Tangkap kod QR dan lukis ke terminal serta web
+        if (qr) {
+            currentQR = qr;
+            isConnected = false;
+            console.log("\n⚡ [QR CODE DIKESAN] Sila imbas kod di bawah atau buka laman web Render anda:");
+            qrcodeTerminal.generate(qr, { small: true });
+        }
+
         if (connection === 'close') {
+            isConnected = false;
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log('⚠️ Sambungan terputus! Menyambung semula:', shouldReconnect);
             if (shouldReconnect) startAiriBot();
         } else if (connection === 'open') {
+            isConnected = true;
+            currentQR = "";
             console.log('✅ Airi Bot Selamat Terhubung ke WhatsApp!');
         }
     });
@@ -79,7 +120,7 @@ async function startAiriBot() {
     const activeGroups = new Set();
 
     // =========================================================================
-    // 🌐 4. PEMASA RAWAK: KONTENA LELONGAN, EVENT KILAT & 100 RANDOM SCENARIOS
+    // 🌐 4. PEMASA RAWAK: KONTENA LELONGAN, EVENT KILAT & 100 RANDOM EVENTS
     // =========================================================================
     setInterval(async () => {
         if (activeGroups.size === 0) return;
@@ -146,7 +187,7 @@ async function startAiriBot() {
         } catch (err) {
             console.error('[AUTO EVENT ERROR]:', err);
         }
-    }, 12 * 60 * 1000); // Berjalan automatik setiap 12 minit
+    }, 12 * 60 * 1000); // Trigger setiap 12 minit
 
     // =========================================================================
     // 💬 5. PENGENDALI MESEJ (COMMAND HANDLER & AIRI CCTV INTERCEPTOR)
@@ -166,7 +207,7 @@ async function startAiriBot() {
             activeGroups.add(jid);
         }
 
-        // Ambil profil pengguna daripada MongoDB Atlas
+        // Ambil data pengguna daripada MongoDB Atlas
         const user = await db.getUser(senderJid, senderName);
 
         // A. JIKA MENGGUNAKAN PREFIX TITIK (.)
@@ -178,7 +219,7 @@ async function startAiriBot() {
                 try {
                     await action.execute({ sock, m, user, db });
                 } catch (err) {
-                    console.error(`[COMMAND ERROR] Ralat pada perintah .${namaCmd}:`, err);
+                    console.error(`[COMMAND ERROR] Ralat pada command .${namaCmd}:`, err);
                     await sock.sendMessage(jid, { 
                         text: 'Aduh, ada wayar sistem tersangkut sekejap hehe~ Cuba lagi kejap lagi ya! 🥺' 
                     }, { quoted: m });
