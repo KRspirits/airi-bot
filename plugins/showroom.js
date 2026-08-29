@@ -1,74 +1,60 @@
-export const SENARAI_KERETA = {
-    1: { name: 'Perodua Kancil 660 (Lompat Turbo)', price: 4500, speed: 45, tier: 'D', desc: 'Kecil tapi menyusup laju celah jammed.' },
-    2: { name: 'Proton Wira 1.5 Aeroback (Ekor Itik)', price: 9500, speed: 65, tier: 'C', desc: 'Legenda litar haram malam minggu.' },
-    3: { name: 'Proton Satria Neo CPS (Tuned)', price: 22000, speed: 85, tier: 'B', desc: 'Cornering Bukit Ampang tak buang minyak.' },
-    4: { name: 'Perodua Myvi Gen 3 (King Highway)', price: 48000, speed: 110, tier: 'A', desc: 'Kereta rasmi pembuli lorong kanan Karak.' },
-    5: { name: 'Nissan Silvia S15 (Geran Siam)', price: 120000, speed: 150, tier: 'S', desc: 'Raja drift bawah jambatan Pulau Pinang.' }
-};
+import { VEHICLES } from '../lib/gamedata.js';
 
 export default {
     name: 'showroom',
-    alias: ['kedai_kereta', 'beli_kenderaan', 'garaj'],
+    alias: ['beli_kenderaan', 'bengkel', 'pasang'],
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid;
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const args = teks.trim().split(' ').slice(1);
-        const commandUsed = teks.slice(1).trim().split(' ')[0].toLowerCase();
+        const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
 
-        // 1. BELI KERETA (.beli_kenderaan [no])
-        if (commandUsed === 'beli_kenderaan') {
-            const noPilihan = parseInt(args[0]);
-            const keretaDipilih = SENARAI_KERETA[noPilihan];
+        // 1. LIHAT SHOWROOM MENGIKUT MUKA SURAT (.showroom [page])
+        if (cmd === 'showroom') {
+            const page = parseInt(args[0]) || 1;
+            const itemPerMuka = 15;
+            const start = (page - 1) * itemPerMuka;
+            const paparan = VEHICLES.slice(start, start + itemPerMuka);
 
-            if (!keretaDipilih) {
-                return sock.sendMessage(jid, { 
-                    text: '❌ Pilihan tak wujud! Taip `.showroom` untuk tengok senarai jentera.' 
-                }, { quoted: m });
+            let katalog = `┌───「 🏎️ 𝗦𝗛𝗢𝗪𝗥𝗢𝗢𝗠 𝗠𝗘𝗚𝗔 (𝗠𝗨𝗞𝗔 𝗦𝗨𝗥𝗔𝗧 ${page}/5) 」\n├───────────────────────────\n`;
+            paparan.forEach(v => {
+                katalog += `├ [${v.id}] *${v.name}*\n│   ⚡ Kelajuan: ${v.speed} km/h | 💵 RM ${v.price.toLocaleString()}\n`;
+            });
+            katalog += `└───────────────────────────\nTaip \`.showroom [1-5]\` untuk muka surat lain.\nBeli guna: \`.beli_kenderaan [id]\``;
+
+            return sock.sendMessage(jid, { text: katalog }, { quoted: m });
+        }
+
+        // 2. BELI JENTERA BERSERTA IMEJ RENDER AI (.beli_kenderaan [id])
+        if (cmd === 'beli_kenderaan') {
+            const vId = args[0]?.toLowerCase();
+            const car = VEHICLES.find(v => v.id === vId);
+
+            if (!car) return sock.sendMessage(jid, { text: '❌ Kod jentera tidak sah! Semak di `.showroom`.' }, { quoted: m });
+
+            if (user.wallet < car.price) {
+                return sock.sendMessage(jid, { text: `❌ Duit poket kau tak cukup RM ${car.price.toLocaleString()}!` }, { quoted: m });
             }
 
-            if (user.wallet < keretaDipilih.price) {
-                return sock.sendMessage(jid, { 
-                    text: `❌ Duit poket kau tak cukup! Perlukan RM ${keretaDipilih.price.toLocaleString()} tapi ada RM ${user.wallet.toLocaleString()} je.` 
-                }, { quoted: m });
-            }
-
-            // Tolak duit dan update jentera
-            user.wallet -= keretaDipilih.price;
-            user.vehicle = {
-                name: keretaDipilih.name,
-                speed: keretaDipilih.speed,
-                price: keretaDipilih.price,
-                tier: keretaDipilih.tier
-            };
+            user.wallet -= car.price;
+            user.vehicle = { name: car.name, speed: car.speed, tier: car.type };
             await db.saveUser(user);
 
-            const responBeli = `
-┌───「 🏎️ 𝗣𝗘𝗡𝗗𝗔𝗙𝗧𝗔𝗥𝗔𝗡 𝗝𝗘𝗡𝗧𝗘𝗥𝗔 」
-├ 🚗 𝗠𝗼𝗱𝗲𝗹 : ${keretaDipilih.name}
-├ ⚡ 𝗦𝗽𝗲𝗲𝗱 : ${keretaDipilih.speed} Km/j Base
-├ 🏷️ 𝗧𝗶𝗲𝗿   : [ ${keretaDipilih.tier} ]
-├ 💵 𝗛𝗮𝗿𝗴𝗮 : RM ${keretaDipilih.price.toLocaleString()}
-└───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Pergh dah ada jentera baru! Jangan bagi enjin barai dekat Karak malam ni!"`;
+            // Menjana render visual berdefinisi tinggi menggunakan Pollinations AI
+            const prompt = encodeURIComponent(`photorealistic high detail ${car.name.replace(/[^a-zA-Z0-9 ]/g, '')}, 4k render, cinematic lighting, cyberpunk street background`);
+            const urlGambar = `https://image.pollinations.ai/prompt/${prompt}?width=512&height=512&nologo=true`;
 
-            return sock.sendMessage(jid, { text: responBeli }, { quoted: m });
+            return sock.sendMessage(jid, {
+                image: { url: urlGambar },
+                caption: `🎉 *KUNCI DISERAHKAN!*\n\nTahniah! Anda kini pemilik sah jentera *${car.name}*.\n⚡ Kelajuan Asas: *${car.speed} km/h*`
+            }, { quoted: m });
         }
 
-        // 2. LIHAT SHOWROOM (.showroom)
-        let katalog = `
-┌───「 🏁 𝗦𝗛𝗢𝗪𝗥𝗢𝗢𝗠 𝗝𝗘𝗡𝗧𝗘𝗥𝗔 𝗟𝗢𝗞𝗔𝗟 」
-│ _Pilih jentera untuk tapau musuh di jalanan._
-├───────────────────────────\n`;
-
-        for (const [id, car] of Object.entries(SENARAI_KERETA)) {
-            katalog += `├ [${id}] *${car.name}* [Tier ${car.tier}]\n│   ⚡ Kelajuan: ${car.speed} Km/j\n│   💵 Harga   : RM ${car.price.toLocaleString()}\n│   ℹ️ Sifat   : ${car.desc}\n`;
+        // 3. BENGKEL MODIFIKASI (.bengkel)
+        if (cmd === 'bengkel' || cmd === 'pasang') {
+            return sock.sendMessage(jid, {
+                text: `🛠️ *BENGKEL TUNING PERFORMANCE*\n1. ECU Remap Stage 1 (+15 km/h) — RM 3,500\n2. Tayar Slick Toyo (+10 km/h) — RM 2,400\n3. Turbo Garrett Ball-Bearing (+30 km/h) — RM 7,500\n\nGuna: \`.pasang [no_mod]\` untuk menaik taraf kelajuan!`
+            }, { quoted: m });
         }
-
-        katalog += `└───────────────────────────
-🚘 *Jentera Semasa Kau:* ${user.vehicle?.name || 'Kaki Bangku'}
-Guna: \`.beli_kenderaan [nombor]\` untuk beli jentera.
-💬 𝗔𝗶𝗿𝗶: "Kumpul duit beli Myvi King la baru ada gaya!"`;
-
-        return sock.sendMessage(jid, { text: katalog }, { quoted: m });
     }
 };
