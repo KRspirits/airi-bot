@@ -1,144 +1,176 @@
-const SPESIES_DATABASE = [
-    // Biasa & Muara
-    { id: 'f1', name: "Ikan Puyu Sawah", price: 80, tier: "Common", buff: { type: 'gaji', val: 10 } },
-    { id: 'f2', name: "Ikan Haruan Lembab", price: 180, tier: "Common", buff: { type: 'gaji', val: 20 } },
-    { id: 'f3', name: "Ikan Kelisa Emas", price: 2500, tier: "Epic", buff: { type: 'gaji', val: 80 } },
-    { id: 'f4', name: "Kelah Merah Titiwangsa", price: 8500, tier: "Legendary", buff: { type: 'speed', val: 15 } },
-    { id: 'f5', name: "Toman Bunga Gergasi", price: 4000, tier: "Epic", buff: { type: 'denda', val: 10 } },
-    // Monster Purba & Mitos
-    { id: 'm1', name: "Buaya Tembaga Muara", price: 80000, tier: "Mythic", danger: true, buff: { type: 'denda', val: 30 } },
-    { id: 'm2', name: "Ikan Purba Coelacanth", price: 350000, tier: "Mythic", danger: false, buff: { type: 'gaji', val: 300 } },
-    { id: 'm3', name: "Naga Tasik Chini", price: 2500000, tier: "Divine", danger: true, buff: { type: 'speed', val: 50 } }
-];
+import { FISH_DATABASE } from '../lib/gamedata.js';
 
-const cdPancing = new Map();
+// Pengendali Cooldown Memancing (35 Saat per Pemain)
+const cdMancing = new Map();
 
 export default {
     name: 'mancing',
-    alias: ['fish', 'jual_ikan', 'bela_ikan', 'akuarium', 'jual_akuarium'],
+    alias: ['jual_ikan', 'akuarium', 'bela_ikan'],
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid;
         const senderId = m.key.participant || jid;
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
-        const commandUsed = teks.slice(1).trim().split(' ')[0].toLowerCase();
-        const args = teks.trim().split(' ').slice(1);
+        const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
         const now = Date.now();
 
-        // 1. LIHAT AKUARIUM & BUFF (.akuarium)
-        if (commandUsed === 'akuarium') {
-            const list = user.aquarium || [];
-            if (list.length === 0) {
-                return sock.sendMessage(jid, { text: '🐟 Balang akuarium kau kosong! Taip `.bela_ikan` lepas pancing.' }, { quoted: m });
+        // -------------------------------------------------------------
+        // A. JUAL SEMUA IKAN (.jual_ikan)
+        // -------------------------------------------------------------
+        if (cmd === 'jual_ikan') {
+            if (!user.inventory?.fish || user.inventory.fish.length === 0) {
+                return sock.sendMessage(jid, { 
+                    text: '🐟 Raga ikan awak kosong! Baling joran dulu guna perintah `.mancing` ya~ 🌸' 
+                }, { quoted: m });
             }
 
-            let str = `┌───「 🐠 𝗣𝗘𝗡𝗚𝗨𝗥𝗨𝗦𝗔𝗡 𝗔𝗞𝗨𝗔𝗥𝗜𝗨𝗠 」\n│ _Ikan peliharaan memberi buff pasif kekal:_\n├───────────────────────────\n`;
-            list.forEach((ik, i) => {
-                str += `├ ${i + 1}. *${ik.name}* [${ik.tier}]\n│   └ Buff: +${ik.buff_val}% ${ik.buff_type}\n`;
+            let totalDapat = 0;
+            let adaMythic = false;
+            let senaraiIkanMythic = [];
+
+            user.inventory.fish.forEach(ikan => {
+                totalDapat += ikan.price;
+                if (ikan.tier === 'Mythic') {
+                    adaMythic = true;
+                    senaraiIkanMythic.push(ikan.name);
+                }
             });
-            str += `└───────────────────────────\nTaip \`.jual_akuarium\` untuk cairkan semua ikan jadi wang tunai!`;
-            return sock.sendMessage(jid, { text: str }, { quoted: m });
-        }
 
-        // 2. CAIRKAN AKUARIUM (.jual_akuarium)
-        if (commandUsed === 'jual_akuarium') {
-            const list = user.aquarium || [];
-            if (list.length === 0) return sock.sendMessage(jid, { text: '❌ Tiada ikan dalam akuarium!' }, { quoted: m });
-
-            let total = 0;
-            list.forEach(i => total += (i.price || 500));
-            user.wallet += total;
-            user.aquarium = [];
+            const jumlahEkor = user.inventory.fish.length;
+            user.wallet += totalDapat;
+            user.inventory.fish = []; // Kosongkan raga simpanan
             await db.saveUser(user);
 
-            return sock.sendMessage(jid, { text: `💰 *AKUARIUM DILELONG!* Kau menerima *RM ${total.toLocaleString()}*!` }, { quoted: m });
-        }
+            let respon = `
+┌───「 💰 𝗣𝗘𝗠𝗕𝗢𝗥𝗢𝗡𝗚 𝗝𝗘𝗧𝗜: 𝗝𝗨𝗔𝗟𝗔𝗡 𝗦𝗘𝗟𝗘𝗦𝗔𝗜 」
+├ 📦 𝗝𝘂𝗺𝗹𝗮𝗵 𝗜𝗸𝗮𝗻 : ${jumlahEkor} Ekor
+├ 💵 𝗧𝘂𝗻𝗮𝗶 𝗠𝗮𝘀𝘂𝗸 : +RM ${totalDapat.toLocaleString()}
+└───────────────────────────`;
 
-        // 3. JUAL SEMUA IKAN BIASA (.jual_ikan)
-        if (commandUsed === 'jual_ikan') {
-            const fishes = user.inventory.fish || [];
-            if (fishes.length === 0) return sock.sendMessage(jid, { text: '❌ Tong ikan kau kosong!' }, { quoted: m });
-
-            let profit = 0;
-            fishes.forEach(f => profit += f.price);
-            user.wallet += profit;
-            user.inventory.fish = [];
-            await db.saveUser(user);
-
-            return sock.sendMessage(jid, { text: `💵 Semua ikan terjual! Berjaya meraih *+RM ${profit.toLocaleString()}*!` }, { quoted: m });
-        }
-
-        // 4. MASUKKAN KE AKUARIUM (.bela_ikan)
-        if (commandUsed === 'bela_ikan') {
-            const fishes = user.inventory.fish || [];
-            if (fishes.length === 0) return sock.sendMessage(jid, { text: '❌ Tiada ikan baru ditangkap untuk dibela!' }, { quoted: m });
-
-            const lastCatch = fishes.pop(); // Ambil tangkapan terakhir
-            if ((user.aquarium || []).length >= 5) {
-                return sock.sendMessage(jid, { text: '❌ Akuarium dah penuh (Maksimum 5 ekor)! Taip `.jual_akuarium` dulu.' }, { quoted: m });
+            if (adaMythic) {
+                respon += `\n🚨 *BERITA GEMPAR JETI!*\nPemborong membeli tangkapan bernilai jutaan ringgit: *${senaraiIkanMythic.join(', ')}*!\n💬 𝗔𝗶𝗿𝗶: "KAYAAA RAYAAA KAWAN KITA NI WEHH! Jangan lupa belanja Airi boba seumur hidup pleaseee~ 🥺✨"`;
+            } else {
+                respon += `\n💬 𝗔𝗶𝗿𝗶: "Alhamdulillah rezeki memancing hari ni! Duit dah selamat masuk poket awak tau~ 🤍"`;
             }
 
-            user.aquarium.push({
-                id: lastCatch.id,
-                name: lastCatch.name,
-                tier: lastCatch.tier,
-                price: lastCatch.price,
-                buff_type: lastCatch.buff.type,
-                buff_val: lastCatch.buff.val
-            });
-            await db.saveUser(user);
-
-            return sock.sendMessage(jid, {
-                text: `🐠 *IKAN DILEPASKAN KE AKUARIUM!*\n*${lastCatch.name}* kini aktif memberikan pasif buff *+${lastCatch.buff.val}% ${lastCatch.buff.type}*!`
-            }, { quoted: m });
+            return sock.sendMessage(jid, { text: respon }, { quoted: m });
         }
 
-        // 5. PROSES PANCING (JETI 2.0)
+        // -------------------------------------------------------------
+        // B. SEMAK STATUS AKUARIUM (.akuarium)
+        // -------------------------------------------------------------
+        if (cmd === 'akuarium') {
+            const listIkan = user.inventory?.fish || [];
+            if (listIkan.length === 0) {
+                return sock.sendMessage(jid, { 
+                    text: '🏛️ Raga dan akuarium awak masih kosong! Pergi memancing guna `.mancing` dulu.' 
+                }, { quoted: m });
+            }
+
+            let uiAkuarium = `┌───「 🏛️ 𝗔𝗞𝗨𝗔𝗥𝗜𝗨𝗠 & 𝗥𝗔𝗚𝗔 𝗜𝗞𝗔𝗡 𝗔𝗪𝗔𝗞 」\n├───────────────────────────\n`;
+            listIkan.forEach((ikan, index) => {
+                uiAkuarium += `├ [${index + 1}] *${ikan.name}* [${ikan.tier}]\n│   ⚖️ Berat: ${ikan.weight} KG ︲ 💵 RM ${ikan.price.toLocaleString()}\n`;
+            });
+            uiAkuarium += `└───────────────────────────\nTaip \`.jual_ikan\` untuk jual semua hasil tangkapan di pasar! 🐟`;
+
+            return sock.sendMessage(jid, { text: uiAkuarium }, { quoted: m });
+        }
+
+        // -------------------------------------------------------------
+        // C. OPERASI MEMANCING (.mancing)
+        // -------------------------------------------------------------
+        // Semakan jika pemain berada dalam lokap balai
         if (user.jail?.status && now < user.jail.release_at) {
-            return sock.sendMessage(jid, { text: '⛓️ Kau dalam lokap/wad hospital, tak boleh pancing!' }, { quoted: m });
-        }
-
-        const cd = 45 * 1000;
-        const last = cdPancing.get(senderId) || 0;
-        if (now - last < cd) {
-            return sock.sendMessage(jid, { text: `⏳ Ikan belum timbul, tunggu ${Math.ceil((cd - (now - last)) / 1000)} saat!` }, { quoted: m });
-        }
-        cdPancing.set(senderId, now);
-
-        const tangkapan = SPESIES_DATABASE[Math.floor(Math.random() * SPESIES_DATABASE.length)];
-
-        // Mekanik Bahaya: Pemangsa Mencederakan Pemain
-        if (tangkapan.danger && Math.random() < 0.40) {
-            user.jail.status = true;
-            user.jail.release_at = now + (5 * 60 * 1000);
-            user.jail.reason = `Diserang dan dibaham oleh ${tangkapan.name}`;
-            await db.saveUser(user);
-
-            return sock.sendMessage(jid, {
-                text: `
-┌───「 🚨 𝗕𝗔𝗛𝗔𝗬𝗔 𝗠𝗨𝗔𝗥𝗔: 𝗧𝗘𝗥𝗖𝗘𝗗𝗘𝗥𝗔 」
-├ 👾 𝗣𝗲𝗺𝗮𝗻𝗴𝘀𝗮 : ${tangkapan.name}
-├ 🩸 𝗞𝗲𝘀      : Ekor libas bot terbalik dan kau diseret ke dasar!
-├ 🏥 𝗛𝗼𝘀𝗽𝗶𝘁𝗮𝗹 : Dikejarkan ke wad kecemasan (5 Minit)!
-└───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Kan dah pesan jangan gatal pancing dekat lubuk naga/buaya! Selamat bernafas dalam wad."`
+            const bakiLokap = Math.ceil((user.jail.release_at - now) / 1000);
+            return sock.sendMessage(jid, { 
+                text: `⛓️ Awak tengah merengkok dalam lokap (${bakiLokap}s lagi)! Kat mana awak nak dapatkan air untuk memancing? 🔒` 
             }, { quoted: m });
         }
 
-        user.inventory.fish.push(tangkapan);
+        // Semakan Cooldown 35 Saat
+        const cdTime = 35 * 1000;
+        const lastRun = cdMancing.get(senderId) || 0;
+        if (now - lastRun < cdTime) {
+            const bakiSaat = Math.ceil((cdTime - (now - lastRun)) / 1000);
+            return sock.sendMessage(jid, { 
+                text: `⏳ Sabar wehh, umpan tengah hanyut dibawa arus! Tunggu lagi *${bakiSaat} saat* sebelum baling kail semula ya~ 🥺` 
+            }, { quoted: m });
+        }
+        cdMancing.set(senderId, now);
+
+        // Algoritma Penentuan Gred Tangkapan (RNG Tiers)
+        const rng = Math.random();
+        let targetTier = 'Common';
+
+        if (rng < 0.01) {
+            targetTier = 'Mythic';       // 1% Peluang (Jackpot Jutaan Ringgit)
+        } else if (rng < 0.05) {
+            targetTier = 'Legendary';    // 4% Peluang
+        } else if (rng < 0.15) {
+            targetTier = 'Epic';         // 10% Peluang
+        } else if (rng < 0.30) {
+            targetTier = 'Rare';         // 15% Peluang
+        } else if (rng < 0.55) {
+            targetTier = 'Uncommon';     // 25% Peluang
+        } else {
+            targetTier = 'Common';       // 45% Peluang
+        }
+
+        // Pilih ikan rawak daripada kategori yang terpilih
+        const pool = FISH_DATABASE.filter(f => f.tier === targetTier);
+        const ikanDapat = pool[Math.floor(Math.random() * pool.length)];
+
+        // Kira harga rawak dalam julat harga spesies
+        const hargaIkan = Math.floor(Math.random() * (ikanDapat.maxPrice - ikanDapat.minPrice + 1)) + ikanDapat.minPrice;
+        
+        // Berat ikan berdasarkan tier
+        const multiplierBerat = targetTier === 'Mythic' ? 85 : (targetTier === 'Legendary' ? 45 : 12);
+        const beratIkan = (Math.random() * multiplierBerat + 1.2).toFixed(2);
+
+        // Simpan ke inventori pemain
+        if (!user.inventory) user.inventory = {};
+        if (!user.inventory.fish) user.inventory.fish = [];
+
+        user.inventory.fish.push({
+            id: ikanDapat.id,
+            name: ikanDapat.name,
+            tier: ikanDapat.tier,
+            weight: beratIkan,
+            price: hargaIkan
+        });
+
+        if (!user.stats) user.stats = {};
         user.stats.fish_caught = (user.stats.fish_caught || 0) + 1;
         await db.saveUser(user);
 
+        // Pengumuman Khas Berita Gempar jika dapat Tier Mythic
+        if (targetTier === 'Mythic') {
+            const announce = `
+╔═════════════════════════════╗
+   🌌 𝗧𝗔𝗡𝗚𝗞𝗔𝗣𝗔𝗡 𝗠𝗜𝗧𝗢𝗦 𝗗𝗨𝗡𝗜𝗔! 🌌
+╠═════════════════════════════╣
+║ 👤 𝗣𝗲𝗺𝗮𝗻𝗰𝗶𝗻𝗴 : @${senderId.split('@')[0]}
+║ 🐟 𝗦𝗽𝗲𝘀𝗶𝗲𝘀   : ${ikanDapat.name}
+║ ⚖️ 𝗕𝗲𝗿𝗮𝘁     : ${beratIkan} KG
+║ 💎 𝗡𝗶𝗹𝗮𝗶     : RM ${hargaIkan.toLocaleString()}
+╚═════════════════════════════╝
+Jeti gempar! Makhluk mitos yang bernilai jutaan ringgit berjaya dinaikkan ke darat!
+👉 Taip \`.jual_ikan\` sekarang untuk serahkan kepada pemborong dan terima tunai jutaan ringgit!
+
+💬 𝗔𝗶𝗿𝗶: "OMGGGGGGG BETUL KE NI?! Tangan awak ada magis ke wehhh dapat ikan bernilai jutaan ringgit?! 😱✨"`;
+
+            return sock.sendMessage(jid, { text: announce, mentions: [senderId] });
+        }
+
+        // Maklum balas tangkapan biasa
         return sock.sendMessage(jid, {
             text: `
-┌───「 🎣 𝗝𝗘𝗧𝗜 𝗠𝗘𝗠𝗔𝗡𝗖𝗜𝗡𝗚 𝟮.𝟬: 𝗦𝗧𝗥𝗜𝗞𝗘! 」
-├ 🐟 𝗦𝗽𝗲𝘀𝗶𝗲𝘀  : ${tangkapan.name}
-├ 🏷️ 𝗧𝗶𝗲𝗿     : [ ${tangkapan.tier} ]
-├ 💵 𝗡𝗶𝗹𝗮𝗶    : RM ${tangkapan.price.toLocaleString()}
-├ ✨ 𝗕𝘂𝗳𝗳     : +${tangkapan.buff.val}% ${tangkapan.buff.type}
-└───────────────────────────
-Pilihan tindakan:
-1. Taip \`.jual_ikan\` untuk ambil tunai segera.
-2. Taip \`.bela_ikan\` untuk simpan di akuarium dan aktifkan buff pasif!`
+🎣 *JORAN BERGETAR PADU!*
+Tangkapan : *${ikanDapat.name}* [${ikanDapat.tier}]
+Berat     : ${beratIkan} KG
+Nilai     : RM ${hargaIkan.toLocaleString()}
+Raga Ikan : ${user.inventory.fish.length} Ekor
+
+Taip \`.jual_ikan\` untuk jual semua hasil tangkapan di jeti! 🐟`
         }, { quoted: m });
     }
 };
