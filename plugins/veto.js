@@ -11,26 +11,37 @@ export default {
     ],
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid;
+        
+        // Ambil ID sebenar penghantar (dalam grup atau PM)
         const senderJid = m.key.participant || jid;
+        
+        // Buang semua simbol bukan nombor, port peranti (:1), dan akhiran WhatsApp
+        const cleanSender = senderJid.replace(/@.*$/, '').replace(/:.*$/, '').replace(/[^0-9]/g, '');
+
+        // Semak sama ada nombor pengirim sepadan dengan mana-mana nombor dalam senarai owner
+        const isOwner = (config.ownerNumbers || []).some(ownerNum => {
+            const cleanOwner = ownerNum.replace(/[^0-9]/g, '');
+            return cleanSender.includes(cleanOwner) || cleanOwner.includes(cleanSender);
+        });
+
+        // Jika bukan Bos Amar, tolak akses
+        if (!isOwner) {
+            return sock.sendMessage(jid, { 
+                text: `⛔ *AKSES DITOLAK!* Zon Kuasa Mutlak hanya untuk Bos Amar!\n\nID Anda dikesan: \`${cleanSender}\`` 
+            }, { quoted: m });
+        }
+
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const args = teks.trim().split(' ').slice(1);
         const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
 
-        // Semakan nombor rasmi Amar
-        const isOwner = senderJid.replace(/[^0-9]/g, '') === config.owner.replace(/[^0-9]/g, '');
-        if (!isOwner) {
-            return sock.sendMessage(jid, { 
-                text: '⛔ *AKSES DITOLAK!* Zon Kuasa Mutlak hanya untuk Bos Amar!' 
-            }, { quoted: m });
-        }
-
         // 1. SET INCOME POKET
         if (cmd === 'set_income') {
             const amt = parseInt(args[0]);
-            if (isNaN(amt) || amt < 0) return sock.sendMessage(jid, { text: '❌ Masukkan amaun!' }, { quoted: m });
+            if (isNaN(amt) || amt < 0) return sock.sendMessage(jid, { text: '❌ Masukkan amaun tunai yang sah!' }, { quoted: m });
             user.wallet = amt;
             await db.saveUser(user);
-            return sock.sendMessage(jid, { text: `👑 *DANA AMAR DITETAPKAN:* RM ${amt.toLocaleString()} tunai di poket!` }, { quoted: m });
+            return sock.sendMessage(jid, { text: `👑 *DANA AMAR DITETAPKAN:* RM ${amt.toLocaleString()} tunai dalam poket!` }, { quoted: m });
         }
 
         // 2. SUNTIK DUIT / EMAS / BITCOIN
@@ -48,16 +59,16 @@ export default {
             await db.saveUser(targetUser);
 
             return sock.sendMessage(jid, {
-                text: `👑 *SUNTIKAN ASET OLEH BOS AMAR!*\nSasaran: @${targetJid.split('@')[0]}\nNilai: ${nilai.toLocaleString()} ${cmd.replace('give_', '').toUpperCase()}`,
+                text: `👑 *SUNTIKAN ASET BERJAYA!*\nSasaran: @${targetJid.split('@')[0]}\nNilai: ${nilai.toLocaleString()} ${cmd.replace('give_', '').toUpperCase()}`,
                 mentions: [targetJid]
             }, { quoted: m });
         }
 
-        // 3. LOKAP & BEBAS
+        // 3. LOKAP PAKSA & BEBAS SERTA-MERTA
         if (cmd === 'jail_user') {
             const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
             const saat = parseInt(args[1]) || 120;
-            if (!targetJid) return sock.sendMessage(jid, { text: '❌ Tag sasaran!' }, { quoted: m });
+            if (!targetJid) return sock.sendMessage(jid, { text: '❌ Tag sasaran: `.jail_user @user [saat]`' }, { quoted: m });
 
             const targetUser = await db.getUser(targetJid);
             targetUser.jail.status = true;
@@ -70,37 +81,37 @@ export default {
 
         if (cmd === 'free_user') {
             const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-            if (!targetJid) return sock.sendMessage(jid, { text: '❌ Tag sasaran!' }, { quoted: m });
+            if (!targetJid) return sock.sendMessage(jid, { text: '❌ Tag sasaran: `.free_user @user`' }, { quoted: m });
 
             const targetUser = await db.getUser(targetJid);
             targetUser.jail.status = false;
             targetUser.jail.release_at = 0;
             await db.saveUser(targetUser);
 
-            return sock.sendMessage(jid, { text: `🕊️ @${targetJid.split('@')[0]} dibebaskan serta-merta!`, mentions: [targetJid] }, { quoted: m });
+            return sock.sendMessage(jid, { text: `🕊️ @${targetJid.split('@')[0]} dibebaskan daripada lokap serta-merta!`, mentions: [targetJid] }, { quoted: m });
         }
 
         // 4. LELONGAN KONTENA MENGEJUT
         if (cmd === 'start_lelong') {
-            return sock.sendMessage(jid, {
-                text: `🚨 *LELONGAN KONTENA MISTERI BERMULA!*\nTapak Bidaan: *RM 50,000*\nTaip \`.bida [nilai]\` untuk merebut kontena rahsia!`
-            });
+            const { triggerRandomAuction } = await import('./bida.js');
+            await triggerRandomAuction(sock, jid);
+            return;
         }
 
-        // 5. EVENT DAN ACARA RAHSIA (AMAR_BLESSING)
+        // 5. EVENT GLOBAL & BLESSING
         if (cmd === 'list_event') {
             return sock.sendMessage(jid, {
-                text: `📜 *SENARAI ACARA GLOBAL*\n1. CRIME_BOOM (Hasil jenayah x2)\n2. GOLD_RUSH (Harga ikan & sewa x2)\n3. TECH_SURGE (Diskaun BM 40%)\n4. *AMAR_BLESSING* (Buff Keramat: 100x ganda semua hasil!)`
+                text: `📜 *SENARAI ACARA GLOBAL (VETO)*\n1. CRIME_BOOM (Hasil jenayah x2)\n2. GOLD_RUSH (Harga emas & ikan x3)\n3. TECH_SURGE (Diskaun BM 40%)\n4. *AMAR_BLESSING* (100x ganda SEMUA hasil pendapatan!)\n\nGuna: \`.start_event [KOD] [HARI]\``
             }, { quoted: m });
         }
 
         if (cmd === 'start_event') {
             const kod = args[0]?.toUpperCase();
-            return sock.sendMessage(jid, { text: `👑 Acara Global *${kod}* diaktifkan oleh Bos Amar!` }, { quoted: m });
+            return sock.sendMessage(jid, { text: `👑 Acara Global *${kod || 'RAWAK'}* telah diaktifkan oleh Bos Amar!` }, { quoted: m });
         }
 
         if (cmd === 'stop_event') {
-            return sock.sendMessage(jid, { text: `👑 Semua acara global dihentikan!` }, { quoted: m });
+            return sock.sendMessage(jid, { text: `👑 Semua acara global telah ditutup serta-merta!` }, { quoted: m });
         }
 
         // 6. SERU WORLD BOSS
@@ -110,17 +121,17 @@ export default {
             });
         }
 
-        // 7. DIAGNOSTIK & AUTOTEST
+        // 7. DIAGNOSTIK KESIHATAN BOT
         if (cmd === 'autotest' || cmd === 'syscheck') {
             const mem = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
             return sock.sendMessage(jid, {
-                text: `⚙️ *LAPORAN DIAGNOSTIK SHADOW LEGACY*\n\n` +
-                      `✅ Enjin Jentera: ${VEHICLES.length} buah jentera sedia lumba\n` +
-                      `✅ Enjin Hartanah: ${PROPERTIES.length} geran beroperasi\n` +
-                      `✅ Spesies Laut: ${FISH_DATABASE.length} hidupan laut aktif\n` +
-                      `✅ Sektor Pekerjaan: ${JOBS.length} kerjaya stabil\n` +
-                      `🧠 Penggunaan Memori: ${mem} MB\n` +
-                      `✨ Sambungan Pangkalan Data: MongoDB Atlas Stabil 100%!`
+                text: `⚙️ *LAPORAN DIAGNOSTIK AIRI OS*\n\n` +
+                      `✅ Founder Status: Dikesan (${cleanSender})\n` +
+                      `✅ Pangkalan Jentera: ${VEHICLES.length} Jentera\n` +
+                      `✅ Pangkalan Hartanah: ${PROPERTIES.length} Geran\n` +
+                      `✅ Pangkalan Hidupan Laut: ${FISH_DATABASE.length} Spesies\n` +
+                      `✅ Sektor Pekerjaan: ${JOBS.length} Kerjaya\n` +
+                      `🧠 Penggunaan RAM: ${mem} MB`
             }, { quoted: m });
         }
     }
