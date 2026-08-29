@@ -1,6 +1,5 @@
 import { config } from '../config.js';
 
-// Fungsi memendekkan format angka besar (1,000 -> 1K, 1,000,000 -> 1M, dll)
 function formatCompactNumber(number) {
     if (isNaN(number) || number === 0 || !number) return '0';
     const absVal = Math.abs(number);
@@ -15,31 +14,29 @@ export default {
     name: 'menu',
     alias: ['help', 'senarai'],
     execute: async ({ sock, m, user }) => {
-        const jid = m.key.remoteJid;
-        const senderJid = m.key.participant || jid || '';
-        const cleanSender = String(senderJid).replace(/@.*$/, '').replace(/:.*$/, '').replace(/[^0-9]/g, '');
-        const senderTag = `@${cleanSender}`;
+        try {
+            const jid = m.key.remoteJid;
+            const senderJid = m.key.participant || jid || '';
+            const cleanSender = String(senderJid).replace(/@.*$/, '').replace(/:.*$/, '').replace(/[^0-9]/g, '');
+            const senderTag = `@${cleanSender}`;
 
-        // Semak status pengasas menggunakan array ownerNumbers secara selamat
-        const ownersList = Array.isArray(config.ownerNumbers) 
-            ? config.ownerNumbers 
-            : (config.owner ? [config.owner] : []);
+            const ownersList = Array.isArray(config.ownerNumbers) 
+                ? config.ownerNumbers 
+                : (config.owner ? [config.owner] : []);
 
-        const isOwner = ownersList.some(ownerNum => {
-            const cleanOwner = String(ownerNum).replace(/[^0-9]/g, '');
-            return cleanSender.includes(cleanOwner) || cleanOwner.includes(cleanSender);
-        });
+            const isOwner = ownersList.some(ownerNum => {
+                const cleanOwner = String(ownerNum).replace(/[^0-9]/g, '');
+                return cleanSender.includes(cleanOwner) || cleanOwner.includes(cleanSender);
+            });
 
-        // Ringkasan baki kewangan pemain
-        const cashRingkas = formatCompactNumber(user?.wallet || 0);
-        const bankRingkas = formatCompactNumber(user?.bank || 0);
-        const jenteraNama = user?.vehicle?.name ? String(user.vehicle.name).split(' ')[0] : 'Tiada';
-        const statusPlat = user?.vehicle?.plate ? `[${user.vehicle.plate}]` : '';
+            const cashRingkas = formatCompactNumber(user?.wallet || 0);
+            const bankRingkas = formatCompactNumber(user?.bank || 0);
+            const jenteraNama = user?.vehicle?.name ? String(user.vehicle.name).split(' ')[0] : 'Tiada';
+            const statusPlat = user?.vehicle?.plate ? `[${user.vehicle.plate}]` : '';
 
-        // Bahagian kawalan owner (VETO disembunyikan daripada teks menu biasa)
-        const ownerControlText = isOwner ? `╟ 👑 𝗖𝗢𝗡𝗧𝗥𝗢𝗟: .set_income ︲ .give_cash ︲ .jail_user ︲ .syscheck\n` : '';
+            const ownerControlText = isOwner ? `╟ 👑 𝗖𝗢𝗡𝗧𝗥𝗢𝗟: .set_income ︲ .give_cash ︲ .jail_user ︲ .syscheck\n` : '';
 
-        const menuText = `
+            const menuText = `
 ╔═════════════════════════════╗
     🌸 𝐀𝐈𝐑𝐈 𝐂𝐎𝐑𝐍𝐄𝐑 𝐎𝐒 𝐕𝟒.𝟐 🌸
 ╠═════════════════════════════╣
@@ -83,7 +80,7 @@ export default {
 ╟ ✧ .makan [id] ︲ .kedai_pet ︲ .beli_pet [id]
 ╟ ✧ .beli_telur ︲ .tetas_telur
 
-🎲 *[ 𝗭𝗢𝗡 ७: 𝗞𝗔𝗦𝗜𝗡𝗢 & 𝗠𝗜𝗡𝗜-𝗚𝗔𝗠𝗘𝗦 ]*
+🎲 *[ 𝗭𝗢𝗡 𝟳: 𝗞𝗔𝗦𝗜𝗡𝗢 & 𝗠𝗜𝗡𝗜-𝗚𝗔𝗠𝗘𝗦 ]*
 ╟ ✧ .serang_boss ︲ .bgk ︲ .coinflip ︲ .slot
 ╟ ✧ .tarik_tali ︲ .teka_nombor ︲ .kotak_beracun
 ╟ ✧ .tembak_botol ︲ .lumba_kuda ︲ .tikam_nombor
@@ -95,9 +92,12 @@ ${ownerControlText}────────────────────�
 💬 𝗔𝗶𝗿𝗶: "Jangan lupa solat & makan ya, jangan asyik lumba haram je hehe~ 😋🤍"
 `.trim();
 
-        return sock.sendMessage(jid, {
-            text: menuText,
-            mentions: [senderJid]
-        }, { quoted: m });
+            return sock.sendMessage(jid, {
+                text: menuText,
+                mentions: [senderJid]
+            }, { quoted: m });
+        } catch (err) {
+            console.error("Menu Error:", err);
+        }
     }
 };
