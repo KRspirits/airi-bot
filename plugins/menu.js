@@ -88,7 +88,7 @@ export default {
 
 🌐 *[ 𝗭𝗢𝗡 𝟴: 𝗜𝗡𝗙𝗢, 𝗚𝗘𝗟𝗔𝗥𝗔𝗡 & 𝗩𝗘𝗧𝗢 ]*
 ╟ ✧ .myid ︲ .profile ︲ .badge ︲ .top ︲ .musim
-${isOwner ? `╟ 👑 𝗩𝗘𝗧𝗢: .set_income ︲ .give_cash ︲ .jail_user ︲ .start_event [KOD] [HARI] ︲ .stop_event ︲ .syscheck` : ''}
+${isOwner ? `╟ 
 ─────────────────────────────
 💬 𝗔𝗶𝗿𝗶: "Jangan lupa solat & makan ya, jangan asyik lumba haram je hehe~ 😋🤍"
 `.trim();
