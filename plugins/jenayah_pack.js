@@ -13,20 +13,21 @@ export default {
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
             const now = Date.now();
 
-            if (!user.bm_items) user.bm_items = [];
+            // FIX "Wayar Rosak": Paksa format array jika data lama rosak
+            if (!user.bm_items || !Array.isArray(user.bm_items)) user.bm_items = [];
             if (!user.lastJenayah) user.lastJenayah = 0;
 
             const KATALOG_BM = {
-                'master key': { harga: 30000, nama: 'Master Key Khas', buffItem: 'curi_kereta' },
-                'laptop': { harga: 50000, nama: 'Hacker Laptop', buffItem: 'scam' },
-                'gengster': { harga: 70000, nama: 'Gengster Upahan', buffItem: 'peras_ugut' },
-                'lori': { harga: 100000, nama: 'Lori Hantu', buffItem: 'seludup' },
-                'bug': { harga: 150000, nama: 'Spy Bug Mikro', buffItem: 'jual_maklumat' },
-                'kontena': { harga: 250000, nama: 'Kontena Rahsia', buffItem: 'seludup_senjata' },
-                'server': { harga: 400000, nama: 'Server Kuantum', buffItem: 'godam_kripto' },
-                'm16': { harga: 600000, nama: 'M16 & Topeng', buffItem: 'rompak_bank' },
-                'pelan': { harga: 1000000, nama: 'Pelan Lantai Kasino', buffItem: 'rompak_kasino' },
-                'c4': { harga: 2000000, nama: 'C4 Explosive', buffItem: 'rompak_jongkong' }
+                'master key': { harga: 30000, nama: 'Master Key Khas', buffItem: 'curi_kereta', buff: 25 },
+                'laptop': { harga: 50000, nama: 'Hacker Laptop', buffItem: 'scam', buff: 25 },
+                'gengster': { harga: 70000, nama: 'Gengster Upahan', buffItem: 'peras_ugut', buff: 25 },
+                'lori': { harga: 100000, nama: 'Lori Hantu', buffItem: 'seludup', buff: 25 },
+                'bug': { harga: 150000, nama: 'Spy Bug Mikro', buffItem: 'jual_maklumat', buff: 30 },
+                'kontena': { harga: 250000, nama: 'Kontena Rahsia', buffItem: 'seludup_senjata', buff: 30 },
+                'server': { harga: 400000, nama: 'Server Kuantum', buffItem: 'godam_kripto', buff: 35 },
+                'm16': { harga: 600000, nama: 'M16 & Topeng', buffItem: 'rompak_bank', buff: 35 },
+                'pelan': { harga: 1000000, nama: 'Pelan Lantai Kasino', buffItem: 'rompak_kasino', buff: 40 },
+                'c4': { harga: 2000000, nama: 'C4 Explosive', buffItem: 'rompak_jongkong', buff: 45 }
             };
 
             const JENAYAH_LIST = {
@@ -42,81 +43,66 @@ export default {
                 'rompak_jongkong': { modal: 250000, min: 3000000, max: 10000000, base: 0.15, jail: 900, bm: 'C4 Explosive', buff: 0.45 }
             };
 
-            // 1. MENU JENAYAH
             if (cmd === 'jenayah') {
-                let senarai = `🏴‍☠️ *KARTEL JENAYAH AIRI*\n\n`;
+                let ui = `╔═════════════════════════════╗\n    🏴‍☠️ 𝗞𝗔𝗥𝗧𝗘𝗟 𝗝𝗘𝗡𝗔𝗬𝗔𝗛 𝗔𝗜𝗥𝗜 🏴‍☠️\n╠═════════════════════════════╣\n`;
                 let i = 1;
                 for (const [kod, data] of Object.entries(JENAYAH_LIST)) {
-                    senarai += `${i++}. *.${kod}*\n   Modal: RM ${(data.modal/1000)}k | Untung: RM ${(data.min/1000)}k-RM ${(data.max/1000000 >= 1 ? (data.max/1000000).toFixed(1)+'m' : (data.max/1000)+'k')} | Risiko: ${Math.round((1 - data.base) * 100)}%\n`;
+                    const statusBuff = user.bm_items.includes(data.bm) ? '🔥' : '❌';
+                    ui += `║ ${i++}. .${kod}\n║ ↳ Risiko: ${Math.round((1 - data.base) * 100)}% | Buff BM: ${statusBuff}\n`;
                 }
-                senarai += `\n💡 *Tip:* Beli barang di Pasar Gelap (\`.bm\`) untuk tambah peluang menang!`;
-                return sock.sendMessage(jid, { text: senarai }, { quoted: m });
+                ui += `╚═════════════════════════════╝\n💡 *Tip:* Taip \`.bm\` untuk kurangkan risiko!`;
+                return sock.sendMessage(jid, { text: ui }, { quoted: m });
             }
 
-            // 2. PASAR GELAP (BLACKMARKET)
             if (cmd === 'bm') {
-                let senaraiBM = `🎪 *PASAR GELAP (BLACKMARKET)*\n\n`;
+                let uiBM = `╔═════════════════════════════╗\n    🎪 𝗣𝗔𝗦𝗔𝗥 𝗚𝗘𝗟𝗔𝗣 (𝗕𝗟𝗔𝗖𝗞𝗠𝗔𝗥𝗞𝗘𝗧)\n╠═════════════════════════════╣\n`;
                 for (const [kodBM, data] of Object.entries(KATALOG_BM)) {
-                    senaraiBM += `🛒 *${data.nama}* - RM ${(data.harga).toLocaleString()}\n   └ Beli: \`.beli_bm ${kodBM}\`\n   └ Buff: +${(JENAYAH_LIST[data.buffItem].buff * 100)}% untuk .${data.buffItem}\n\n`;
+                    uiBM += `║ 🛒 ${data.nama} (RM ${data.harga / 1000}k)\n║ ↳ Beli: \`.beli_bm ${kodBM}\`\n║ ↳ Efek: +${data.buff}% utk .${data.buffItem}\n╟─────────────────────────────\n`;
                 }
-                return sock.sendMessage(jid, { text: senaraiBM.trim() }, { quoted: m });
+                uiBM += `╚═════════════════════════════╝`;
+                return sock.sendMessage(jid, { text: uiBM }, { quoted: m });
             }
 
             if (cmd === 'beli_bm') {
-                const item = args[0]?.toLowerCase(); // Guna keyword pertama je untuk mudah
+                const item = args[0]?.toLowerCase();
                 const pilihan = KATALOG_BM[item];
                 
-                if (!pilihan) return sock.sendMessage(jid, { text: `❌ Barang tak wujud! Taip \`.bm\` untuk tengok senarai keyword belian yang betul.` }, { quoted: m });
+                if (!pilihan) return sock.sendMessage(jid, { text: `❌ Kod barang tak wujud! Tengok senarai di \`.bm\`` }, { quoted: m });
                 if (user.wallet < pilihan.harga) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup RM ${pilihan.harga.toLocaleString()}!` }, { quoted: m });
-                if (user.bm_items.includes(pilihan.nama)) return sock.sendMessage(jid, { text: `✅ Kau dah simpan ${pilihan.nama} dalam stor. Tak payah beli lagi.` }, { quoted: m });
+                if (user.bm_items.includes(pilihan.nama)) return sock.sendMessage(jid, { text: `✅ Kau dah ada ${pilihan.nama} dalam stor.` }, { quoted: m });
 
                 user.wallet -= pilihan.harga;
                 user.bm_items.push(pilihan.nama);
                 await db.saveUser(user);
-                return sock.sendMessage(jid, { text: `🎪 Transaksi gelap selesai, Amar.\n\n📦 *${pilihan.nama}* selamat diseludup masuk ke dalam inventori kau!` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `🎪 Transaksi gelap selesai.\n📦 *${pilihan.nama}* diseludup masuk inventori!` }, { quoted: m });
             }
 
-            // 3. SISTEM JENAYAH DINAMIK (10 JENIS)
             if (JENAYAH_LIST[cmd]) {
                 const aksi = JENAYAH_LIST[cmd];
-
-                // Cooldown 5 Minit untuk beri masa polis reda
                 if (now - user.lastJenayah < 300000) {
-                    const sisa = Math.ceil((300000 - (now - user.lastJenayah)) / 1000);
-                    return sock.sendMessage(jid, { text: `🚨 Wanted level masih tinggi! Menyorok dulu selama ${sisa} saat sebelum sambung kerja gila.` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `🚨 Wanted level masih tinggi! Menyorok dulu selama ${Math.ceil((300000 - (now - user.lastJenayah)) / 1000)} saat.` }, { quoted: m });
                 }
+                if (user.wallet < aksi.modal) return sock.sendMessage(jid, { text: `❌ Modal pendahuluan RM ${aksi.modal.toLocaleString()} diperlukan.` }, { quoted: m });
 
-                if (user.wallet < aksi.modal) return sock.sendMessage(jid, { text: `❌ Modal tak cukup! Kau perlukan RM ${aksi.modal.toLocaleString()} untuk biaya kos awal.` }, { quoted: m });
-
-                let totalSuccess = aksi.base;
-                let adaBuff = false;
-                if (user.bm_items.includes(aksi.bm)) {
-                    totalSuccess += aksi.buff;
-                    adaBuff = true;
-                }
-
+                let totalSuccess = aksi.base + (user.bm_items.includes(aksi.bm) ? aksi.buff : 0);
                 user.lastJenayah = now;
-                const nasib = Math.random();
 
-                if (nasib <= totalSuccess) {
+                if (Math.random() <= totalSuccess) {
                     const untung = Math.floor(Math.random() * (aksi.max - aksi.min + 1)) + aksi.min;
-                    user.wallet -= aksi.modal; // Tolak modal
-                    user.dirty_money = (user.dirty_money || 0) + untung; // Masuk duit haram
+                    user.wallet -= aksi.modal; 
+                    user.dirty_money = (user.dirty_money || 0) + untung; 
                     await db.saveUser(user);
-                    
-                    const teksBuff = adaBuff ? `\n🔥 Buff Aktif: *${aksi.bm}* buat kerja kau sangat licik!` : '';
-                    return sock.sendMessage(jid, { text: `🏴‍☠️ *JACKPOT JENAYAH!*\n\nKerja bersih! Kau sebat RM ${untung.toLocaleString()} duit haram!${teksBuff}\n💦 Cuci duit tu cepat guna \`.cuci_duit\` sebelum kantoi.` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `🏴‍☠️ *JACKPOT!*\nKau sebat RM ${untung.toLocaleString()} duit haram!\n💦 Cuci duit tu cepat guna \`.cuci_duit\`.` }, { quoted: m });
                 } else {
-                    user.wallet -= aksi.modal; // Modal hangus
-                    user.jail = { status: true, release_at: Date.now() + (aksi.jail * 1000), reason: `Dicekup waktu buat ${cmd}` };
+                    user.wallet -= aksi.modal; 
+                    user.jail = { status: true, release_at: Date.now() + (aksi.jail * 1000), reason: `Dicekup waktu ${cmd}` };
                     await db.saveUser(user);
-                    
-                    return sock.sendMessage(jid, { text: `🚨 *AMARAN: BUSTED!*\n\nOperasi kau digempur unit taktikal PDRM! Modal lebur dan kau disumbat ke lokap selama ${aksi.jail} saat!` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `🚨 *BUSTED!*\nPolis gempur lokasi! Modal lebur, masuk lokap ${aksi.jail} saat.` }, { quoted: m });
                 }
             }
-
         } catch (err) {
             console.error("Jenayah Mega Error:", err);
+            return sock.sendMessage(m.key.remoteJid, { text: `❌ Sistem Kartel Error: Sila lapor pada Bos Amar.` }, { quoted: m });
         }
     }
 };
