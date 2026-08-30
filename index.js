@@ -119,7 +119,7 @@ async function startAiriBot() {
     // Senarai ID Grup Aktif untuk Automasi
     const activeGroups = new Set();
 
-    // =========================================================================
+   // =========================================================================
     // 🌐 4. PEMASA RAWAK: KONTENA LELONGAN, EVENT KILAT & 100 RANDOM EVENTS
     // =========================================================================
     setInterval(async () => {
@@ -130,6 +130,13 @@ async function startAiriBot() {
         const rng = Math.random();
 
         try {
+            // Dapatkan senarai ahli rasmi dalam grup ni sahaja (Elak usik nombor luar/contact)
+            const metadata = await sock.groupMetadata(targetGroup).catch(() => null);
+            if (!metadata || !metadata.participants) return;
+            
+            // Ambil JID ahli yang ada dalam grup ni saja
+            const groupMemberJids = metadata.participants.map(p => p.id);
+
             // 20% Peluang: Trak Wang Terbalik (Event Reaksi Pantas .kutip)
             if (rng < 0.20) {
                 const { triggerSpeedDrop } = await import('./plugins/kutip.js');
@@ -146,7 +153,11 @@ async function startAiriBot() {
                 const allUsers = await db.getAllUsers();
                 if (allUsers.length === 0) return;
 
-                const targetUser = allUsers[Math.floor(Math.random() * allUsers.length)];
+                // Tapis user supaya HANYA pilih pemain yang ada dalam grup semasa sahaja!
+                const activeGroupUsers = allUsers.filter(u => groupMemberJids.includes(u.id));
+                if (activeGroupUsers.length === 0) return;
+
+                const targetUser = activeGroupUsers[Math.floor(Math.random() * activeGroupUsers.length)];
                 const ev = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
                 const jumlah = Math.floor(Math.random() * (ev.max - ev.min + 1)) + ev.min;
 
@@ -174,7 +185,7 @@ async function startAiriBot() {
 ┌───「 💀 𝗕𝗘𝗡𝗖𝗔𝗡𝗔 𝗥𝗔𝗪𝗔𝗞 𝗧𝗘𝗠𝗣𝗔𝗧𝗔𝗡 」
 ├ 👤 𝗠𝗮𝗻𝗴𝘀𝗮  : @${targetUser.id.split('@')[0]}
 ├ 🛑 𝗦𝗲𝗻𝗮𝗿𝗶𝗼 : ${ev.task}
-├ 💸 𝗟𝗲𝗯𝘂   : -RM ${jumlah.toLocaleString()}
+├ 💸 𝗟𝗲𝗯𝘂    : -RM ${jumlah.toLocaleString()}
 └───────────────────────────
 💬 𝗔𝗶𝗿𝗶: "${ev.roast}"`;
 
