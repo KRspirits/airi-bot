@@ -10,13 +10,32 @@ export default {
 
             if (cmd === 'kedai_pet') {
                 return sock.sendMessage(jid, { 
-                    text: `🐾 *KEDAI HAIWAN PELIHARAAN* 🐾\n\n1. Kucing Oyen - RM 5,000\n2. Burung Hantu - RM 15,000\n3. Anak Naga - RM 500,000\n\n🥚 *Telur Misteri* - RM 10,000\n\n*Guna:* \`.beli_pet [nama]\` atau \`.beli_telur\`` 
+                    text: `🐾 *KEDAI HAIWAN PELIHARAAN* 🐾\n\n1. Oyen - RM 5,000\n2. Burung Hantu - RM 15,000\n3. Anak Naga - RM 500,000\n\n🥚 *Telur Misteri* - RM 10,000\n\n*Guna:* \`.beli_pet [nama]\` atau \`.beli_telur\`` 
                 }, { quoted: m });
+            }
+
+            if (cmd === 'beli_pet') {
+                const namaPet = args.join(' ').toLowerCase();
+                const katalog = {
+                    'oyen': { harga: 5000, nama: 'Oyen' },
+                    'burung hantu': { harga: 15000, nama: 'Burung Hantu' },
+                    'anak naga': { harga: 500000, nama: 'Anak Naga' }
+                };
+
+                const pilihan = katalog[namaPet];
+                if (!pilihan) return sock.sendMessage(jid, { text: `❌ Haiwan peliharaan "${namaPet}" tiada di kedai. Sila semak \`.kedai_pet\`` }, { quoted: m });
+
+                if (user.wallet < pilihan.harga) return sock.sendMessage(jid, { text: `❌ Duit tak cukup RM ${pilihan.harga.toLocaleString()}!` }, { quoted: m });
+                
+                user.wallet -= pilihan.harga;
+                user.pet_aktif = pilihan.nama;
+                await db.saveUser(user);
+                return sock.sendMessage(jid, { text: `🐾 Berjaya beli *${pilihan.nama}* dengan harga RM ${pilihan.harga.toLocaleString()}!` }, { quoted: m });
             }
 
             if (cmd === 'beli_telur') {
                 const harga = 10000;
-                if (user.wallet < harga) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup RM 10,000 untuk beli telur!` }, { quoted: m });
+                if (user.wallet < harga) return sock.sendMessage(jid, { text: `❌ Duit tak cukup RM 10,000 untuk telur!` }, { quoted: m });
                 
                 user.wallet -= harga;
                 user.telur_pet = (user.telur_pet || 0) + 1;
@@ -34,7 +53,7 @@ export default {
                 user.pet_aktif = dapat;
                 await db.saveUser(user);
                 
-                return sock.sendMessage(jid, { text: `✨ *CRAAAKKK!*\n\nTelur misteri kau pecah dan seekor *${dapat}* keluar! 🐾` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `✨ *CRAAAKKK!*\n\nTelur misteri kau pecah dan *${dapat}* keluar! 🐾` }, { quoted: m });
             }
         } catch (err) {
             console.error("Pet Error:", err);
