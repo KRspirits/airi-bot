@@ -1,8 +1,15 @@
+import fs from 'fs';
+import path from 'path';
+
+const dbPath = path.resolve('./database_bm.json');
+let bmDB = {};
+try { if (fs.existsSync(dbPath)) bmDB = JSON.parse(fs.readFileSync(dbPath, 'utf8')); } catch (e) {}
+
 const BM_CATALOG = {
-    '1': { nama: 'Topeng Muka Hacker', harga: 50000, buff: 0.10, ket: '-10% Risiko Jenayah' },
+    '1': { nama: 'Topeng Hacker', harga: 50000, buff: 0.10, ket: '-10% Risiko Jenayah' },
     '2': { nama: 'Kabel Orang Dalam', harga: 150000, buff: 0.20, ket: '-20% Risiko Jenayah' },
-    '3': { nama: 'Alibi Palsu VVIP', harga: 300000, buff: 0.35, ket: '-35% Risiko Jenayah' },
-    '4': { nama: 'Sindiket Kebal Duit', harga: 800000, buff: 0.50, ket: '-50% Risiko Jenayah' }
+    '3': { nama: 'Alibi VVIP', harga: 300000, buff: 0.35, ket: '-35% Risiko Jenayah' },
+    '4': { nama: 'Sindiket Kebal', harga: 800000, buff: 0.50, ket: '-50% Risiko Jenayah' }
 };
 
 export default {
@@ -11,65 +18,47 @@ export default {
     execute: async ({ sock, m, user, db }) => {
         try {
             const jid = m.key.remoteJid;
+            const senderId = m.key.participant || jid;
             const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
             const args = teks.trim().split(' ').slice(1);
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
 
-            // Sediakan struktur inventory jika kosong
-            if (!user.inventory) user.inventory = {};
-            if (!user.inventory.bm_buff) {
-                user.inventory.bm_buff = { nama: 'Tiada', perlindungan: 0 };
-            }
+            if (!bmDB[senderId]) bmDB[senderId] = { nama: 'Tiada', perlindungan: 0 };
+            const pData = bmDB[senderId];
 
-            // 1. PAPAR MENU PASAR GELAP (.bm / .pasar_gelap)
             if (cmd === 'bm' || cmd === 'pasar_gelap') {
                 let ui = `╔═════════════════════════════╗\n` +
                          `    🏴‍☠️ 𝗣𝗔𝗦𝗔𝗥 𝗚𝗘𝗟𝗔𝗣 (𝗕𝗟𝗔𝗖Ｋ 𝗠𝗔𝗥𝗞𝗘𝗧)\n` +
                          `╠═════════════════════════════╣\n\n` +
-                         `⚠️ Beli alat perlindungan di sini untuk kurangkan risiko kantoi polis semasa buat \`.jenayah\`!\n\n`;
+                         `⚠️ Beli barang perlindungan di sini untuk kurangkan risiko \`.jenayah\`!\n\n`;
 
                 for (const [id, item] of Object.entries(BM_CATALOG)) {
                     ui += `[${id}] ${item.nama}\n ↳ Harga: RM ${item.harga.toLocaleString()}\n ↳ Efek: ${item.ket}\n\n`;
                 }
 
-                ui += `🛠️ **Buff Semasa:** ${user.inventory.bm_buff.nama} (-${user.inventory.bm_buff.perlindungan * 100}% Risiko)\n` +
-                      `🛒 **Cara Beli:** \`.beli_bm [nombor]\`\nContoh: \`.beli_bm 2\``;
+                ui += `🛠️ *Buff Semasa:* ${pData.nama} (-${pData.perlindungan * 100}% Risiko)\n` +
+                      `🛒 *Cara Beli:* \`.beli_bm [no]\` (Contoh: \`.beli_bm 2\`)`;
 
                 return sock.sendMessage(jid, { text: ui }, { quoted: m });
             }
 
-            // 2. BELI BARANG GELAP (.beli_bm)
             if (cmd === 'beli_bm') {
                 const id = args[0];
-                if (!id || !BM_CATALOG[id]) {
-                    return sock.sendMessage(jid, { text: `❌ Sila letak kod nombor barang yang betul. Taip \`.bm\` untuk tengok senarai.` }, { quoted: m });
-                }
-
-                const item = BM_CATALOG[id];
+                if (!id || !BM_CATALOG[id]) return sock.sendMessage(jid, { text: `❌ Kod nombor salah! Taip \`.bm\`` }, { quoted: m });
                 
-                if (user.wallet < item.harga) {
-                    return sock.sendMessage(jid, { text: `❌ Duit tunai poket tak cukup RM ${item.harga.toLocaleString()} untuk berurus niaga di pasar gelap!` }, { quoted: m });
-                }
+                const item = BM_CATALOG[id];
+                if (user.wallet < item.harga) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup RM ${item.harga.toLocaleString()}!` }, { quoted: m });
 
-                // Tolak duit & update buff
                 user.wallet -= item.harga;
-                user.inventory.bm_buff = {
-                    nama: item.nama,
-                    perlindungan: item.buff
-                };
-
-                // Paksa save ke database
-                if (typeof user.markModified === 'function') {
-                    user.markModified('inventory');
-                }
+                bmDB[senderId] = { nama: item.nama, perlindungan: item.buff };
+                
+                fs.writeFileSync(dbPath, JSON.stringify(bmDB, null, 2));
                 await db.saveUser(user);
 
-                return sock.sendMessage(jid, { text: `✅ Transaksi haram berjaya!\n\nKau telah pasang *${item.nama}*. Risiko kantoi buat jenayah sekarang dikurangkan sebanyak **${item.buff * 100}%**.` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `✅ Transaksi haram berjaya!\n\nKau telah pasang *${item.nama}*. Risiko kantoi buat jenayah diturunkan sebanyak **${item.buff * 100}%**.` }, { quoted: m });
             }
-
         } catch (err) {
-            console.error("Black Market Error:", err);
-            return sock.sendMessage(m.key.remoteJid, { text: `Sistem Pasar Gelap rosak! Hubungi @Shadow Legacy` }, { quoted: m });
+            console.error("BM Error:", err);
         }
     }
 };
