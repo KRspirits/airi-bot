@@ -1,10 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
-const dbPath = path.resolve('./database_bm.json');
-let bmDB = {};
-try { if (fs.existsSync(dbPath)) bmDB = JSON.parse(fs.readFileSync(dbPath, 'utf8')); } catch (e) {}
-
 const BM_CATALOG = {
     '1': { nama: 'Topeng Hacker', harga: 50000, buff: 0.10, ket: '-10% Risiko Jenayah' },
     '2': { nama: 'Kabel Orang Dalam', harga: 150000, buff: 0.20, ket: '-20% Risiko Jenayah' },
@@ -18,13 +11,14 @@ export default {
     execute: async ({ sock, m, user, db }) => {
         try {
             const jid = m.key.remoteJid;
-            const senderId = m.key.participant || jid;
             const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
             const args = teks.trim().split(' ').slice(1);
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
 
-            if (!bmDB[senderId]) bmDB[senderId] = { nama: 'Tiada', perlindungan: 0 };
-            const pData = bmDB[senderId];
+            // Struktur selamat tanpa File System
+            if (!user.inventory) user.inventory = {};
+            if (!user.inventory.bm_nama) user.inventory.bm_nama = 'Tiada';
+            if (!user.inventory.bm_perlindungan) user.inventory.bm_perlindungan = 0;
 
             if (cmd === 'bm' || cmd === 'pasar_gelap') {
                 let ui = `╔═════════════════════════════╗\n` +
@@ -36,7 +30,7 @@ export default {
                     ui += `[${id}] ${item.nama}\n ↳ Harga: RM ${item.harga.toLocaleString()}\n ↳ Efek: ${item.ket}\n\n`;
                 }
 
-                ui += `🛠️ *Buff Semasa:* ${pData.nama} (-${pData.perlindungan * 100}% Risiko)\n` +
+                ui += `🛠️ *Buff Semasa:* ${user.inventory.bm_nama} (-${user.inventory.bm_perlindungan * 100}% Risiko)\n` +
                       `🛒 *Cara Beli:* \`.beli_bm [no]\` (Contoh: \`.beli_bm 2\`)`;
 
                 return sock.sendMessage(jid, { text: ui }, { quoted: m });
@@ -47,18 +41,20 @@ export default {
                 if (!id || !BM_CATALOG[id]) return sock.sendMessage(jid, { text: `❌ Kod nombor salah! Taip \`.bm\`` }, { quoted: m });
                 
                 const item = BM_CATALOG[id];
-                if (user.wallet < item.harga) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup RM ${item.harga.toLocaleString()}!` }, { quoted: m });
+                if ((user.wallet || 0) < item.harga) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup RM ${item.harga.toLocaleString()}!` }, { quoted: m });
 
                 user.wallet -= item.harga;
-                bmDB[senderId] = { nama: item.nama, perlindungan: item.buff };
+                user.inventory.bm_nama = item.nama;
+                user.inventory.bm_perlindungan = item.buff;
                 
-                fs.writeFileSync(dbPath, JSON.stringify(bmDB, null, 2));
+                if (typeof user.markModified === 'function') user.markModified('inventory');
                 await db.saveUser(user);
 
                 return sock.sendMessage(jid, { text: `✅ Transaksi haram berjaya!\n\nKau telah pasang *${item.nama}*. Risiko kantoi buat jenayah diturunkan sebanyak **${item.buff * 100}%**.` }, { quoted: m });
             }
         } catch (err) {
             console.error("BM Error:", err);
+            return sock.sendMessage(m.key.remoteJid, { text: `Sistem Pasar Gelap rosak! Hubungi pengurusan.` }, { quoted: m });
         }
     }
 };
