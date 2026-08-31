@@ -1,6 +1,6 @@
 const cdMancing = new Map();
 
-// --- KATALOG KEDAI PANCING (5 ITEM SETIAP KATEGORI) ---
+// --- KATALOG KEDAI PANCING & JALA ---
 const KEDAI = {
     rod: {
         '1': { nama: 'Rod Buluh', harga: 15000, buff_rare: 0.05, ket: '+5% Peluang Ikan Rare' },
@@ -22,6 +22,13 @@ const KEDAI = {
         '3': { nama: 'Udang Hidup', harga: 25000, qty: 10, bonus_all: 0.05, ket: '+5% Tarik Ikan (10x guna)' },
         '4': { nama: 'Palet Premium', harga: 60000, qty: 10, bonus_all: 0.10, ket: '+10% Tarik Ikan (10x guna)' },
         '5': { nama: 'Umpan VIP Berkilau', harga: 150000, qty: 10, bonus_all: 0.20, ket: '+20% Tarik Ikan (10x guna)' }
+    },
+    jala: {
+        '1': { nama: 'Jala Kain Nilon', harga: 50000, qty: 5, min_tangkapan: 2, max_tangkapan: 4, ket: 'Tangkapan 2-4 ekor (5x guna)' },
+        '2': { nama: 'Jala Berantai Besi', harga: 200000, qty: 8, min_tangkapan: 3, max_tangkapan: 6, ket: 'Tangkapan 3-6 ekor (8x guna)' },
+        '3': { nama: 'Jala Serat Karbon', harga: 600000, qty: 10, min_tangkapan: 4, max_tangkapan: 8, bonus_rare: 0.10, ket: 'Tangkapan 4-8 ekor + Rare (10x guna)' },
+        '4': { nama: 'Jala Mega Trawler', harga: 2000000, qty: 12, min_tangkapan: 6, max_tangkapan: 12, bonus_rare: 0.20, ket: 'Tangkapan 6-12 ekor (12x guna)' },
+        '5': { nama: 'Jala Kuantum Emas', harga: 7500000, qty: 15, min_tangkapan: 8, max_tangkapan: 15, bonus_mitos: 0.03, ket: 'Peluang sauk Mitos pukal! (15x guna)' }
     },
     akuarium: {
         '1': { nama: 'Balang Kaca', harga: 50000, slot: 2, ket: 'Boleh bela 2 Ikan' },
@@ -79,7 +86,7 @@ const IKAN_MITOS = [
 
 export default {
     name: 'mancing',
-    alias: ['ikan', 'akuarium', 'bela_ikan', 'jual_ikan', 'kedai_pancing', 'beli_pancing'],
+    alias: ['ikan', 'akuarium', 'bela_ikan', 'jual_ikan', 'kedai_pancing', 'beli_pancing', 'jala'],
     execute: async ({ sock, m, user, db }) => {
         try {
             const jid = m.key.remoteJid;
@@ -96,11 +103,15 @@ export default {
                     rod: { nama: 'Tali Rafia', buff_rare: 0 },
                     reel: { nama: 'Tiada', buff_mitos: 0 },
                     umpan: { nama: 'Tiada', qty: 0, bonus_all: 0 },
+                    jala: { nama: 'Tiada', qty: 0, min_tangkapan: 0, max_tangkapan: 0 },
                     akuarium: { nama: 'Balang Kuih (Percuma)', slot: 1, ikan: [] }
                 };
             }
+            if (!user.pancingan.jala) {
+                user.pancingan.jala = { nama: 'Tiada', qty: 0, min_tangkapan: 0, max_tangkapan: 0 };
+            }
 
-            // 1. KEDAI PANCING (.kedai_pancing & .beli_pancing)
+            // 1. KEDAI PANCING & JALA (.kedai_pancing & .beli_pancing)
             if (cmd === 'kedai_pancing') {
                 let ui = `╔═════════════════════════════╗\n    🎣 𝗞𝗘𝗗𝗔𝗜 𝗣𝗔𝗡𝗖𝗜𝗡𝗚 𝗣𝗥𝗢\n╠═════════════════════════════╣\n\n`;
                 
@@ -114,17 +125,18 @@ export default {
 
                 ui += susunKatalog('ROD (Tarik Ikan Rare)', 'rod');
                 ui += susunKatalog('REEL (Tarik Ikan Mitos)', 'reel');
-                ui += susunKatalog('UMPAN (Peluang Umum)', 'umpan');
+                ui += susunKatalog('UMPAN (Peluang Joran)', 'umpan');
+                ui += susunKatalog('JALA (Tangkapan Pukal Massal)', 'jala');
                 ui += susunKatalog('AKUARIUM (Slot Buff)', 'akuarium');
                 
-                ui += `🛒 *Cara Beli:* \`.beli_pancing [kategori] [nombor]\`\nContoh: \`.beli_pancing rod 3\``;
+                ui += `🛒 *Cara Beli:* \`.beli_pancing [kategori] [nombor]\`\nContoh: \`.beli_pancing jala 3\``;
                 return sock.sendMessage(jid, { text: ui }, { quoted: m });
             }
 
             if (cmd === 'beli_pancing') {
                 const kategori = args[0]?.toLowerCase();
                 const id = args[1];
-                if (!['rod', 'reel', 'umpan', 'akuarium'].includes(kategori) || !id) return sock.sendMessage(jid, { text: `❌ Format: \`.beli_pancing [rod/reel/umpan/akuarium] [nombor]\`` }, { quoted: m });
+                if (!['rod', 'reel', 'umpan', 'jala', 'akuarium'].includes(kategori) || !id) return sock.sendMessage(jid, { text: `❌ Format: \`.beli_pancing [rod/reel/umpan/jala/akuarium] [nombor]\`` }, { quoted: m });
                 
                 const item = KEDAI[kategori][id];
                 if (!item) return sock.sendMessage(jid, { text: `❌ Kod nombor tak wujud dalam kedai.` }, { quoted: m });
@@ -135,11 +147,19 @@ export default {
                 if (kategori === 'akuarium') {
                     const ikanLama = user.pancingan.akuarium.ikan || [];
                     user.pancingan.akuarium = { nama: item.nama, slot: item.slot, ikan: ikanLama };
-                } else if (kategori === 'umpan') {
-                    if (user.pancingan.umpan.nama === item.nama) {
-                        user.pancingan.umpan.qty += item.qty;
+                } else if (kategori === 'umpan' || kategori === 'jala') {
+                    if (user.pancingan[kategori].nama === item.nama) {
+                        user.pancingan[kategori].qty += item.qty;
                     } else {
-                        user.pancingan.umpan = { nama: item.nama, qty: item.qty, bonus_all: item.bonus_all };
+                        user.pancingan[kategori] = { 
+                            nama: item.nama, 
+                            qty: item.qty, 
+                            bonus_all: item.bonus_all || 0,
+                            min_tangkapan: item.min_tangkapan || 0,
+                            max_tangkapan: item.max_tangkapan || 0,
+                            bonus_rare: item.bonus_rare || 0,
+                            bonus_mitos: item.bonus_mitos || 0
+                        };
                     }
                 } else {
                     user.pancingan[kategori] = { nama: item.nama, [`buff_${kategori === 'rod'?'rare':'mitos'}`]: item[`buff_${kategori === 'rod'?'rare':'mitos'}`] };
@@ -149,7 +169,7 @@ export default {
                 return sock.sendMessage(jid, { text: `✅ Pembayaran disahkan!\n\nKau telah membeli *${item.nama}*.\n${item.ket || ''}` }, { quoted: m });
             }
 
-            // 2. MEMANCING (.mancing)
+            // 2. MEMANCING JORAN (.mancing)
             if (cmd === 'mancing') {
                 const now = Date.now();
                 if (now - (cdMancing.get(senderId) || 0) < 35000) {
@@ -169,31 +189,80 @@ export default {
                 const peluangBiasa = 0.64; 
 
                 const rng = Math.random();
-                let ikanDapat, gred;
+                let ikanDapat;
 
                 if (rng < peluangMitos) {
                     ikanDapat = IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)];
-                    gred = "🌟 *TANGKAPAN MITOS!!* 🌟";
                 } else if (rng < (peluangMitos + peluangRare)) {
                     ikanDapat = IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)];
-                    gred = "✨ *Tangkapan Rare!*";
                 } else if (rng < (peluangMitos + peluangRare + peluangBiasa)) {
                     ikanDapat = IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)];
-                    gred = "🎣 *Tangkapan Biasa*";
                 } else {
                     ikanDapat = SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
-                    gred = "🗑️ *Tarik Sampah...*";
                 }
 
                 user.inventory.fish.push(ikanDapat);
                 await db.saveUser(user);
 
                 return sock.sendMessage(jid, { 
-                    text: `${gred}\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: RM ${ikanDapat.harga.toLocaleString()}\n\n🎣 Sisa Umpan (${user.pancingan.umpan.nama}): ${user.pancingan.umpan.qty}x` 
+                    text: `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: RM ${ikanDapat.harga.toLocaleString()}\n\n🎣 Sisa Umpan (${user.pancingan.umpan.nama}): ${user.pancingan.umpan.qty}x` 
                 }, { quoted: m });
             }
 
-            // 3. TONG IKAN (.ikan)
+            // 3. SISTEM TEBAR JALA (.jala) - TANGKAPAN PUKAL MASSAL
+            if (cmd === 'jala') {
+                const now = Date.now();
+                if (now - (cdMancing.get(senderId + '_jala') || 0) < 45000) {
+                    return sock.sendMessage(jid, { text: `⏳ Jala sedang dikeringkan! Tunggu ${Math.ceil((45000 - (now - (cdMancing.get(senderId + '_jala') || 0))) / 1000)} saat lagi.` }, { quoted: m });
+                }
+
+                if (!user.pancingan.jala || user.pancingan.jala.qty <= 0) {
+                    return sock.sendMessage(jid, { text: `❌ Jala kau tiada atau dah koyak! Pergi beli jala baharu di \`.kedai_pancing\`.` }, { quoted: m });
+                }
+
+                cdMancing.set(senderId + '_jala', now);
+                user.pancingan.jala.qty -= 1;
+
+                const minT = user.pancingan.jala.min_tangkapan || 2;
+                const maxT = user.pancingan.jala.max_tangkapan || 4;
+                const jumlahTangkapan = Math.floor(Math.random() * (maxT - minT + 1)) + minT;
+
+                let hasilJalaTeks = `🕸️ *TEBARAN JALA BERJAYA!* 🕸️\nKau sauk air laut dan naikkan:\n\n`;
+                let totalHarga = 0;
+
+                for (let i = 0; i < jumlahTangkapan; i++) {
+                    const rngJala = Math.random();
+                    let tangkapan;
+
+                    const bonusMitosJala = user.pancingan.jala.bonus_mitos || 0;
+                    const bonusRareJala = user.pancingan.jala.bonus_rare || 0;
+
+                    if (rngJala < (0.01 + bonusMitosJala)) {
+                        tangkapan = IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)];
+                    } else if (rngJala < (0.20 + bonusRareJala)) {
+                        tangkapan = IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)];
+                    } else if (rngJala < 0.75) {
+                        tangkapan = IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)];
+                    } else {
+                        tangkapan = SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
+                    }
+
+                    user.inventory.fish.push(tangkapan);
+                    totalHarga += tangkapan.harga;
+                    hasilJalaTeks += `▪️ ${tangkapan.nama} (RM ${tangkapan.harga.toLocaleString()})\n`;
+                }
+
+                await db.saveUser(user);
+
+                hasilJalaTeks += `\n📦 Jumlah Tangkapan: *${jumlahTangkapan} Ekor*\n` +
+                                 `💵 Anggaran Nilai Pasaran: *RM ${totalHarga.toLocaleString()}*\n` +
+                                 `🕸️ Sisa Jala (${user.pancingan.jala.nama}): ${user.pancingan.jala.qty}x\n\n` +
+                                 `👉 Taip \`.ikan\` untuk simpan ikan ber-buff ke akuarium atau \`.jual_ikan\` untuk jual semua!`;
+
+                return sock.sendMessage(jid, { text: hasilJalaTeks }, { quoted: m });
+            }
+
+            // 4. TONG IKAN (.ikan)
             if (cmd === 'ikan') {
                 if (user.inventory.fish.length === 0) return sock.sendMessage(jid, { text: `🐟 Tong ikan kosong.` }, { quoted: m });
                 let senarai = `╔═════════════════════════════╗\n    🐟 𝗧𝗢𝗡𝗚 𝗜𝗞𝗔𝗡\n╠═════════════════════════════╣\n`;
@@ -202,7 +271,7 @@ export default {
                 return sock.sendMessage(jid, { text: senarai }, { quoted: m });
             }
 
-            // 4. AKUARIUM & BELA (.akuarium / .bela_ikan)
+            // 5. AKUARIUM & BELA (.akuarium / .bela_ikan)
             if (cmd === 'akuarium') {
                 const ak = user.pancingan.akuarium;
                 let ui = `╔═════════════════════════════╗\n    🌊 ${ak.nama.toUpperCase()} [${ak.ikan.length}/${ak.slot}]\n╠═════════════════════════════╣\n`;
@@ -229,7 +298,7 @@ export default {
                 return sock.sendMessage(jid, { text: `🌊 Kau masukkan *${ikanPilihan.nama}* ke dalam ${ak.nama}.\n🔥 Buff diaktifkan!` }, { quoted: m });
             }
 
-            // 5. JUAL IKAN (.jual_ikan)
+            // 6. JUAL IKAN (.jual_ikan)
             if (cmd === 'jual_ikan') {
                 if (user.inventory.fish.length === 0) return sock.sendMessage(jid, { text: '❌ Tong ikan kosong.' }, { quoted: m });
                 let untung = 0;
@@ -241,7 +310,7 @@ export default {
             }
 
         } catch (err) {
-            console.error("Mancing Mega Error:", err);
+            console.error("Mancing & Jala Mega Error:", err);
         }
     }
 };
