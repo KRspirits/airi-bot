@@ -1,109 +1,98 @@
+import fs from 'fs';
+import path from 'path';
+
+const dbPathBM = path.resolve('./database_bm.json');
+
+const JENAYAH_LIST = {
+    'curi_kereta': { nama: 'Curi Kereta', risiko: 0.40, min: 2000, max: 5000, penalti: 5 },
+    'scam': { nama: 'Scam Macau', risiko: 0.45, min: 4000, max: 8000, penalti: 10 },
+    'peras_ugut': { nama: 'Peras Ugut', risiko: 0.50, min: 6000, max: 12000, penalti: 15 },
+    'seludup': { nama: 'Seludup Haram', risiko: 0.55, min: 10000, max: 20000, penalti: 20 },
+    'jual_maklumat': { nama: 'Jual Maklumat Sulit', risiko: 0.60, min: 15000, max: 30000, penalti: 30 },
+    'seludup_senjata': { nama: 'Seludup Senjata', risiko: 0.65, min: 25000, max: 50000, penalti: 45 },
+    'godam_kripto': { nama: 'Godam Kripto', risiko: 0.70, min: 40000, max: 80000, penalti: 60 },
+    'rompak_bank': { nama: 'Rompak Bank', risiko: 0.75, min: 80000, max: 150000, penalti: 90 },
+    'rompak_kasino': { nama: 'Rompak Kasino', risiko: 0.80, min: 150000, max: 300000, penalti: 120 },
+    'rompak_jongkong': { nama: 'Rompak Jongkong Emas', risiko: 0.85, min: 300000, max: 600000, penalti: 180 }
+};
+
 export default {
     name: 'jenayah',
+    alias: Object.keys(JENAYAH_LIST),
     execute: async ({ sock, m, user, db }) => {
-        const jid = m.key.remoteJid;
-
-        // Pastikan format database wujud
-        if (!user.jail) user.jail = { status: false, release_at: 0 };
-        if (!user.inventory) user.inventory = {};
-        if (!user.inventory.bm_buff) user.inventory.bm_buff = { nama: 'Tiada', perlindungan: 0 };
-
-        // Semak rekod lokap
-        if (user.jail.status) {
-            if (Date.now() < user.jail.release_at) {
-                const bakiMinit = Math.ceil((user.jail.release_at - Date.now()) / 60000);
-                return sock.sendMessage(jid, { 
-                    text: `⛓️ Duduk diam-diam dalam lokap tu! Ada baki lagi ${bakiMinit} minit.` 
-                }, { quoted: m });
-            } else {
-                user.jail.status = false;
-            }
-        }
-
-        const senario = [
-            {
-                lokasi: "Lorong Petaling Street",
-                misi: "Rembat 5 kotak jam tangan ciplak gred 1:1",
-                peluangAsal: 0.60, // 60% chance berjaya tanpa buff
-                min: 800, max: 2000,
-                penalti: 2 * 60 * 1000,
-                ceritaSukses: "Kau licik menyusup waktu tokey gerai tengah kalut kemas payung hujan!",
-                ceritaGagal: "Kaki tersadung payung, tokey kejar bawa parang potong daging!",
-                roast: "Amboi laju buat kerja, belanja kitorang teh tarik ais malam ni!"
-            },
-            {
-                lokasi: "Highway Karak (Pemberhentian Lori)",
-                misi: "Sedut minyak diesel dari lori treler",
-                peluangAsal: 0.50, // 50% chance berjaya tanpa buff
-                min: 1500, max: 3000,
-                penalti: 3 * 60 * 1000,
-                ceritaSukses: "Dapat sedut 3 tong diesel penuh tanpa sedarkan driver yang tengah tidur mati.",
-                ceritaGagal: "Tertelan hos diesel, pastu pemandu lori keluar pegang sepana saiz 32.",
-                roast: "Hahaha telan diesel terus jadi enjin turbo ke bang? Rehat balai dulu!"
-            },
-            {
-                lokasi: "Bukit Ampang (Port Lumba Haram)",
-                misi: "Buka sport rim te37 dari Satria Neo",
-                peluangAsal: 0.40, // 40% chance berjaya tanpa buff
-                min: 1500, max: 3500,
-                penalti: 4 * 60 * 1000,
-                ceritaSukses: "Sempat buka semua nut sebelum anjing liar kawasan tu menyalak!",
-                ceritaGagal: "Tengah jack kereta, owner datang bawak geng lumba haram kepung kau.",
-                roast: "Rim orang kau kebas, tapi balik naik jalan kaki jugak. Aduhai."
-            },
-            {
-                lokasi: "Laluan Smart Tunnel KL",
-                misi: "Kopek cermin van curi beg duit",
-                peluangAsal: 0.35, // 35% chance berjaya tanpa buff
-                min: 3000, max: 6000,
-                penalti: 5 * 60 * 1000,
-                ceritaSukses: "Cermin pecah senyap, sambar beg duit terus lari ikut laluan kecemasan!",
-                ceritaGagal: "Lampu isyarat tiba-tiba hijau, van jalan laju dan kau disorot lampu tinggi Myvi King!",
-                roast: "Acah nak jadi Fast & Furious, kan dah kena tapau dengan King jalanan."
-            }
-        ];
-
-        // Pilih misi rawak & kira peluang berjaya bersama Buff Black Market
-        const hasilRawak = senario[Math.floor(Math.random() * senario.length)];
-        const buffBM = user.inventory.bm_buff.perlindungan;
-        const peratusBerjaya = hasilRawak.peluangAsal + buffBM;
-
-        const rng = Math.random();
-        const isBerjaya = rng <= peratusBerjaya; // Lulus jika RNG lebih rendah/sama dengan peluang
-
-        if (isBerjaya) {
-            const dapat = Math.floor(Math.random() * (hasilRawak.max - hasilRawak.min + 1)) + hasilRawak.min;
-            user.black_money = (user.black_money || 0) + dapat;
+        try {
+            const jid = m.key.remoteJid;
+            const senderId = m.key.participant || jid;
             
-            if (typeof user.markModified === 'function') user.markModified('inventory');
-            await db.saveUser(user);
+            const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
+            const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
 
-            const respon = `
-┌───「 🏴‍☠️ 𝗢𝗣𝗘𝗥𝗔𝗦𝗜 𝗚𝗘𝗟𝗔𝗣: 𝗦𝗘𝗧𝗧𝗟𝗘 」
-├ 📍 𝗟𝗼𝗸𝗮𝘀𝗶 : ${hasilRawak.lokasi}
-├ 🎯 𝗠𝗶𝘀𝗶   : ${hasilRawak.misi}
-├ 🛡️ 𝗕𝘂𝗳𝗳 𝗕𝗠: ${user.inventory.bm_buff.nama} (+${buffBM * 100}%)
-├ 💵 𝗛𝗮𝘀𝗶𝗹  : +RM ${dapat.toLocaleString()} (Duit Kotor)
-├ 📝 𝗞𝗲𝘀    : ${hasilRawak.ceritaSukses}
-└───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "${hasilRawak.roast}"`;
-            return sock.sendMessage(jid, { text: respon.trim() }, { quoted: m });
-        } else {
-            user.jail.status = true;
-            user.jail.release_at = Date.now() + hasilRawak.penalti;
-            
-            if (typeof user.markModified === 'function') user.markModified('inventory');
-            await db.saveUser(user);
+            // Rujuk fail Black Market
+            let bmDB = {};
+            try { if (fs.existsSync(dbPathBM)) bmDB = JSON.parse(fs.readFileSync(dbPathBM, 'utf8')); } catch (e) {}
+            const pDataBM = bmDB[senderId] || { nama: 'Tiada', perlindungan: 0 };
 
-            const respon = `
-┌───「 🚨 𝗞𝗔𝗡𝗧𝗢𝗜 𝗕𝗔𝗦𝗔𝗛: 𝗟𝗢𝗞𝗔𝗣 」
-├ 📍 𝗟𝗼𝗸𝗮𝘀𝗶 : ${hasilRawak.lokasi}
-├ 🛡️ 𝗕𝘂𝗳𝗳 𝗕𝗠: ${user.inventory.bm_buff.nama} (Gagal lindung)
-├ 🛑 𝗦𝗲𝗯𝗮𝗯  : ${hasilRawak.ceritaGagal}
-├ ⏳ 𝗛𝘂𝗸𝘂𝗺𝗮𝗻: ${hasilRawak.penalti / 60000} Minit Lokap
-└───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "${hasilRawak.roast}"`;
-            return sock.sendMessage(jid, { text: respon.trim() }, { quoted: m });
+            if (cmd === 'jenayah') {
+                let ui = `╔═════════════════════════════╗\n` +
+                         `    🏴‍☠️ 𝗞𝗔𝗥𝗧𝗘𝗟 𝗝𝗘𝗡𝗔𝗬𝗔𝗛 𝗔𝗜𝗥𝗜 🏴‍☠️\n` +
+                         `╠═════════════════════════════╣\n\n`;
+
+                let i = 1;
+                for (const [key, info] of Object.entries(JENAYAH_LIST)) {
+                    const statusBuff = pDataBM.perlindungan > 0 ? `✅ (${pDataBM.nama})` : `❌`;
+                    
+                    let risikoSemasa = (info.risiko * 100) - (pDataBM.perlindungan * 100);
+                    if (risikoSemasa < 5) risikoSemasa = 5; 
+
+                    ui += `| ${i}. .${key}\n`;
+                    if (pDataBM.perlindungan > 0) {
+                        ui += `| ↳ Risiko: ~~${info.risiko * 100}%~~ 📉 ${risikoSemasa}% | Buff BM: ${statusBuff}\n`;
+                    } else {
+                        ui += `| ↳ Risiko: ${info.risiko * 100}% | Buff BM: ${statusBuff}\n`;
+                    }
+                    i++;
+                }
+
+                ui += `\n💡 **Tip:** Taip \`.bm\` untuk kurangkan peratusan risiko!`;
+                return sock.sendMessage(jid, { text: ui }, { quoted: m });
+            }
+
+            if (JENAYAH_LIST[cmd]) {
+                if (!user.jail) user.jail = { status: false, release_at: 0 };
+                
+                if (user.jail.status && Date.now() < user.jail.release_at) {
+                    const baki = Math.ceil((user.jail.release_at - Date.now()) / 60000);
+                    return sock.sendMessage(jid, { text: `⛓️ Kau masih meringkuk dalam lokap! Baki hukuman: ${baki} minit.` }, { quoted: m });
+                } else if (user.jail.status) {
+                    user.jail.status = false;
+                }
+
+                const crime = JENAYAH_LIST[cmd];
+                let risikoAkhir = crime.risiko - pDataBM.perlindungan;
+                if (risikoAkhir < 0.05) risikoAkhir = 0.05;
+
+                const rng = Math.random();
+                const isKantoi = rng < risikoAkhir;
+
+                if (isKantoi) {
+                    user.jail = { status: true, release_at: Date.now() + (crime.penalti * 60000) };
+                    await db.saveUser(user);
+                    
+                    let alasanBuff = pDataBM.perlindungan > 0 ? `🛡️ Buff BM: ${pDataBM.nama} (Gagal menyorok)\n` : '';
+                    
+                    return sock.sendMessage(jid, { text: `🚨 **KANTOI BASAH!**\nKau ditangkap polis semasa melakukan operasi *${crime.nama}*.\n\n${alasanBuff}⏳ Hukuman Lokap: ${crime.penalti} Minit.` }, { quoted: m });
+                } else {
+                    const untung = Math.floor(Math.random() * (crime.max - crime.min + 1)) + crime.min;
+                    user.duit_gelap = (user.duit_gelap || user.black_money || 0) + untung;
+                    await db.saveUser(user);
+                    
+                    let efekBuff = pDataBM.perlindungan > 0 ? `🛡️ Buff BM: ${pDataBM.nama} (-${pDataBM.perlindungan * 100}% Risiko)\n` : '';
+
+                    return sock.sendMessage(jid, { text: `🏴‍☠️ **MISI SUKSES!**\nOperasi *${crime.nama}* berjaya tanpa dikesan radar polis.\n\n${efekBuff}💵 Hasil Kotor: RM ${untung.toLocaleString()}` }, { quoted: m });
+                }
+            }
+        } catch (err) {
+            console.error("Jenayah Error:", err);
         }
     }
 };
