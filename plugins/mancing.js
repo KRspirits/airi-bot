@@ -1,3 +1,23 @@
+import fs from 'fs';
+import path from 'path';
+
+// --- DATABASE LOKAL KHAS UNTUK PANCING ---
+const dbPath = path.resolve('./database_pancing.json');
+let pancingDB = {};
+
+try {
+    if (fs.existsSync(dbPath)) {
+        pancingDB = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    }
+} catch (err) {
+    console.error("Gagal membaca database_pancing.json", err);
+    pancingDB = {};
+}
+
+function savePancingDB() {
+    fs.writeFileSync(dbPath, JSON.stringify(pancingDB, null, 2));
+}
+
 const cdMancing = new Map();
 
 // --- KATALOG KEDAI PANCING & JALA ---
@@ -110,14 +130,6 @@ const IKAN_MITOS = [
     { nama: 'Tapak Sulaiman Magma 🌋', harga: 4500000, buff: '+18% Lulus Jenayah' }, { nama: 'Raja Ketam Atlantis 🦀', harga: 11000000, buff: '+RM45,000 Gaji' }
 ];
 
-// FUNGSI PAKSA SAVE UNTUK MONGODB (Hanya fokus pada 'inventory')
-async function forceSave(user, db) {
-    if (typeof user.markModified === 'function') {
-        user.markModified('inventory');
-    }
-    await db.saveUser(user);
-}
-
 export default {
     name: 'mancing',
     alias: ['ikan', 'akuarium', 'bela_ikan', 'jual_ikan', 'kedai_pancing', 'beli_pancing', 'jala'],
@@ -129,21 +141,21 @@ export default {
             const args = teks.trim().split(' ').slice(1);
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
 
-            // SUNTIKAN STRUKTUR PANGKALAN DATA (Simpan TERUS dalam inventory)
-            if (!user.inventory) user.inventory = {};
-            if (!Array.isArray(user.inventory.fish)) user.inventory.fish = [];
-            
-            if (!user.inventory.pancingan) {
-                user.inventory.pancingan = {
+            // SUNTIKAN SISTEM: Daftar User dalam Local JSON Database jika belum wujud
+            if (!pancingDB[senderId]) {
+                pancingDB[senderId] = {
                     rod: { nama: 'Tali Rafia', buff_rare: 0 },
                     reel: { nama: 'Tiada', buff_mitos: 0 },
                     umpan: { nama: 'Tiada', qty: 0, bonus_all: 0 },
                     jala: { nama: 'Tiada', qty: 0, min_tangkapan: 0, max_tangkapan: 0 },
-                    akuarium: { nama: 'Balang Kuih (Percuma)', slot: 1, ikan: [] }
+                    akuarium: { nama: 'Balang Kuih (Percuma)', slot: 1, ikan: [] },
+                    tong_ikan: []
                 };
+                savePancingDB();
             }
-            if (!user.inventory.pancingan.jala) user.inventory.pancingan.jala = { nama: 'Tiada', qty: 0, min_tangkapan: 0, max_tangkapan: 0 };
-            if (!user.inventory.pancingan.umpan) user.inventory.pancingan.umpan = { nama: 'Tiada', qty: 0, bonus_all: 0 };
+
+            // Akses data pancing peribadi pemain dari JSON Local
+            const pData = pancingDB[senderId];
 
             // 1. KEDAI PANCING & JALA (.kedai_pancing & .beli_pancing)
             if (cmd === 'kedai_pancing') {
@@ -175,16 +187,17 @@ export default {
                 if (!item) return sock.sendMessage(jid, { text: `❌ Kod nombor tak wujud dalam kedai.` }, { quoted: m });
                 if (user.wallet < item.harga) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup RM ${item.harga.toLocaleString()}!` }, { quoted: m });
 
-                user.wallet -= item.harga;
+                user.wallet -= item.harga; // Tolak duit dalam MongoDB
                 
+                // Simpan barang memancing dalam JSON Local
                 if (kategori === 'akuarium') {
-                    const ikanLama = user.inventory.pancingan.akuarium.ikan || [];
-                    user.inventory.pancingan.akuarium = { nama: item.nama, slot: item.slot, ikan: ikanLama };
+                    const ikanLama = pData.akuarium.ikan || [];
+                    pData.akuarium = { nama: item.nama, slot: item.slot, ikan: ikanLama };
                 } else if (kategori === 'umpan' || kategori === 'jala') {
-                    if (user.inventory.pancingan[kategori].nama === item.nama) {
-                        user.inventory.pancingan[kategori].qty += item.qty;
+                    if (pData[kategori].nama === item.nama) {
+                        pData[kategori].qty += item.qty;
                     } else {
-                        user.inventory.pancingan[kategori] = { 
+                        pData[kategori] = { 
                             nama: item.nama, 
                             qty: item.qty, 
                             bonus_all: item.bonus_all || 0,
@@ -195,10 +208,12 @@ export default {
                         };
                     }
                 } else {
-                    user.inventory.pancingan[kategori] = { nama: item.nama, [`buff_${kategori === 'rod'?'rare':'mitos'}`]: item[`buff_${kategori === 'rod'?'rare':'mitos'}`] };
+                    pData[kategori] = { nama: item.nama, [`buff_${kategori === 'rod'?'rare':'mitos'}`]: item[`buff_${kategori === 'rod'?'rare':'mitos'}`] };
                 }
 
-                await forceSave(user, db); 
+                savePancingDB(); // Save ke fail JSON
+                await db.saveUser(user); // Save duit ke MongoDB
+
                 return sock.sendMessage(jid, { text: `✅ Pembayaran disahkan!\n\nKau telah membeli *${item.nama}*.\n${item.ket || ''}` }, { quoted: m });
             }
 
@@ -209,16 +224,16 @@ export default {
                     return sock.sendMessage(jid, { text: `⏳ Ikan tengah riki umpan tu! Sabar ${Math.ceil((35000 - (now - (cdMancing.get(senderId) || 0))) / 1000)} saat lagi.` }, { quoted: m });
                 }
 
-                if (!user.inventory.pancingan.umpan || user.inventory.pancingan.umpan.qty <= 0) {
+                if (!pData.umpan || pData.umpan.qty <= 0) {
                     return sock.sendMessage(jid, { text: `❌ Kotak umpan kosong! Pergi borong di \`.kedai_pancing\` dulu.` }, { quoted: m });
                 }
 
                 cdMancing.set(senderId, now);
-                user.inventory.pancingan.umpan.qty -= 1; 
+                pData.umpan.qty -= 1; 
 
-                const bonusBait = user.inventory.pancingan.umpan.bonus_all || 0;
-                const peluangMitos = 0.01 + (user.inventory.pancingan.reel.buff_mitos || 0) + bonusBait; 
-                const peluangRare = 0.15 + (user.inventory.pancingan.rod.buff_rare || 0) + bonusBait; 
+                const bonusBait = pData.umpan.bonus_all || 0;
+                const peluangMitos = 0.01 + (pData.reel.buff_mitos || 0) + bonusBait; 
+                const peluangRare = 0.15 + (pData.rod.buff_rare || 0) + bonusBait; 
                 const peluangBiasa = 0.64; 
 
                 const rng = Math.random();
@@ -234,11 +249,18 @@ export default {
                     ikanDapat = SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
                 }
 
-                user.inventory.fish.push(ikanDapat);
-                await forceSave(user, db);
+                // Masuk ikan ke tong lokal
+                pData.tong_ikan.push(ikanDapat);
+
+                // Reset jika umpan habis
+                if (pData.umpan.qty <= 0) {
+                    pData.umpan = { nama: 'Tiada', qty: 0, bonus_all: 0 };
+                }
+
+                savePancingDB();
 
                 return sock.sendMessage(jid, { 
-                    text: `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: RM ${ikanDapat.harga.toLocaleString()}\n\n🎣 Sisa Umpan (${user.inventory.pancingan.umpan.nama}): ${user.inventory.pancingan.umpan.qty}x` 
+                    text: `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: RM ${ikanDapat.harga.toLocaleString()}\n\n🎣 Sisa Umpan (${pData.umpan.nama || 'Tiada'}): ${pData.umpan.qty}x` 
                 }, { quoted: m });
             }
 
@@ -249,7 +271,7 @@ export default {
                     return sock.sendMessage(jid, { text: `⏳ Jala sedang dikeringkan! Tunggu ${Math.ceil((45000 - (now - (cdMancing.get(senderId + '_jala') || 0))) / 1000)} saat lagi.` }, { quoted: m });
                 }
 
-                if (!user.inventory.pancingan.jala || user.inventory.pancingan.jala.qty <= 0) {
+                if (!pData.jala || pData.jala.qty <= 0) {
                     return sock.sendMessage(jid, { text: `❌ Jala kau tiada atau dah koyak! Pergi beli jala baharu di \`.kedai_pancing\`.` }, { quoted: m });
                 }
 
@@ -259,12 +281,12 @@ export default {
                 let statusJala = "✅ Jala masih elok tanpa calar.";
                 
                 if (rngRosak < 0.25) { 
-                    user.inventory.pancingan.jala.qty -= 1;
+                    pData.jala.qty -= 1;
                     statusJala = "⚠️ Jala tersangkut karang! (Ketahanan -1)";
                 }
 
-                const minT = user.inventory.pancingan.jala.min_tangkapan || 2;
-                const maxT = user.inventory.pancingan.jala.max_tangkapan || 4;
+                const minT = pData.jala.min_tangkapan || 2;
+                const maxT = pData.jala.max_tangkapan || 4;
                 const jumlahTangkapan = Math.floor(Math.random() * (maxT - minT + 1)) + minT;
 
                 let hasilJalaTeks = `🕸️ *TEBARAN JALA BERJAYA!* 🕸️\nKau sauk air laut dan naikkan:\n\n`;
@@ -273,8 +295,8 @@ export default {
                 for (let i = 0; i < jumlahTangkapan; i++) {
                     const rngJala = Math.random();
                     let tangkapan;
-                    const bonusMitosJala = user.inventory.pancingan.jala.bonus_mitos || 0;
-                    const bonusRareJala = user.inventory.pancingan.jala.bonus_rare || 0;
+                    const bonusMitosJala = pData.jala.bonus_mitos || 0;
+                    const bonusRareJala = pData.jala.bonus_rare || 0;
 
                     if (rngJala < (0.01 + bonusMitosJala)) {
                         tangkapan = IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)];
@@ -286,36 +308,40 @@ export default {
                         tangkapan = SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
                     }
 
-                    user.inventory.fish.push(tangkapan);
+                    pData.tong_ikan.push(tangkapan);
                     totalHarga += tangkapan.harga;
                     hasilJalaTeks += `▪️ ${tangkapan.nama} (RM ${tangkapan.harga.toLocaleString()})\n`;
                 }
 
-                if (user.inventory.pancingan.jala.qty <= 0) {
+                // Reset jala jika ranap
+                let sisaJalaDisplay = pData.jala.qty;
+                if (pData.jala.qty <= 0) {
                     statusJala = "💥 Jala koyak rabak sepenuhnya dan tak boleh diguna lagi!";
+                    sisaJalaDisplay = 0;
+                    pData.jala = { nama: 'Tiada', qty: 0, min_tangkapan: 0, max_tangkapan: 0 };
                 }
 
-                await forceSave(user, db); 
+                savePancingDB();
 
                 hasilJalaTeks += `\n📦 Jumlah Tangkapan: *${jumlahTangkapan} Ekor*\n` +
                                  `💵 Anggaran Nilai Pasaran: *RM ${totalHarga.toLocaleString()}*\n\n` +
-                                 `[ ${statusJala} ]\n🕸️ Sisa Ketahanan (${user.inventory.pancingan.jala.nama}): ${user.inventory.pancingan.jala.qty}x`;
+                                 `[ ${statusJala} ]\n🕸️ Sisa Ketahanan: ${sisaJalaDisplay}x`;
 
                 return sock.sendMessage(jid, { text: hasilJalaTeks }, { quoted: m });
             }
 
             // 4. TONG IKAN (.ikan)
             if (cmd === 'ikan') {
-                if (user.inventory.fish.length === 0) return sock.sendMessage(jid, { text: `🐟 Tong ikan kosong.` }, { quoted: m });
+                if (!pData.tong_ikan || pData.tong_ikan.length === 0) return sock.sendMessage(jid, { text: `🐟 Tong ikan kosong.` }, { quoted: m });
                 let senarai = `╔═════════════════════════════╗\n    🐟 𝗧𝗢𝗡𝗚 𝗜𝗞𝗔𝗡\n╠═════════════════════════════╣\n`;
-                user.inventory.fish.forEach((i, idx) => senarai += `║ [${idx + 1}] ${i.nama} (RM ${i.harga.toLocaleString()})\n║ ↳ Buff: ${i.buff}\n`);
+                pData.tong_ikan.forEach((i, idx) => senarai += `║ [${idx + 1}] ${i.nama} (RM ${i.harga.toLocaleString()})\n║ ↳ Buff: ${i.buff}\n`);
                 senarai += `╚═════════════════════════════╝\n💡 Guna: \`.bela_ikan [no]\` atau \`.jual_ikan\``;
                 return sock.sendMessage(jid, { text: senarai }, { quoted: m });
             }
 
             // 5. AKUARIUM & BELA (.akuarium / .bela_ikan)
             if (cmd === 'akuarium') {
-                const ak = user.inventory.pancingan.akuarium;
+                const ak = pData.akuarium;
                 let ui = `╔═════════════════════════════╗\n    🌊 ${ak.nama.toUpperCase()} [${ak.ikan.length}/${ak.slot}]\n╠═════════════════════════════╣\n`;
                 if (ak.ikan.length === 0) ui += `║ 🪹 Air kosong je...\n`;
                 ak.ikan.forEach((i, idx) => ui += `║ ${idx + 1}. ${i.nama}\n║ ⚡ ${i.buff}\n`);
@@ -324,30 +350,33 @@ export default {
             }
 
             if (cmd === 'bela_ikan') {
-                const ak = user.inventory.pancingan.akuarium;
+                const ak = pData.akuarium;
                 const indeks = parseInt(args[0]) - 1;
                 
-                if (isNaN(indeks) || !user.inventory.fish[indeks]) return sock.sendMessage(jid, { text: `❌ Nombor ikan tak sah. Rujuk \`.ikan\`` }, { quoted: m });
+                if (isNaN(indeks) || !pData.tong_ikan[indeks]) return sock.sendMessage(jid, { text: `❌ Nombor ikan tak sah. Rujuk \`.ikan\`` }, { quoted: m });
                 if (ak.ikan.length >= ak.slot) return sock.sendMessage(jid, { text: `❌ ${ak.nama} dah penuh! Kena upgrade akuarium kat kedai.` }, { quoted: m });
 
-                const ikanPilihan = user.inventory.fish[indeks];
+                const ikanPilihan = pData.tong_ikan[indeks];
                 if (ikanPilihan.buff === 'Tiada') return sock.sendMessage(jid, { text: `❌ Ikan ni takde buff, buang masa je bela. Jual!` }, { quoted: m });
 
                 ak.ikan.push(ikanPilihan);
-                user.inventory.fish.splice(indeks, 1);
-                await forceSave(user, db);
+                pData.tong_ikan.splice(indeks, 1);
+                savePancingDB();
 
                 return sock.sendMessage(jid, { text: `🌊 Kau masukkan *${ikanPilihan.nama}* ke dalam ${ak.nama}.\n🔥 Buff diaktifkan!` }, { quoted: m });
             }
 
             // 6. JUAL IKAN (.jual_ikan)
             if (cmd === 'jual_ikan') {
-                if (user.inventory.fish.length === 0) return sock.sendMessage(jid, { text: '❌ Tong ikan kosong.' }, { quoted: m });
+                if (!pData.tong_ikan || pData.tong_ikan.length === 0) return sock.sendMessage(jid, { text: '❌ Tong ikan kosong.' }, { quoted: m });
                 let untung = 0;
-                user.inventory.fish.forEach(i => untung += i.harga);
+                pData.tong_ikan.forEach(i => untung += i.harga);
                 user.wallet += untung;
-                user.inventory.fish = []; 
-                await forceSave(user, db);
+                pData.tong_ikan = []; 
+                
+                savePancingDB();
+                await db.saveUser(user);
+                
                 return sock.sendMessage(jid, { text: `💸 Semua tangkapan dijual! Untung Bersih: *RM ${untung.toLocaleString()}*` }, { quoted: m });
             }
 
