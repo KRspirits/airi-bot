@@ -1,27 +1,36 @@
 export default {
-    name: 'bal',
-    alias: ['balance', 'duit', 'wallet'],
+    name: 'balance',
+    alias: ['bal', 'duit', 'akaun', 'wallet'],
     execute: async ({ sock, m, user }) => {
-        const jid = m.key.remoteJid;
-        const senderName = m.pushName || 'Warga Gelap';
+        try {
+            const jid = m.key.remoteJid;
+            const nama = m.pushName || user.name || 'Warga Siber';
 
-        const totalKekayaan = user.wallet + user.bank + (user.black_money || 0);
+            // Tarik data tunai & aset
+            const poket = user.wallet || 0;
+            const bank = user.bank || 0;
+            const duitGelap = user.duit_gelap || 0;
+            const emas = user.emas || user.inventory?.emas || 0;
+            const btc = user.btc || user.inventory?.btc || 0;
+            
+            const jumlahTunai = poket + bank + duitGelap;
 
-        const statusTeks = user.jail?.status 
-            ? '⛓️ Merengkok Dalam Lokap' 
-            : '🟢 Bebas / Warga Aman';
-
-        const respon = `
-┌───「 💳 𝗣𝗢𝗥𝗧𝗙𝗢𝗟𝗜𝗢 𝗞𝗘𝗪𝗔𝗡𝗚𝗔𝗡 」
-├ 👤 𝗡𝗮𝗺𝗮     : ${senderName}
-├ 💵 𝗣𝗼𝗸𝗲𝘁    : RM ${user.wallet.toLocaleString()}
-├ 🏦 𝗕𝗮𝗻𝗸     : RM ${user.bank.toLocaleString()}
-├ 🏴‍☠️ 𝗗𝘂𝗶𝘁 𝗚𝗲𝗹𝗮𝗽: RM ${(user.black_money || 0).toLocaleString()}
-├ 📊 𝗝𝘂𝗺𝗹𝗮𝗵   : RM ${totalKekayaan.toLocaleString()}
-├ ⚖️ 𝗦𝘁𝗮𝘁𝘂𝘀   : ${statusTeks}
+            const teksBal = `
+┌───「 💳 **PORTFOLIO KEWANGAN** 」
+├ 👤 **Nama** : ${nama}
+├ 💵 **Poket** : RM ${poket.toLocaleString()}
+├ 🏦 **Bank** : RM ${bank.toLocaleString()}
+├ 🏴‍☠️ **Duit Gelap**: RM ${duitGelap.toLocaleString()}
+├ 🪙 **Emas** : ${emas.toLocaleString()} Gram
+├ ₿ **BTC** : ${btc.toLocaleString()} Unit
+├ 📊 **Jumlah** : RM ${jumlahTunai.toLocaleString()}
 └───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Banyak simpan dalam bank tu tak takut kena hack ke bang? Belanja la aku sikit."`;
 
-        return sock.sendMessage(jid, { text: respon }, { quoted: m });
+💬 **Airi**: "Banyak simpan dalam bank tu tak takut kena hack ke bang? Belanja la aku sikit."`.trim();
+
+            return sock.sendMessage(jid, { text: teksBal }, { quoted: m });
+        } catch (err) {
+            console.error("Balance Error:", err);
+        }
     }
 };
