@@ -132,7 +132,7 @@ const IKAN_MITOS = [
 
 export default {
     name: 'mancing',
-    alias: ['ikan', 'akuarium', 'bela_ikan', 'jual_ikan', 'kedai_pancing', 'beli_pancing', 'jala'],
+    alias: ['ikan', 'akuarium', 'bela_ikan', 'jual_ikan', 'jual_akuarium', 'kedai_pancing', 'beli_pancing', 'jala'],
     execute: async ({ sock, m, user, db }) => {
         try {
             const jid = m.key.remoteJid;
@@ -154,10 +154,8 @@ export default {
                 savePancingDB();
             }
 
-            // Akses data pancing peribadi pemain dari JSON Local
             const pData = pancingDB[senderId];
 
-            // 1. KEDAI PANCING & JALA (.kedai_pancing & .beli_pancing)
             if (cmd === 'kedai_pancing') {
                 let ui = `╔═════════════════════════════╗\n    🎣 𝗞𝗘𝗗𝗔𝗜 𝗣𝗔𝗡𝗖𝗜𝗡𝗚 𝗣𝗥𝗢\n╠═════════════════════════════╣\n\n`;
                 const susunKatalog = (title, category) => {
@@ -267,8 +265,9 @@ export default {
             // 3. SISTEM TEBAR JALA (.jala)
             if (cmd === 'jala') {
                 const now = Date.now();
-                if (now - (cdMancing.get(senderId + '_jala') || 0) < 45000) {
-                    return sock.sendMessage(jid, { text: `⏳ Jala sedang dikeringkan! Tunggu ${Math.ceil((45000 - (now - (cdMancing.get(senderId + '_jala') || 0))) / 1000)} saat lagi.` }, { quoted: m });
+                // Tukar CD Jala ke 3 Minit (180,000 ms)
+                if (now - (cdMancing.get(senderId + '_jala') || 0) < 180000) {
+                    return sock.sendMessage(jid, { text: `⏳ Jala sedang dikeringkan! Tunggu ${Math.ceil((180000 - (now - (cdMancing.get(senderId + '_jala') || 0))) / 1000)} saat lagi.` }, { quoted: m });
                 }
 
                 if (!pData.jala || pData.jala.qty <= 0) {
@@ -310,7 +309,10 @@ export default {
 
                     pData.tong_ikan.push(tangkapan);
                     totalHarga += tangkapan.harga;
-                    hasilJalaTeks += `▪️ ${tangkapan.nama} (RM ${tangkapan.harga.toLocaleString()})\n`;
+                    
+                    // Paparkan buff jika ikan tersebut mempunyainya
+                    let displayBuff = tangkapan.buff !== 'Tiada' ? ` ⚡ [${tangkapan.buff}]` : '';
+                    hasilJalaTeks += `▪️ ${tangkapan.nama} (RM ${tangkapan.harga.toLocaleString()})${displayBuff}\n`;
                 }
 
                 // Reset jala jika ranap
@@ -345,7 +347,7 @@ export default {
                 let ui = `╔═════════════════════════════╗\n    🌊 ${ak.nama.toUpperCase()} [${ak.ikan.length}/${ak.slot}]\n╠═════════════════════════════╣\n`;
                 if (ak.ikan.length === 0) ui += `║ 🪹 Air kosong je...\n`;
                 ak.ikan.forEach((i, idx) => ui += `║ ${idx + 1}. ${i.nama}\n║ ⚡ ${i.buff}\n`);
-                ui += `╚═════════════════════════════╝`;
+                ui += `╚═════════════════════════════╝\n💡 Nak jual? Taip \`.jual_akuarium [no]\``;
                 return sock.sendMessage(jid, { text: ui }, { quoted: m });
             }
 
@@ -378,6 +380,23 @@ export default {
                 await db.saveUser(user);
                 
                 return sock.sendMessage(jid, { text: `💸 Semua tangkapan dijual! Untung Bersih: *RM ${untung.toLocaleString()}*` }, { quoted: m });
+            }
+
+            // 7. JUAL IKAN AKUARIUM (.jual_akuarium)
+            if (cmd === 'jual_akuarium') {
+                const ak = pData.akuarium;
+                const indeks = parseInt(args[0]) - 1;
+                
+                if (isNaN(indeks) || !ak.ikan[indeks]) return sock.sendMessage(jid, { text: `❌ Nombor tak sah. Rujuk \`.akuarium\` dulu.` }, { quoted: m });
+
+                const ikanJual = ak.ikan[indeks];
+                user.wallet += ikanJual.harga;
+                ak.ikan.splice(indeks, 1);
+                
+                savePancingDB();
+                await db.saveUser(user);
+
+                return sock.sendMessage(jid, { text: `💸 Kau jual *${ikanJual.nama}* dari akuarium ke pasaran dengan harga *RM ${ikanJual.harga.toLocaleString()}*!` }, { quoted: m });
             }
 
         } catch (err) {
