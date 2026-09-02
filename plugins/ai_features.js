@@ -3,8 +3,20 @@ import { askAiri, judgeCourtAppeal, appraiseItem, verifyPantun } from '../lib/ge
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// ⚠️ LETAK API KEY GEMINI KAU DI SINI
-const genAI = new GoogleGenerativeAI(config.geminiApiKey || 'SILA_LETAK_API_KEY_GEMINI_DI_SINI');
+// 🔄 KOLEKSI 11 API KEY GEMINI (SISTEM ROTASI/UNLIMITED)
+const GEMINI_KEYS = [
+    'AQ.Ab8RN6K1-yJQ_KYUEdrhVgacGogHwRweJX-A8F5pjYQs7Dr1nw',
+    'AQ.Ab8RN6IbN-Kka-F8Q7yF-DCjJbdQd5IgZizAgI3YSp_YptsZxQ',
+    'AQ.Ab8RN6Lfs5SNYXP4ifzubwN2G6QP2jE-yU-YhyIAQ4GknQYZqQ',
+    'AQ.Ab8RN6JUzR_oYM4cOUxRmGjOkEqfZxCwRN7h2HZ0UaQ5ccTnuA',
+    'AQ.Ab8RN6JUTKZEVYFCcrgIVC_hSx8kfbsryY-IhWqq-mzmKt1Lyg',
+    'AQ.Ab8RN6L2194bi54DXPi52SNB2xlIWDxA3i0MVnMD_QCQhY4LFw',
+    'AQ.Ab8RN6IRvi7BBsQe1eBeE96YQRzXa7yN9r6cI1fJMuGv0D1sSg',
+    'AQ.Ab8RN6Jki0zRkG6Z3FqdA_j6jibOBaErN3iz_MJ136OPAcqo7w',
+    'AQ.Ab8RN6I7zeMVNANx2wdKWxlZ_COUvf8IMXMZhJo-BLeNtuNMeA',
+    'AQ.Ab8RN6IN_IgJitHmI8jH_VyEl8ybGRfIbklQLzhgH5T84yM3iA',
+    'AQ.Ab8RN6IfjhnWADdxycArhrpv6-B2cAnjRMnu8xze8NQeRflluw'
+];
 
 export default {
     name: 'airi_mega',
@@ -117,7 +129,7 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
                 }
             }
 
-           // 5. TAKSIR BARANG TEKS & GAMBAR (DINAMIK HARGA IKUT KUALITI)
+            // 5. TAKSIR BARANG TEKS & GAMBAR (DINAMIK HARGA IKUT KUALITI)
             if (cmd === 'taksir') {
                 const isImage = !!m.message?.imageMessage;
                 const isQuotedImage = !!m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
@@ -135,6 +147,9 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
                 let ceritaUlasan = "";
                 let hargaTaksiran = 0;
 
+                // PILIH API KEY SECARA RAWAK DARI TATASUSUNAN
+                const activeKey = GEMINI_KEYS[Math.floor(Math.random() * GEMINI_KEYS.length)];
+                const genAI = new GoogleGenerativeAI(activeKey);
                 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
                 // JIKA PENGGUNA HANTAR ATAU REPLY GAMBAR
@@ -218,7 +233,6 @@ Harga: [Hanya angka integer harga, tanpa RM atau koma]`;
                 return sock.sendMessage(jid, { text: resMsg }, { quoted: m });
             }
             
-
             // 6. PANTUN AI (.pantun_ai)
             if (cmd === 'pantun_ai') {
                 const pantunInput = args.join(' ').trim();
