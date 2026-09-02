@@ -117,58 +117,107 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
                 }
             }
 
-            // 5. TAKSIR BARANG TEKS & GAMBAR (.taksir)
+           // 5. TAKSIR BARANG TEKS & GAMBAR (DINAMIK HARGA IKUT KUALITI)
             if (cmd === 'taksir') {
                 const isImage = !!m.message?.imageMessage;
                 const isQuotedImage = !!m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
                 const barangText = args.join(' ').trim();
 
                 if (!isImage && !isQuotedImage && !barangText) {
-                    return sock.sendMessage(jid, { text: '❌ Hantar/reply gambar barang, atau tulis nama barang nak ditaksir!' }, { quoted: m });
+                    return sock.sendMessage(jid, { 
+                        text: `❌ Hantar gambar bersama caption \`.taksir [info]\`, atau reply gambar dengan \`.taksir\`!\nKalau tiada gambar, boleh taip nama barang cth: \`.taksir jam rolex buruk\`` 
+                    }, { quoted: m });
                 }
 
-                let hasil = { harga: 0, cerita: "", barang: barangText || "Barang Misteri" };
+                await sock.sendMessage(jid, { text: `🔍 *Airi sedang belek barang & semak nilai pasaran semasa...*` }, { quoted: m });
 
-                // JIKA GAMBAR DIHANTAR (Guna Gemini Vision)
+                let namaBarang = barangText || "Barang Tanpa Nama";
+                let ceritaUlasan = "";
+                let hargaTaksiran = 0;
+
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+                // JIKA PENGGUNA HANTAR ATAU REPLY GAMBAR
                 if (isImage || isQuotedImage) {
-                    await sock.sendMessage(jid, { text: `⏳ *Airi sedang belek gambar barang ni...*` }, { quoted: m });
-                    
-                    const msgToDownload = isQuotedImage ? { message: m.message.extendedTextMessage.contextInfo.quotedMessage } : m;
-                    const buffer = await downloadMediaMessage(msgToDownload, 'buffer', {}, { logger: console, reuploadRequest: sock.updateMediaMessage });
-                    const base64Image = buffer.toString('base64');
-                    const mimeType = isImage ? m.message.imageMessage.mimetype : m.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage.mimetype;
+                    const msgToDownload = isQuotedImage 
+                        ? { message: m.message.extendedTextMessage.contextInfo.quotedMessage } 
+                        : m;
 
-                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                    const prompt = `Sebagai Airi, penilai barang pajak gadai yang sarkastik dan comel. Kaji gambar ini.
-Wajib balas dalam format ini sahaja:
-Nama: [Teka nama barang ringkas]
-Cerita: [Ulasan atau kutukan kelakar 1 ayat pasal barang ni]
-Harga: [Pilih nombor integer rawak antara 10 hingga 20000 mengikut nilai barang]`;
+                    const buffer = await downloadMediaMessage(msgToDownload, 'buffer', {}, { 
+                        logger: console, 
+                        reuploadRequest: sock.updateMediaMessage 
+                    });
+
+                    const base64Image = buffer.toString('base64');
+                    const mimeType = isImage 
+                        ? m.message.imageMessage.mimetype 
+                        : m.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage.mimetype;
+
+                    const promptVisual = `Kau adalah Airi, penilai kedai pajak gadai yang sarkastik, cerdik, dan cerewet. 
+Tengok gambar ini dengan teliti. Nilai barang tersebut berdasarkan kualiti fizikal, rupa paras, kebersihan, atau kecacatannya.
+Konteks tambahan daripada pemain: "${barangText || 'Tiada info tambahan'}".
+
+Tentukan harga belian munasabah antara RM 50 hingga RM 50000:
+- Barang sampah/rosak/biasa: RM 50 - RM 800
+- Barang elok/elektronik sederhana: RM 900 - RM 4,500
+- Barang mewah/vintage/emas/rare: RM 5,000 - RM 50,000
+
+Wajib balas dalam format ini sahaja tanpa ayat pembuka atau penutup lain:
+Nama: [Nama spesifik barang yang dikesan]
+Kondisi: [Satu ulasan kelakar atau sarkastik 1-2 ayat tentang rupa dan keadaan barang]
+Harga: [Hanya angka integer harga tawaran beli, tanpa RM atau koma]`;
 
                     const imageParts = [{ inlineData: { data: base64Image, mimeType: mimeType } }];
-                    const result = await model.generateContent([prompt, ...imageParts]);
-                    const responseText = result.response.text();
+                    const result = await model.generateContent([promptVisual, ...imageParts]);
+                    const resTeks = result.response.text();
 
-                    const matchNama = responseText.match(/Nama:\s*(.+)/i);
-                    const matchCerita = responseText.match(/Cerita:\s*(.+)/i);
-                    const matchHarga = responseText.match(/Harga:\s*(\d+)/i);
+                    const mNama = resTeks.match(/Nama:\s*(.+)/i);
+                    const mKondisi = resTeks.match(/Kondisi:\s*(.+)/i);
+                    const mHarga = resTeks.match(/Harga:\s*(\d+)/i);
 
-                    hasil.barang = matchNama ? matchNama[1].trim() : "Barang Antik";
-                    hasil.cerita = matchCerita ? matchCerita[1].trim() : "Fuh, silau mata Airi tengok!";
-                    hasil.harga = matchHarga ? parseInt(matchHarga[1]) : Math.floor(Math.random() * 5000) + 100;
-                } 
-                // JIKA TEKS SAHAJA (Guna Fungsi Asal)
-                else {
-                    const hasilAsal = await appraiseItem(barangText);
-                    hasil.barang = barangText;
-                    hasil.cerita = hasilAsal.cerita;
-                    hasil.harga = hasilAsal.harga;
+                    namaBarang = mNama ? mNama[1].trim() : "Barang Terpakai";
+                    ceritaUlasan = mKondisi ? mKondisi[1].trim() : "Boleh tahan rupa dia, Airi tolong ambil je la.";
+                    hargaTaksiran = mHarga ? parseInt(mHarga[1]) : (Math.floor(Math.random() * 1500) + 100);
+
+                } else {
+                    // JIKA TEKS SAHAJA TANPA GAMBAR
+                    const promptTeks = `Kau adalah Airi, penilai pajak gadai sarkastik. Pemain mahu gadai barang ini: "${barangText}".
+Nilaikan harga beli logik (RM 50 - RM 30,000) mengikut nama barang tersebut.
+Wajib balas dalam format ini sahaja:
+Nama: [Nama barang kemas]
+Kondisi: [Ulasan sarkastik 1 ayat]
+Harga: [Hanya angka integer harga, tanpa RM atau koma]`;
+
+                    const result = await model.generateContent(promptTeks);
+                    const resTeks = result.response.text();
+
+                    const mNama = resTeks.match(/Nama:\s*(.+)/i);
+                    const mKondisi = resTeks.match(/Kondisi:\s*(.+)/i);
+                    const mHarga = resTeks.match(/Harga:\s*(\d+)/i);
+
+                    namaBarang = mNama ? mNama[1].trim() : barangText;
+                    ceritaUlasan = mKondisi ? mKondisi[1].trim() : "Sebab kau minta elok-elok, Airi beli.";
+                    hargaTaksiran = mHarga ? parseInt(mHarga[1]) : (Math.floor(Math.random() * 2000) + 200);
                 }
 
-                user.wallet = (user.wallet || 0) + hasil.harga;
+                // Had keselamatan (Clamp value)
+                if (isNaN(hargaTaksiran) || hargaTaksiran <= 0) hargaTaksiran = 150;
+                if (hargaTaksiran > 50000) hargaTaksiran = 50000;
+
+                // Masukkan wang ke poket pengguna
+                user.wallet = (user.wallet || 0) + hargaTaksiran;
                 await db.saveUser(user);
-                return sock.sendMessage(jid, { text: `┌───「 🏪 𝗣𝗔𝗝𝗔𝗞 𝗚𝗔𝗗𝗔𝗜 𝗔𝗜𝗥𝗜 𝗖𝗢𝗠𝗘𝗟 」\n├ 📦 𝗕𝗮𝗿𝗮𝗻𝗴 : ${hasil.barang}\n├ 📜 𝗦𝗲𝗷𝗮𝗿𝗮𝗵 : ${hasil.cerita}\n├ 💵 𝗧𝗮𝗸𝘀𝗶𝗿𝗮𝗻: +RM ${hasil.harga.toLocaleString()}\n└───────────────────────────\n💬 𝗔𝗶𝗿𝗶: "Airi ambil ya! 🤍"` }, { quoted: m });
+
+                const resMsg = `┌───「 🏪 𝗣𝗔𝗝𝗔𝗞 𝗚𝗔𝗗𝗔𝗜 𝗔𝗜𝗥𝗜 」
+├ 📦 𝗕𝗮𝗿𝗮𝗻𝗴   : ${namaBarang}
+├ 🔍 𝗞𝗼𝗻𝗱𝗶𝘀𝗶  : ${ceritaUlasan}
+├ 💵 𝗧𝗮𝘄𝗮𝗿𝗮𝗻 : RM ${hargaTaksiran.toLocaleString()}
+└───────────────────────────
+💬 𝗔𝗶𝗿𝗶: "Duit tunai RM ${hargaTaksiran.toLocaleString()} dah masuk poket. Jangan guna buat judi pula!"`.trim();
+
+                return sock.sendMessage(jid, { text: resMsg }, { quoted: m });
             }
+            
 
             // 6. PANTUN AI (.pantun_ai)
             if (cmd === 'pantun_ai') {
