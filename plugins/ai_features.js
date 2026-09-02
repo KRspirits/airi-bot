@@ -3,17 +3,8 @@ import { askAiri, judgeCourtAppeal, appraiseItem, verifyPantun } from '../lib/ge
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// 🔄 SISTEM ROTASI AUTOMATIK BACA DARI RENDER / CONFIG
-const rawKeys = process.env.GEMINI_API_KEY || config.geminiKey || config.geminiApiKey || '';
-const apiKeys = rawKeys.split(/[\s,]+/).filter(k => k.trim().length > 0);
-let currentKeyIndex = 0;
-
-function getGenAI() {
-    if (apiKeys.length === 0) throw new Error("Tiada API Key dikesan di Render/Config!");
-    const activeKey = apiKeys[currentKeyIndex];
-    currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
-    return new GoogleGenerativeAI(activeKey);
-}
+// ⚠️ API KEY GEMINI
+const genAI = new GoogleGenerativeAI('AQ.Ab8RN6K1-yJQ_KYUEdrhVgacGogHwRweJX-A8F5pjYQs7Dr1nw');
 
 export default {
     name: 'airi_mega',
@@ -23,19 +14,25 @@ export default {
             const jid = m.key.remoteJid;
             const senderJid = m.key.participant || jid;
             const cleanSender = String(senderJid).replace(/[^0-9]/g, '');
-            const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.imageMessage?.caption || m.message?.videoMessage?.caption || '';
+            
+            // PENTING: Tangkap caption gambar/video sekali supaya bot tak palau
+            const teks = m.message?.conversation || 
+                         m.message?.extendedTextMessage?.text || 
+                         m.message?.imageMessage?.caption || 
+                         m.message?.videoMessage?.caption || 
+                         m.message?.viewOnceMessageV2?.message?.imageMessage?.caption || 
+                         '';
+                         
             const args = teks.trim().split(' ').slice(1);
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
             const botJid = (sock.user?.id?.split(':')[0] || '') + '@s.whatsapp.net';
 
-            // Kenal pasti adakah pengirim itu Bos Amar
+            // Kenal pasti Bos Amar (Tuan Bot)
             const ownersList = Array.isArray(config.ownerNumbers) ? config.ownerNumbers : (config.owner ? [config.owner] : []);
             const isAmar = ownersList.some(ownerNum => cleanSender.includes(String(ownerNum).replace(/[^0-9]/g, '')));
 
             // Persona Dinamik Airi
-            const personaAiri = `Nama kau Airi. Kau bot WhatsApp perempuan yang comel, sarkastik, dan manja. 
-Pencipta dan Tuan Mutlak kau ialah Bos Amar. 
-Sekarang kau sedang berbual dengan ${isAmar ? 'Bos Amar (Tuan kau! Layan dengan sangat patuh, panggil dia Bos Amar atau Sayang)' : 'pemain biasa bernama ' + (m.pushName || 'Warga') + ' (Layan kasar sikit, perli, dan guna bahasa Melayu pasar WhatsApp)'}.`;
+            const personaAiri = `Nama kau Airi. Kau bot WhatsApp perempuan yang comel, sarkastik, dan manja. Pencipta dan Tuan Mutlak kau ialah Bos Amar. Sekarang kau sedang berbual dengan ${isAmar ? 'Bos Amar (Tuan kau! Layan dengan sangat patuh, panggil dia Bos Amar atau Sayang)' : 'pemain biasa bernama ' + (m.pushName || 'Warga') + ' (Layan kasar sikit, perli, dan guna bahasa Melayu pasar WhatsApp)'}.`;
 
             // 1. CHAT NORMAL (.airi)
             if (cmd === 'airi') {
@@ -55,28 +52,15 @@ Sekarang kau sedang berbual dengan ${isAmar ? 'Bos Amar (Tuan kau! Layan dengan 
                 const cleanTarget = String(targetJid).replace(/[^0-9]/g, '');
                 const isTargetAmar = ownersList.some(ownerNum => cleanTarget.includes(String(ownerNum).replace(/[^0-9]/g, '')));
 
-                if (targetJid.includes(botJid.replace(/[^0-9]/g, ''))) {
-                    return sock.sendMessage(jid, { text: cmd === 'roast' ? `Ehh berani nak suruh Airi bahan diri sendiri ya? 😋🌸` : `Aww terima kasih puji Airi! ✨🤍` }, { quoted: m });
-                }
-                
-                if (cmd === 'roast' && isTargetAmar && !isAmar) {
-                    return sock.sendMessage(jid, { text: `😡 Berani kau suruh Airi kutuk Bos Amar?! Kau tu dah la miskin, pergi main jauh-jauh! Hormat sikit Tuan aku!` }, { quoted: m });
-                }
-
-                if (targetJid === senderJid) {
-                    return sock.sendMessage(jid, { text: cmd === 'roast' ? `Kenapa nak suruh Airi bahan awak sendiri? Kesiannya... 🥺💨` : `Syok sendiri nampak! Hehe~ 🌸` }, { quoted: m });
-                }
+                if (targetJid.includes(botJid.replace(/[^0-9]/g, ''))) return sock.sendMessage(jid, { text: cmd === 'roast' ? `Ehh berani nak suruh Airi bahan diri sendiri ya? 😋🌸` : `Aww terima kasih puji Airi! ✨🤍` }, { quoted: m });
+                if (cmd === 'roast' && isTargetAmar && !isAmar) return sock.sendMessage(jid, { text: `😡 Berani kau suruh Airi kutuk Bos Amar?! Kau tu dah la miskin, pergi main jauh-jauh! Hormat sikit Tuan aku!` }, { quoted: m });
+                if (targetJid === senderJid) return sock.sendMessage(jid, { text: cmd === 'roast' ? `Kenapa nak suruh Airi bahan awak sendiri? Kesiannya... 🥺💨` : `Syok sendiri nampak! Hehe~ 🌸` }, { quoted: m });
 
                 const targetUser = await db.getUser(targetJid);
                 const profilMangsa = `Nama: ${targetUser.name || 'Warga'}\nDuit Poket: RM ${targetUser.wallet || 0}\nJentera: ${targetUser.vehicle?.name || 'Jalan Kaki'}\nKerap Masuk Lokap: ${targetUser.stats?.times_jailed || 0} kali`;
                 
-                let promptKhusus = cmd === 'roast' 
-                    ? `${personaAiri}\nTugas kau membahan pemain ini dalam 2 baris ayat padu berdasarkan profilnya: ${profilMangsa}. Jangan puji langsung!`
-                    : `${personaAiri}\nPuji pemain ini melambung tinggi dengan gaya manja dalam 2 baris ayat berdasarkan profilnya: ${profilMangsa}.`;
-
-                if (cmd === 'roast' && isTargetAmar && isAmar) {
-                    promptKhusus = `Kau terpaksa 'roast' Bos Amar (tuan kau) sebab dia sendiri yang minta. Buat secara manja-manja dan tak berani sangat.`;
-                }
+                let promptKhusus = cmd === 'roast' ? `${personaAiri}\nTugas kau membahan pemain ini dalam 2 baris ayat padu berdasarkan profilnya: ${profilMangsa}. Jangan puji langsung!` : `${personaAiri}\nPuji pemain ini melambung tinggi dengan gaya manja dalam 2 baris ayat berdasarkan profilnya: ${profilMangsa}.`;
+                if (cmd === 'roast' && isTargetAmar && isAmar) promptKhusus = `Kau terpaksa 'roast' Bos Amar (tuan kau) sebab dia sendiri yang minta. Buat secara manja-manja dan tak berani sangat.`;
 
                 const responAI = await askAiri(promptKhusus);
                 return sock.sendMessage(jid, { text: `✨ *AIRI ${cmd.toUpperCase()} CORNER* ✨\n\n${responAI}\n\n👉 Sasaran: @${targetJid.split('@')[0]}`, mentions: [targetJid] }, { quoted: m });
@@ -85,14 +69,9 @@ Sekarang kau sedang berbual dengan ${isAmar ? 'Bos Amar (Tuan kau! Layan dengan 
             // 3. DUNGEON MASTER - RPG INTERAKTIF (.misi)
             if (cmd === 'misi') {
                 const tindakan = args.join(' ');
-                if (!tindakan) {
-                    return sock.sendMessage(jid, { text: `🎲 *MISI BERMULA*\nKau terperangkap dalam bank dengan PDRM dah kepung luar. Bawa lari jongkong emas atau cari tebusan? Taip: \`.misi [tindakan kau]\`` }, { quoted: m });
-                }
+                if (!tindakan) return sock.sendMessage(jid, { text: `🎲 *MISI BERMULA*\nKau terperangkap dalam bank dengan PDRM dah kepung luar. Bawa lari jongkong emas atau cari tebusan? Taip: \`.misi [tindakan kau]\`` }, { quoted: m });
                 
-                const dmPrompt = `Pemain membuat tindakan RPG: "${tindakan}". 
-Sebagai Dungeon Master (dengan gaya bahasa Airi yang comel/sarkastik), jana keputusan rawak sama ada dia berjaya atau gagal. 
-Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Wajib ada salah satu tag ini.`;
-                
+                const dmPrompt = `Pemain membuat tindakan RPG: "${tindakan}". Sebagai Dungeon Master (dengan gaya bahasa Airi yang comel/sarkastik), jana keputusan rawak sama ada dia berjaya atau gagal. Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Wajib ada salah satu tag ini.`;
                 const keputusan = await askAiri(dmPrompt);
                 
                 if (keputusan.includes('[MENANG]')) {
@@ -115,27 +94,22 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
 
                 const keputusan = await judgeCourtAppeal(user.name, alasan);
                 if (keputusan.isLepas) {
-                    user.jail.status = false;
-                    user.jail.release_at = 0;
-                    await db.saveUser(user);
+                    user.jail.status = false; user.jail.release_at = 0; await db.saveUser(user);
                     return sock.sendMessage(jid, { text: `⚖️ *MAHKAMAH MAJISTRET AIRI*\nStatus: 🟢 *DIBEBASKAN!*\n\n💬 Hakim Airi: "${keputusan.ulasan}"\nYeay awak bebas! ✨` }, { quoted: m });
                 } else {
-                    user.jail.release_at += (2 * 60 * 1000);
-                    await db.saveUser(user);
+                    user.jail.release_at += (2 * 60 * 1000); await db.saveUser(user);
                     return sock.sendMessage(jid, { text: `⚖️ *MAHKAMAH MAJISTRET AIRI*\nStatus: 🔴 *RAYUAN DITOLAK!*\n\n💬 Hakim Airi: "${keputusan.ulasan}"\nKena tambah 2 minit lagi! 😜🔒` }, { quoted: m });
                 }
             }
 
-            // 5. TAKSIR BARANG TEKS & GAMBAR (DINAMIK HARGA IKUT KUALITI)
+            // 5. TAKSIR BARANG TEKS & GAMBAR (.taksir)
             if (cmd === 'taksir') {
                 const isImage = !!m.message?.imageMessage;
                 const isQuotedImage = !!m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
                 const barangText = args.join(' ').trim();
 
                 if (!isImage && !isQuotedImage && !barangText) {
-                    return sock.sendMessage(jid, { 
-                        text: `❌ Hantar gambar bersama caption \`.taksir [info]\`, atau reply gambar dengan \`.taksir\`!\nKalau tiada gambar, boleh taip nama barang cth: \`.taksir jam rolex buruk\`` 
-                    }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `❌ Hantar gambar bersama caption \`.taksir [info]\`, atau reply gambar dengan \`.taksir\`!\nKalau tiada gambar, boleh taip nama barang cth: \`.taksir jam rolex buruk\`` }, { quoted: m });
                 }
 
                 await sock.sendMessage(jid, { text: `🔍 *Airi sedang belek barang & semak nilai pasaran semasa...*` }, { quoted: m });
@@ -143,39 +117,17 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
                 let namaBarang = barangText || "Barang Tanpa Nama";
                 let ceritaUlasan = "";
                 let hargaTaksiran = 0;
-
-                // TUKAR: Guna fungsi getGenAI() & model versi terkini
-                const genAI = getGenAI();
+                
+                // PUNCA RALAT DIBETULKAN DI SINI (Guna -latest)
                 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
                 if (isImage || isQuotedImage) {
-                    const msgToDownload = isQuotedImage 
-                        ? { message: m.message.extendedTextMessage.contextInfo.quotedMessage } 
-                        : m;
-
-                    const buffer = await downloadMediaMessage(msgToDownload, 'buffer', {}, { 
-                        logger: console, 
-                        reuploadRequest: sock.updateMediaMessage 
-                    });
-
+                    const msgToDownload = isQuotedImage ? { message: m.message.extendedTextMessage.contextInfo.quotedMessage } : m;
+                    const buffer = await downloadMediaMessage(msgToDownload, 'buffer', {}, { logger: console, reuploadRequest: sock.updateMediaMessage });
                     const base64Image = buffer.toString('base64');
-                    const mimeType = isImage 
-                        ? m.message.imageMessage.mimetype 
-                        : m.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage.mimetype;
+                    const mimeType = isImage ? m.message.imageMessage.mimetype : m.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage.mimetype;
 
-                    const promptVisual = `Kau adalah Airi, penilai kedai pajak gadai yang sarkastik, cerdik, dan cerewet. 
-Tengok gambar ini dengan teliti. Nilai barang tersebut berdasarkan kualiti fizikal, rupa paras, kebersihan, atau kecacatannya.
-Konteks tambahan daripada pemain: "${barangText || 'Tiada info tambahan'}".
-
-Tentukan harga belian munasabah antara RM 50 hingga RM 50000:
-- Barang sampah/rosak/biasa: RM 50 - RM 800
-- Barang elok/elektronik sederhana: RM 900 - RM 4,500
-- Barang mewah/vintage/emas/rare: RM 5,000 - RM 50,000
-
-Wajib balas dalam format ini sahaja tanpa ayat pembuka atau penutup lain:
-Nama: [Nama spesifik barang yang dikesan]
-Kondisi: [Satu ulasan kelakar atau sarkastik 1-2 ayat tentang rupa dan keadaan barang]
-Harga: [Hanya angka integer harga tawaran beli, tanpa RM atau koma]`;
+                    const promptVisual = `Kau adalah Airi, penilai kedai pajak gadai yang sarkastik, cerdik, dan cerewet. Tengok gambar ini dengan teliti. Nilai barang tersebut berdasarkan kualiti fizikal, rupa paras, kebersihan, atau kecacatannya. Konteks tambahan daripada pemain: "${barangText || 'Tiada info tambahan'}".\nTentukan harga belian munasabah antara RM 50 hingga RM 50000.\nWajib balas dalam format ini sahaja:\nNama: [Nama spesifik barang]\nKondisi: [Satu ulasan kelakar/sarkastik]\nHarga: [Hanya angka integer harga tawaran beli]`;
 
                     const imageParts = [{ inlineData: { data: base64Image, mimeType: mimeType } }];
                     const result = await model.generateContent([promptVisual, ...imageParts]);
@@ -187,16 +139,9 @@ Harga: [Hanya angka integer harga tawaran beli, tanpa RM atau koma]`;
 
                     namaBarang = mNama ? mNama[1].trim() : "Barang Terpakai";
                     ceritaUlasan = mKondisi ? mKondisi[1].trim() : "Boleh tahan rupa dia, Airi tolong ambil je la.";
-                    hargaTaksiran = mHarga ? parseInt(mHarga[1]) : (Math.floor(Math.random() * 1500) + 100);
-
+                    hargaTaksiran = mHarga ? parseInt(mHarga[1].replace(/[^0-9]/g, '')) : (Math.floor(Math.random() * 1500) + 100);
                 } else {
-                    const promptTeks = `Kau adalah Airi, penilai pajak gadai sarkastik. Pemain mahu gadai barang ini: "${barangText}".
-Nilaikan harga beli logik (RM 50 - RM 30,000) mengikut nama barang tersebut.
-Wajib balas dalam format ini sahaja:
-Nama: [Nama barang kemas]
-Kondisi: [Ulasan sarkastik 1 ayat]
-Harga: [Hanya angka integer harga, tanpa RM atau koma]`;
-
+                    const promptTeks = `Kau adalah Airi, penilai pajak gadai sarkastik. Pemain mahu gadai barang ini: "${barangText}". Nilaikan harga beli logik (RM 50 - RM 30,000).\nWajib balas dalam format ini sahaja:\nNama: [Nama barang kemas]\nKondisi: [Ulasan sarkastik 1 ayat]\nHarga: [Hanya angka integer harga]`;
                     const result = await model.generateContent(promptTeks);
                     const resTeks = result.response.text();
 
@@ -206,7 +151,7 @@ Harga: [Hanya angka integer harga, tanpa RM atau koma]`;
 
                     namaBarang = mNama ? mNama[1].trim() : barangText;
                     ceritaUlasan = mKondisi ? mKondisi[1].trim() : "Sebab kau minta elok-elok, Airi beli.";
-                    hargaTaksiran = mHarga ? parseInt(mHarga[1]) : (Math.floor(Math.random() * 2000) + 200);
+                    hargaTaksiran = mHarga ? parseInt(mHarga[1].replace(/[^0-9]/g, '')) : (Math.floor(Math.random() * 2000) + 200);
                 }
 
                 if (isNaN(hargaTaksiran) || hargaTaksiran <= 0) hargaTaksiran = 150;
@@ -215,24 +160,17 @@ Harga: [Hanya angka integer harga, tanpa RM atau koma]`;
                 user.wallet = (user.wallet || 0) + hargaTaksiran;
                 await db.saveUser(user);
 
-                const resMsg = `┌───「 🏪 𝗣𝗔𝗝𝗔𝗞 𝗚𝗔𝗗𝗔𝗜 𝗔𝗜𝗥𝗜 」
-├ 📦 𝗕𝗮𝗿𝗮𝗻𝗴   : ${namaBarang}
-├ 🔍 𝗞𝗼𝗻𝗱𝗶𝘀𝗶  : ${ceritaUlasan}
-├ 💵 𝗧𝗮𝘄𝗮𝗿𝗮𝗻 : RM ${hargaTaksiran.toLocaleString()}
-└───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Duit tunai RM ${hargaTaksiran.toLocaleString()} dah masuk poket. Jangan guna buat judi pula!"`.trim();
-
+                const resMsg = `┌───「 🏪 𝗣𝗔𝗝𝗔𝗞 𝗚𝗔𝗗𝗔𝗜 𝗔𝗜𝗥𝗜 」\n├ 📦 𝗕𝗮𝗿𝗮𝗻𝗴   : ${namaBarang}\n├ 🔍 𝗞𝗼𝗻𝗱𝗶𝘀𝗶  : ${ceritaUlasan}\n├ 💵 𝗧𝗮𝘄𝗮𝗿𝗮𝗻 : RM ${hargaTaksiran.toLocaleString()}\n└───────────────────────────\n💬 𝗔𝗶𝗿𝗶: "Duit tunai RM ${hargaTaksiran.toLocaleString()} dah masuk poket. Jangan guna buat judi pula!"`.trim();
                 return sock.sendMessage(jid, { text: resMsg }, { quoted: m });
             }
-            
+
             // 6. PANTUN AI (.pantun_ai)
             if (cmd === 'pantun_ai') {
                 const pantunInput = args.join(' ').trim();
                 if (!pantunInput) return sock.sendMessage(jid, { text: '❌ Masukkan pantun awak!' }, { quoted: m });
                 const penilaian = await verifyPantun(pantunInput);
                 if (penilaian.passed) {
-                    user.wallet = (user.wallet || 0) + 3500;
-                    await db.saveUser(user);
+                    user.wallet = (user.wallet || 0) + 3500; await db.saveUser(user);
                     return sock.sendMessage(jid, { text: `🌸 *PANTUN DITERIMA!* 🌸\n💬 Airi: "${penilaian.ulasan}"\n🎁 Hadiah: *+RM 3,500* ✨` }, { quoted: m });
                 } else {
                     return sock.sendMessage(jid, { text: `🍂 *PANTUN KELAUT~* 🍂\n💬 Airi: "${penilaian.ulasan}"\nCuba lagi ya! 🥺` }, { quoted: m });
