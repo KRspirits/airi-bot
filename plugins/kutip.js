@@ -94,41 +94,49 @@ export default {
 
                 // Tamat lelongan (60 saat)
                 setTimeout(async () => {
+                    // Cek jika bidaState masih wujud untuk grup/PM ini
                     if (bidaState[jid] && bidaState[jid].aktif) {
-                        const lelong = bidaState[jid];
+                        
+                        // Ekstrak data terus untuk elak memori hilang (Bug fix)
+                        const pemenangId = bidaState[jid].pembidaTertinggi;
+                        const hargaFinal = bidaState[jid].hargaSemasa;
+                        const itemData = bidaState[jid].dataItem;
+                        
+                        // Tutup bidaan
                         bidaState[jid].aktif = false;
                         delete bidaState[jid];
 
-                        if (!lelong.pembidaTertinggi) {
-                            return sock.sendMessage(jid, { text: `🔨 Masa tamat! Tiada siapa yang berani membida *${lelong.dataItem.nama}*. Barang disimpan semula.` });
+                        // Jika tiada siapa letak bidaan
+                        if (!pemenangId) {
+                            return sock.sendMessage(jid, { text: `🔨 Masa tamat! Tiada siapa yang berani membida *${itemData.nama}*. Barang disimpan semula.` });
                         }
 
                         try {
-                            const winner = await db.getUser(lelong.pembidaTertinggi);
+                            let winner = await db.getUser(pemenangId);
                             
-                            // Anti Cek Tendang
-                            if (winner.wallet < lelong.hargaSemasa) {
+                            // Logik Anti Cek Tendang
+                            if ((winner.wallet || 0) < hargaFinal) {
+                                if (!winner.jail) winner.jail = { status: false, release_at: 0 };
                                 winner.jail = { status: true, release_at: Date.now() + (5 * 60000), reason: "Bida Palsu / Cek Tendang" };
                                 await db.saveUser(winner);
-                                return sock.sendMessage(jid, { text: `🔨 *LELONGAN BATAL!*\n\n@${lelong.pembidaTertinggi.split('@')[0]} diseret polis ke lokap 5 minit kerana bidaan palsu (Duit poket tak cukup)!`, mentions: [lelong.pembidaTertinggi] });
+                                return sock.sendMessage(jid, { text: `🔨 *LELONGAN BATAL!*\n\n@${pemenangId.split('@')[0]} diseret polis ke lokap 5 minit kerana bidaan palsu (Duit poket tiba-tiba tak cukup)!`, mentions: [pemenangId] });
                             }
 
-                            // Tolak bayaran
-                            winner.wallet -= lelong.hargaSemasa;
+                            // Tolak bayaran pemenang
+                            winner.wallet -= hargaFinal;
                             
                             let hadiahTeks = "";
-                            const itemData = lelong.dataItem;
 
-                            // LOGIK PENGAGIHAN GANJARAN MENGIKUT JENIS
+                            // LOGIK PENGAGIHAN GANJARAN
                             if (itemData.jenis === 'tunai') {
                                 const nilaiSebenar = Math.floor(Math.random() * (itemData.maxTunai - itemData.minTunai + 1)) + itemData.minTunai;
                                 winner.wallet += nilaiSebenar;
-                                const untung = nilaiSebenar - lelong.hargaSemasa;
+                                const untung = nilaiSebenar - hargaFinal;
                                 const statusUntung = untung >= 0 ? `Untung RM ${untung.toLocaleString()} 📈` : `Rugi RM ${Math.abs(untung).toLocaleString()} 📉 (Kena Scam!)`;
                                 hadiahTeks = `🔍 Nilai sebenar wang di dalam beg: *RM ${nilaiSebenar.toLocaleString()}*\n📊 *Status:* ${statusUntung}`;
                             } 
                             else if (itemData.jenis === 'kereta') {
-                                winner.vehicle = { name: itemData.reward, speed: Math.floor(Math.random() * 80) + 150 }; // Masuk terus ke Garaj!
+                                winner.vehicle = { name: itemData.reward, speed: Math.floor(Math.random() * 80) + 150 };
                                 hadiahTeks = `🚗 *Tahniah!* Selepas kontena dibuka, kau menemui kunci *${itemData.reward}*!\nKenderaan telah pun dihantar ke dalam \`.garaj\` kau. Nilai pasaran kenderaan ini adalah RM ${itemData.nilaiPasaran.toLocaleString()}.`;
                             }
                             else if (itemData.jenis === 'emas') {
@@ -140,35 +148,44 @@ export default {
                                 hadiahTeks = `🖥️ *Jackpot Kripto!* Pelayan berjaya dihidupkan dan kau memindahkan *${itemData.reward} Unit BTC* terus ke \`.balance\` kau!`;
                             }
 
+                            // Simpan data pemenang ke database utama
+                            if (typeof winner.markModified === 'function') {
+                                winner.markModified('vehicle');
+                            }
                             await db.saveUser(winner);
 
                             let winMsg = `🔨 *LELONGAN TAMAT! SOLD!* 🔨\n\n` +
-                                         `👤 *Pemenang:* @${lelong.pembidaTertinggi.split('@')[0]}\n` +
-                                         `💸 *Harga Dibayar:* RM ${lelong.hargaSemasa.toLocaleString()}\n\n` +
+                                         `👤 *Pemenang:* @${pemenangId.split('@')[0]}\n` +
+                                         `💸 *Harga Dibayar:* RM ${hargaFinal.toLocaleString()}\n\n` +
                                          `${hadiahTeks}`;
 
-                            return sock.sendMessage(jid, { text: winMsg, mentions: [lelong.pembidaTertinggi] });
+                            return sock.sendMessage(jid, { text: winMsg, mentions: [pemenangId] });
 
                         } catch (e) {
                             console.error("Lelong Timeout Error:", e);
                         }
                     }
-                }, 60000); 
+                }, 60000); // 60 saat timer
                 return;
             }
 
+            // C) Mengurus Bidaan yang masuk
             if (cmd === 'bida') {
-                if (!bidaState[jid] || !bidaState[jid].aktif) return sock.sendMessage(jid, { text: `❌ Tiada lelongan berlangsung. Taip \`.mula_bida\`` }, { quoted: m });
+                if (!bidaState[jid] || !bidaState[jid].aktif) return sock.sendMessage(jid, { text: `❌ Tiada lelongan berlangsung. Taip \`.lelong\`` }, { quoted: m });
                 
                 const bidAmount = parseInt(args[0]);
                 if (isNaN(bidAmount)) return sock.sendMessage(jid, { text: `❌ Contoh format bidaan: \`.bida 50000\`` }, { quoted: m });
-                if (user.wallet < bidAmount) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup nak bida RM ${bidAmount.toLocaleString()}!` }, { quoted: m });
+                if ((user.wallet || 0) < bidAmount) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup nak bida RM ${bidAmount.toLocaleString()}!` }, { quoted: m });
                 if (bidAmount <= bidaState[jid].hargaSemasa) return sock.sendMessage(jid, { text: `❌ Bidaan mesti LEBIH TINGGI dari RM ${bidaState[jid].hargaSemasa.toLocaleString()}!` }, { quoted: m });
 
+                // Update data harga & rekodkan ID pembida tertinggi
                 bidaState[jid].hargaSemasa = bidAmount;
                 bidaState[jid].pembidaTertinggi = senderId;
 
-                return sock.sendMessage(jid, { text: `📢 @${senderId.split('@')[0]} membida dengan harga *RM ${bidAmount.toLocaleString()}*!\nAda berani potong?`, mentions: [senderId] }, { quoted: m });
+                return sock.sendMessage(jid, { 
+                    text: `📢 *BIDAAN DITERIMA!*\n@${senderId.split('@')[0]} meletakkan bidaan sebanyak *RM ${bidAmount.toLocaleString()}*!`, 
+                    mentions: [senderId] 
+                }, { quoted: m });
             }
 
         } catch (err) {
