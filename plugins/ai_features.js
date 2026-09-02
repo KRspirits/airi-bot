@@ -1,5 +1,10 @@
 import { config } from '../config.js';
 import { askAiri, judgeCourtAppeal, appraiseItem, verifyPantun } from '../lib/geminiAI.js';
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// ⚠️ LETAK API KEY GEMINI KAU DI SINI
+const genAI = new GoogleGenerativeAI(config.geminiApiKey || 'SILA_LETAK_API_KEY_GEMINI_DI_SINI');
 
 export default {
     name: 'airi_mega',
@@ -9,7 +14,7 @@ export default {
             const jid = m.key.remoteJid;
             const senderJid = m.key.participant || jid;
             const cleanSender = String(senderJid).replace(/[^0-9]/g, '');
-            const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
+            const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.imageMessage?.caption || '';
             const args = teks.trim().split(' ').slice(1);
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
             const botJid = (sock.user?.id?.split(':')[0] || '') + '@s.whatsapp.net';
@@ -28,7 +33,6 @@ Sekarang kau sedang berbual dengan ${isAmar ? 'Bos Amar (Tuan kau! Layan dengan 
                 const soalan = args.join(' ').trim();
                 if (!soalan) return sock.sendMessage(jid, { text: `Hehe ya ${isAmar ? 'Bos Amar' : 'awak'}? Nak Airi tolong apa tu? Taip \`.airi [soalan]\` tau~ 🌸✨` }, { quoted: m });
                 
-                // Hantar persona bersama soalan ke helper sedia ada
                 const konteks = `${personaAiri}\n\nSoalan pemain: "${soalan}"`;
                 const jawapan = await askAiri(konteks, "Abaikan format tambahan, balas terus sebagai Airi.");
                 return sock.sendMessage(jid, { text: `💬 𝗔𝗶𝗿𝗶: ${jawapan}` }, { quoted: m });
@@ -46,7 +50,6 @@ Sekarang kau sedang berbual dengan ${isAmar ? 'Bos Amar (Tuan kau! Layan dengan 
                     return sock.sendMessage(jid, { text: cmd === 'roast' ? `Ehh berani nak suruh Airi bahan diri sendiri ya? 😋🌸` : `Aww terima kasih puji Airi! ✨🤍` }, { quoted: m });
                 }
                 
-                // LOGIK PERTAHANAN BOS AMAR
                 if (cmd === 'roast' && isTargetAmar && !isAmar) {
                     return sock.sendMessage(jid, { text: `😡 Berani kau suruh Airi kutuk Bos Amar?! Kau tu dah la miskin, pergi main jauh-jauh! Hormat sikit Tuan aku!` }, { quoted: m });
                 }
@@ -114,14 +117,57 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
                 }
             }
 
-            // 5. TAKSIR BARANG TEKS (.taksir)
+            // 5. TAKSIR BARANG TEKS & GAMBAR (.taksir)
             if (cmd === 'taksir') {
-                const barang = args.join(' ').trim();
-                if (!barang) return sock.sendMessage(jid, { text: '❌ Tulis nama barang nak ditaksir!' }, { quoted: m });
-                const hasil = await appraiseItem(barang);
-                user.wallet += hasil.harga;
+                const isImage = !!m.message?.imageMessage;
+                const isQuotedImage = !!m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+                const barangText = args.join(' ').trim();
+
+                if (!isImage && !isQuotedImage && !barangText) {
+                    return sock.sendMessage(jid, { text: '❌ Hantar/reply gambar barang, atau tulis nama barang nak ditaksir!' }, { quoted: m });
+                }
+
+                let hasil = { harga: 0, cerita: "", barang: barangText || "Barang Misteri" };
+
+                // JIKA GAMBAR DIHANTAR (Guna Gemini Vision)
+                if (isImage || isQuotedImage) {
+                    await sock.sendMessage(jid, { text: `⏳ *Airi sedang belek gambar barang ni...*` }, { quoted: m });
+                    
+                    const msgToDownload = isQuotedImage ? { message: m.message.extendedTextMessage.contextInfo.quotedMessage } : m;
+                    const buffer = await downloadMediaMessage(msgToDownload, 'buffer', {}, { logger: console, reuploadRequest: sock.updateMediaMessage });
+                    const base64Image = buffer.toString('base64');
+                    const mimeType = isImage ? m.message.imageMessage.mimetype : m.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage.mimetype;
+
+                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    const prompt = `Sebagai Airi, penilai barang pajak gadai yang sarkastik dan comel. Kaji gambar ini.
+Wajib balas dalam format ini sahaja:
+Nama: [Teka nama barang ringkas]
+Cerita: [Ulasan atau kutukan kelakar 1 ayat pasal barang ni]
+Harga: [Pilih nombor integer rawak antara 10 hingga 20000 mengikut nilai barang]`;
+
+                    const imageParts = [{ inlineData: { data: base64Image, mimeType: mimeType } }];
+                    const result = await model.generateContent([prompt, ...imageParts]);
+                    const responseText = result.response.text();
+
+                    const matchNama = responseText.match(/Nama:\s*(.+)/i);
+                    const matchCerita = responseText.match(/Cerita:\s*(.+)/i);
+                    const matchHarga = responseText.match(/Harga:\s*(\d+)/i);
+
+                    hasil.barang = matchNama ? matchNama[1].trim() : "Barang Antik";
+                    hasil.cerita = matchCerita ? matchCerita[1].trim() : "Fuh, silau mata Airi tengok!";
+                    hasil.harga = matchHarga ? parseInt(matchHarga[1]) : Math.floor(Math.random() * 5000) + 100;
+                } 
+                // JIKA TEKS SAHAJA (Guna Fungsi Asal)
+                else {
+                    const hasilAsal = await appraiseItem(barangText);
+                    hasil.barang = barangText;
+                    hasil.cerita = hasilAsal.cerita;
+                    hasil.harga = hasilAsal.harga;
+                }
+
+                user.wallet = (user.wallet || 0) + hasil.harga;
                 await db.saveUser(user);
-                return sock.sendMessage(jid, { text: `┌───「 🏪 𝗣𝗔𝗝𝗔𝗞 𝗚𝗔𝗗𝗔𝗜 𝗔𝗜𝗥𝗜 𝗖𝗢𝗠𝗘𝗟 」\n├ 📦 𝗕𝗮𝗿𝗮𝗻𝗴 : ${barang}\n├ 📜 𝗦𝗲𝗷𝗮𝗿𝗮𝗵 : ${hasil.cerita}\n├ 💵 𝗧𝗮𝗸𝘀𝗶𝗿𝗮𝗻: +RM ${hasil.harga.toLocaleString()}\n└───────────────────────────\n💬 𝗔𝗶𝗿𝗶: "Airi suka barang ni tau! 🤍"` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `┌───「 🏪 𝗣𝗔𝗝𝗔𝗞 𝗚𝗔𝗗𝗔𝗜 𝗔𝗜𝗥𝗜 𝗖𝗢𝗠𝗘𝗟 」\n├ 📦 𝗕𝗮𝗿𝗮𝗻𝗴 : ${hasil.barang}\n├ 📜 𝗦𝗲𝗷𝗮𝗿𝗮𝗵 : ${hasil.cerita}\n├ 💵 𝗧𝗮𝗸𝘀𝗶𝗿𝗮𝗻: +RM ${hasil.harga.toLocaleString()}\n└───────────────────────────\n💬 𝗔𝗶𝗿𝗶: "Airi ambil ya! 🤍"` }, { quoted: m });
             }
 
             // 6. PANTUN AI (.pantun_ai)
@@ -130,7 +176,7 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
                 if (!pantunInput) return sock.sendMessage(jid, { text: '❌ Masukkan pantun awak!' }, { quoted: m });
                 const penilaian = await verifyPantun(pantunInput);
                 if (penilaian.passed) {
-                    user.wallet += 3500;
+                    user.wallet = (user.wallet || 0) + 3500;
                     await db.saveUser(user);
                     return sock.sendMessage(jid, { text: `🌸 *PANTUN DITERIMA!* 🌸\n💬 Airi: "${penilaian.ulasan}"\n🎁 Hadiah: *+RM 3,500* ✨` }, { quoted: m });
                 } else {
@@ -141,7 +187,7 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
             // 7. BULETIN CYBER (.buletin_cyber)
             if (cmd === 'buletin_cyber') {
                 const allUsers = await db.getAllUsers();
-                const topKaya = allUsers.sort((a, b) => (b.wallet + b.bank) - (a.wallet + a.bank))[0]?.name || 'Tiada';
+                const topKaya = allUsers.sort((a, b) => ((b.wallet || 0) + (b.bank || 0)) - ((a.wallet || 0) + (a.bank || 0)))[0]?.name || 'Tiada';
                 const banduan = allUsers.filter(u => u.jail?.status).map(u => u.name).slice(0, 2).join(', ') || 'Semua warga baik-baik';
                 const promptBuletin = `${personaAiri}\nBuat siaran berita ringkas kelakar. Paling kaya: ${topKaya}. Dalam lokap: ${banduan}. Gaya wartawan cilik ceria.`;
                 const teksBerita = await askAiri(promptBuletin);
@@ -150,6 +196,7 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
 
         } catch (err) {
             console.error("AI Features Error:", err);
+            return sock.sendMessage(m.key.remoteJid, { text: "❌ Airi tengah pening sikit. Cuba kejap lagi ya!" }, { quoted: m });
         }
     }
 };
