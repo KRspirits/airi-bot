@@ -1,7 +1,3 @@
-// Memori global untuk event Trak Wang Kilat & Lelongan Bida
-const kutipState = {};
-const bidaState = {};
-
 // SENARAI BARANG LELONG & JENIS GANJARAN
 const SENARAI_LELONG = [
     // Jenis: Tunai (Misteri)
@@ -14,15 +10,19 @@ const SENARAI_LELONG = [
     { nama: "🏍️ Kotak Kayu Seludup Sempadan", jenis: 'kereta', reward: 'Kawasaki H2R', nilaiPasaran: 250000, minBid: 30000 },
     
     // Jenis: Aset (Emas / BTC)
-    { nama: "🪙 Peti Besi Pejabat Tanah Lama", jenis: 'emas', reward: 500, nilaiPasaran: 150000, minBid: 25000 }, // 500 gram emas
-    { nama: "🖥️ Pelayan PC Godam PDRM", jenis: 'btc', reward: 2, nilaiPasaran: 500000, minBid: 100000 } // 2 unit BTC
+    { nama: "🪙 Peti Besi Pejabat Tanah Lama", jenis: 'emas', reward: 500, nilaiPasaran: 150000, minBid: 25000 },
+    { nama: "🖥️ Pelayan PC Godam PDRM", jenis: 'btc', reward: 2, nilaiPasaran: 500000, minBid: 100000 }
 ];
 
 export async function triggerSpeedDrop(sock, targetGroup) {
+    // Tanam memori di dalam sock supaya tidak hilang bila fail di-reload
+    if (!sock.kutipState) sock.kutipState = {};
+    const kutipDB = sock.kutipState;
+
     const kodRahsia = Math.floor(Math.random() * 900) + 100; 
     const jumlahWang = Math.floor(Math.random() * 50000) + 10000;
 
-    kutipState[targetGroup] = { aktif: true, kod: kodRahsia, jumlah: jumlahWang };
+    kutipDB[targetGroup] = { aktif: true, kod: kodRahsia, jumlah: jumlahWang };
 
     let msg = `┌───「 🚚 𝗧𝗥𝗔𝗞 𝗦𝗘𝗞𝗨𝗥𝗜𝗧𝗜 𝗧𝗘𝗥𝗕𝗔𝗟𝗜𝗞! 」\n` +
               `│ *Pintu belakang van keselamatan pecah di lebuh raya!*\n` +
@@ -35,8 +35,8 @@ export async function triggerSpeedDrop(sock, targetGroup) {
     await sock.sendMessage(targetGroup, { text: msg });
 
     setTimeout(() => {
-        if (kutipState[targetGroup] && kutipState[targetGroup].aktif) {
-            delete kutipState[targetGroup];
+        if (kutipDB[targetGroup] && kutipDB[targetGroup].aktif) {
+            delete kutipDB[targetGroup];
             sock.sendMessage(targetGroup, { text: `☁️ Orang ramai dah sapu habis semua duit! Tiada siapa yang sempat kutip.` }).catch(() => {});
         }
     }, 30000);
@@ -53,16 +53,22 @@ export default {
             const args = teks.trim().split(' ').slice(1);
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
 
+            // Init state storage kebal reload
+            if (!sock.bidaState) sock.bidaState = {};
+            if (!sock.kutipState) sock.kutipState = {};
+            const bidaDB = sock.bidaState;
+            const kutipDB = sock.kutipState;
+
             // ============================================
             // 1. SISTEM KUTIP TRAK TERBALIK
             // ============================================
             if (cmd === 'kutip' || cmd === 'grab' || cmd === 'ambil') {
                 const kodMasuk = parseInt(args[0]);
-                if (!kutipState[jid] || !kutipState[jid].aktif) return sock.sendMessage(jid, { text: `❌ Tiada trak duit terbalik buat masa ni.` }, { quoted: m });
-                if (isNaN(kodMasuk) || kodMasuk !== kutipState[jid].kod) return sock.sendMessage(jid, { text: `❌ Kod salah! Cepat cuba lagi sebelum orang lain rembat.` }, { quoted: m });
+                if (!kutipDB[jid] || !kutipDB[jid].aktif) return sock.sendMessage(jid, { text: `❌ Tiada trak duit terbalik buat masa ni.` }, { quoted: m });
+                if (isNaN(kodMasuk) || kodMasuk !== kutipDB[jid].kod) return sock.sendMessage(jid, { text: `❌ Kod salah! Cepat cuba lagi sebelum orang lain rembat.` }, { quoted: m });
 
-                const hadiah = kutipState[jid].jumlah;
-                delete kutipState[jid]; 
+                const hadiah = kutipDB[jid].jumlah;
+                delete kutipDB[jid]; 
 
                 user.wallet = (user.wallet || 0) + hadiah;
                 await db.saveUser(user);
@@ -74,15 +80,15 @@ export default {
             // 2. SISTEM LELONGAN BIDA (ITEM/KERETA/ASET)
             // ============================================
             if (cmd === 'mula_bida' || cmd === 'lelong' || (cmd === 'bida' && args[0]?.toLowerCase() === 'mula')) {
-                if (bidaState[jid] && bidaState[jid].aktif) return sock.sendMessage(jid, { text: `❌ Lelongan masih berlangsung! Sila bida barang yang ada sekarang.` }, { quoted: m });
+                if (bidaDB[jid] && bidaDB[jid].aktif) return sock.sendMessage(jid, { text: `❌ Lelongan masih berlangsung! Sila bida barang yang ada sekarang.` }, { quoted: m });
 
                 const item = SENARAI_LELONG[Math.floor(Math.random() * SENARAI_LELONG.length)];
                 
-                bidaState[jid] = {
+                bidaDB[jid] = {
                     aktif: true,
                     dataItem: item,
                     hargaSemasa: item.minBid,
-                    pembidaTertinggi: null
+                    pemenang: null // Simpan ID pemenang
                 };
 
                 let msgLelong = `📢 *LELONGAN PASAR GELAP BERMULA!* 📢\n\n` +
@@ -94,49 +100,45 @@ export default {
 
                 // Tamat lelongan (60 saat)
                 setTimeout(async () => {
-                    // Cek jika bidaState masih wujud untuk grup/PM ini
-                    if (bidaState[jid] && bidaState[jid].aktif) {
+                    if (bidaDB[jid] && bidaDB[jid].aktif) {
+                        const lelong = bidaDB[jid];
+                        const idPemenang = lelong.pemenang;
+                        const hargaAkhir = lelong.hargaSemasa;
+                        const itemData = lelong.dataItem;
                         
-                        // Ekstrak data terus untuk elak memori hilang (Bug fix)
-                        const pemenangId = bidaState[jid].pembidaTertinggi;
-                        const hargaFinal = bidaState[jid].hargaSemasa;
-                        const itemData = bidaState[jid].dataItem;
-                        
-                        // Tutup bidaan
-                        bidaState[jid].aktif = false;
-                        delete bidaState[jid];
+                        bidaDB[jid].aktif = false; // Kunci lelongan
 
-                        // Jika tiada siapa letak bidaan
-                        if (!pemenangId) {
+                        if (!idPemenang) {
+                            delete bidaDB[jid];
                             return sock.sendMessage(jid, { text: `🔨 Masa tamat! Tiada siapa yang berani membida *${itemData.nama}*. Barang disimpan semula.` });
                         }
 
                         try {
-                            let winner = await db.getUser(pemenangId);
+                            const winner = await db.getUser(idPemenang);
                             
-                            // Logik Anti Cek Tendang
-                            if ((winner.wallet || 0) < hargaFinal) {
-                                if (!winner.jail) winner.jail = { status: false, release_at: 0 };
+                            // Logik Anti Cek Tendang (Duit tak cukup masa menang)
+                            if ((winner.wallet || 0) < hargaAkhir) {
                                 winner.jail = { status: true, release_at: Date.now() + (5 * 60000), reason: "Bida Palsu / Cek Tendang" };
                                 await db.saveUser(winner);
-                                return sock.sendMessage(jid, { text: `🔨 *LELONGAN BATAL!*\n\n@${pemenangId.split('@')[0]} diseret polis ke lokap 5 minit kerana bidaan palsu (Duit poket tiba-tiba tak cukup)!`, mentions: [pemenangId] });
+                                delete bidaDB[jid];
+                                return sock.sendMessage(jid, { text: `🔨 *LELONGAN BATAL!*\n\n@${idPemenang.split('@')[0]} diseret polis ke lokap 5 minit kerana bidaan palsu (Duit poket tiba-tiba tak cukup)!`, mentions: [idPemenang] });
                             }
 
-                            // Tolak bayaran pemenang
-                            winner.wallet -= hargaFinal;
+                            // Tolak bayaran
+                            winner.wallet -= hargaAkhir;
                             
                             let hadiahTeks = "";
 
-                            // LOGIK PENGAGIHAN GANJARAN
+                            // LOGIK PENGAGIHAN GANJARAN MENGIKUT JENIS
                             if (itemData.jenis === 'tunai') {
                                 const nilaiSebenar = Math.floor(Math.random() * (itemData.maxTunai - itemData.minTunai + 1)) + itemData.minTunai;
                                 winner.wallet += nilaiSebenar;
-                                const untung = nilaiSebenar - hargaFinal;
+                                const untung = nilaiSebenar - hargaAkhir;
                                 const statusUntung = untung >= 0 ? `Untung RM ${untung.toLocaleString()} 📈` : `Rugi RM ${Math.abs(untung).toLocaleString()} 📉 (Kena Scam!)`;
                                 hadiahTeks = `🔍 Nilai sebenar wang di dalam beg: *RM ${nilaiSebenar.toLocaleString()}*\n📊 *Status:* ${statusUntung}`;
                             } 
                             else if (itemData.jenis === 'kereta') {
-                                winner.vehicle = { name: itemData.reward, speed: Math.floor(Math.random() * 80) + 150 };
+                                winner.vehicle = { name: itemData.reward, speed: Math.floor(Math.random() * 80) + 150 }; // Masuk terus ke Garaj
                                 hadiahTeks = `🚗 *Tahniah!* Selepas kontena dibuka, kau menemui kunci *${itemData.reward}*!\nKenderaan telah pun dihantar ke dalam \`.garaj\` kau. Nilai pasaran kenderaan ini adalah RM ${itemData.nilaiPasaran.toLocaleString()}.`;
                             }
                             else if (itemData.jenis === 'emas') {
@@ -148,44 +150,38 @@ export default {
                                 hadiahTeks = `🖥️ *Jackpot Kripto!* Pelayan berjaya dihidupkan dan kau memindahkan *${itemData.reward} Unit BTC* terus ke \`.balance\` kau!`;
                             }
 
-                            // Simpan data pemenang ke database utama
-                            if (typeof winner.markModified === 'function') {
-                                winner.markModified('vehicle');
-                            }
+                            if (typeof winner.markModified === 'function') winner.markModified('vehicle');
                             await db.saveUser(winner);
+                            delete bidaDB[jid]; // Clear memori lelongan
 
                             let winMsg = `🔨 *LELONGAN TAMAT! SOLD!* 🔨\n\n` +
-                                         `👤 *Pemenang:* @${pemenangId.split('@')[0]}\n` +
-                                         `💸 *Harga Dibayar:* RM ${hargaFinal.toLocaleString()}\n\n` +
+                                         `👤 *Pemenang:* @${idPemenang.split('@')[0]}\n` +
+                                         `💸 *Harga Dibayar:* RM ${hargaAkhir.toLocaleString()}\n\n` +
                                          `${hadiahTeks}`;
 
-                            return sock.sendMessage(jid, { text: winMsg, mentions: [pemenangId] });
+                            return sock.sendMessage(jid, { text: winMsg, mentions: [idPemenang] });
 
                         } catch (e) {
                             console.error("Lelong Timeout Error:", e);
+                            delete bidaDB[jid];
                         }
                     }
-                }, 60000); // 60 saat timer
+                }, 60000); 
                 return;
             }
 
-            // C) Mengurus Bidaan yang masuk
             if (cmd === 'bida') {
-                if (!bidaState[jid] || !bidaState[jid].aktif) return sock.sendMessage(jid, { text: `❌ Tiada lelongan berlangsung. Taip \`.lelong\`` }, { quoted: m });
+                if (!bidaDB[jid] || !bidaDB[jid].aktif) return sock.sendMessage(jid, { text: `❌ Tiada lelongan berlangsung. Taip \`.lelong\`` }, { quoted: m });
                 
                 const bidAmount = parseInt(args[0]);
                 if (isNaN(bidAmount)) return sock.sendMessage(jid, { text: `❌ Contoh format bidaan: \`.bida 50000\`` }, { quoted: m });
                 if ((user.wallet || 0) < bidAmount) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup nak bida RM ${bidAmount.toLocaleString()}!` }, { quoted: m });
-                if (bidAmount <= bidaState[jid].hargaSemasa) return sock.sendMessage(jid, { text: `❌ Bidaan mesti LEBIH TINGGI dari RM ${bidaState[jid].hargaSemasa.toLocaleString()}!` }, { quoted: m });
+                if (bidAmount <= bidaDB[jid].hargaSemasa) return sock.sendMessage(jid, { text: `❌ Bidaan mesti LEBIH TINGGI dari RM ${bidaDB[jid].hargaSemasa.toLocaleString()}!` }, { quoted: m });
 
-                // Update data harga & rekodkan ID pembida tertinggi
-                bidaState[jid].hargaSemasa = bidAmount;
-                bidaState[jid].pembidaTertinggi = senderId;
+                bidaDB[jid].hargaSemasa = bidAmount;
+                bidaDB[jid].pemenang = senderId; // Lock ID Pembida
 
-                return sock.sendMessage(jid, { 
-                    text: `📢 *BIDAAN DITERIMA!*\n@${senderId.split('@')[0]} meletakkan bidaan sebanyak *RM ${bidAmount.toLocaleString()}*!`, 
-                    mentions: [senderId] 
-                }, { quoted: m });
+                return sock.sendMessage(jid, { text: `📢 *BIDAAN DITERIMA!*\n@${senderId.split('@')[0]} meletakkan bidaan sebanyak *RM ${bidAmount.toLocaleString()}*!`, mentions: [senderId] }, { quoted: m });
             }
 
         } catch (err) {
