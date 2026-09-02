@@ -3,20 +3,17 @@ import { askAiri, judgeCourtAppeal, appraiseItem, verifyPantun } from '../lib/ge
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// 🔄 KOLEKSI 11 API KEY GEMINI (SISTEM ROTASI/UNLIMITED)
-const GEMINI_KEYS = [
-    'AQ.Ab8RN6K1-yJQ_KYUEdrhVgacGogHwRweJX-A8F5pjYQs7Dr1nw',
-    'AQ.Ab8RN6IbN-Kka-F8Q7yF-DCjJbdQd5IgZizAgI3YSp_YptsZxQ',
-    'AQ.Ab8RN6Lfs5SNYXP4ifzubwN2G6QP2jE-yU-YhyIAQ4GknQYZqQ',
-    'AQ.Ab8RN6JUzR_oYM4cOUxRmGjOkEqfZxCwRN7h2HZ0UaQ5ccTnuA',
-    'AQ.Ab8RN6JUTKZEVYFCcrgIVC_hSx8kfbsryY-IhWqq-mzmKt1Lyg',
-    'AQ.Ab8RN6L2194bi54DXPi52SNB2xlIWDxA3i0MVnMD_QCQhY4LFw',
-    'AQ.Ab8RN6IRvi7BBsQe1eBeE96YQRzXa7yN9r6cI1fJMuGv0D1sSg',
-    'AQ.Ab8RN6Jki0zRkG6Z3FqdA_j6jibOBaErN3iz_MJ136OPAcqo7w',
-    'AQ.Ab8RN6I7zeMVNANx2wdKWxlZ_COUvf8IMXMZhJo-BLeNtuNMeA',
-    'AQ.Ab8RN6IN_IgJitHmI8jH_VyEl8ybGRfIbklQLzhgH5T84yM3iA',
-    'AQ.Ab8RN6IfjhnWADdxycArhrpv6-B2cAnjRMnu8xze8NQeRflluw'
-];
+// 🔄 SISTEM ROTASI AUTOMATIK BACA DARI RENDER / CONFIG
+const rawKeys = process.env.GEMINI_API_KEY || config.geminiKey || config.geminiApiKey || '';
+const apiKeys = rawKeys.split(/[\s,]+/).filter(k => k.trim().length > 0);
+let currentKeyIndex = 0;
+
+function getGenAI() {
+    if (apiKeys.length === 0) throw new Error("Tiada API Key dikesan di Render/Config!");
+    const activeKey = apiKeys[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
+    return new GoogleGenerativeAI(activeKey);
+}
 
 export default {
     name: 'airi_mega',
@@ -26,7 +23,7 @@ export default {
             const jid = m.key.remoteJid;
             const senderJid = m.key.participant || jid;
             const cleanSender = String(senderJid).replace(/[^0-9]/g, '');
-            const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.imageMessage?.caption || '';
+            const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.imageMessage?.caption || m.message?.videoMessage?.caption || '';
             const args = teks.trim().split(' ').slice(1);
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
             const botJid = (sock.user?.id?.split(':')[0] || '') + '@s.whatsapp.net';
@@ -147,12 +144,10 @@ Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Waj
                 let ceritaUlasan = "";
                 let hargaTaksiran = 0;
 
-                // PILIH API KEY SECARA RAWAK DARI TATASUSUNAN
-                const activeKey = GEMINI_KEYS[Math.floor(Math.random() * GEMINI_KEYS.length)];
-                const genAI = new GoogleGenerativeAI(activeKey);
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                // TUKAR: Guna fungsi getGenAI() & model versi terkini
+                const genAI = getGenAI();
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-                // JIKA PENGGUNA HANTAR ATAU REPLY GAMBAR
                 if (isImage || isQuotedImage) {
                     const msgToDownload = isQuotedImage 
                         ? { message: m.message.extendedTextMessage.contextInfo.quotedMessage } 
@@ -195,7 +190,6 @@ Harga: [Hanya angka integer harga tawaran beli, tanpa RM atau koma]`;
                     hargaTaksiran = mHarga ? parseInt(mHarga[1]) : (Math.floor(Math.random() * 1500) + 100);
 
                 } else {
-                    // JIKA TEKS SAHAJA TANPA GAMBAR
                     const promptTeks = `Kau adalah Airi, penilai pajak gadai sarkastik. Pemain mahu gadai barang ini: "${barangText}".
 Nilaikan harga beli logik (RM 50 - RM 30,000) mengikut nama barang tersebut.
 Wajib balas dalam format ini sahaja:
@@ -215,11 +209,9 @@ Harga: [Hanya angka integer harga, tanpa RM atau koma]`;
                     hargaTaksiran = mHarga ? parseInt(mHarga[1]) : (Math.floor(Math.random() * 2000) + 200);
                 }
 
-                // Had keselamatan (Clamp value)
                 if (isNaN(hargaTaksiran) || hargaTaksiran <= 0) hargaTaksiran = 150;
                 if (hargaTaksiran > 50000) hargaTaksiran = 50000;
 
-                // Masukkan wang ke poket pengguna
                 user.wallet = (user.wallet || 0) + hargaTaksiran;
                 await db.saveUser(user);
 
