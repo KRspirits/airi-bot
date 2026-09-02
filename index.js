@@ -208,7 +208,12 @@ async function startAiriBot() {
         const m = messages[0];
         if (!m.message || m.key.fromMe) return;
 
-        const teks = m.message.conversation || m.message.extendedTextMessage?.text || '';
+      const teks = m.message?.conversation || 
+             m.message?.extendedTextMessage?.text || 
+             m.message?.imageMessage?.caption || 
+             m.message?.videoMessage?.caption || 
+             m.message?.viewOnceMessageV2?.message?.imageMessage?.caption || 
+             '';
         const jid = m.key.remoteJid;
         const senderJid = m.key.participant || jid;
         const senderName = m.pushName || 'Warga Gelap';
