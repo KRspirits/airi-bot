@@ -1,11 +1,15 @@
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
-const fs = require('fs');
-const path = require('path');
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegPath from 'ffmpeg-static';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
 
-// Konfigurasi path binary FFmpeg untuk Render
+// Konfigurasi binary FFmpeg untuk Render
 ffmpeg.setFfmpegPath(ffmpegPath);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function compressVideo(inputPath, outputPath) {
     return new Promise((resolve, reject) => {
@@ -31,11 +35,11 @@ function compressVideo(inputPath, outputPath) {
     });
 }
 
-module.exports = {
-    name: 'Shadow Status',
-    command: ['hd', 'purestatus'],
+export default {
+    name: 'ShadowStatus HD',
+    command: ['shadowstatus', 'hd'],
     category: 'tools',
-    description: 'Mampatkan video status HD tanpa pecah',
+    description: 'Mampatkan video WhatsApp Status kualiti HD tanpa pecah',
 
     async execute({ sock, m, args }) {
         const isQuotedVideo = m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage;
@@ -43,7 +47,7 @@ module.exports = {
 
         if (!isDirectVideo && !isQuotedVideo) {
             return sock.sendMessage(m.key.remoteJid, {
-                text: '❌ *Sila reply video* atau *hantar video bersama caption* `.hd`'
+                text: '❌ *Sila reply video* atau *hantar video bersama kapsyen* `.shadowstatus` atau `.hd`'
             }, { quoted: m });
         }
 
@@ -67,13 +71,13 @@ module.exports = {
 
             await sock.sendMessage(jid, {
                 video: fs.readFileSync(tempOut),
-                caption: '✨ *Video PureStatus HD Siap!*\n\nFormat telah diselaraskan khas untuk WhatsApp Status tanpa pecah.'
+                caption: '⚡ *ShadowStatus HD Berjaya Diproses!*\n\nFormat video telah dioptimumkan untuk WhatsApp Status tanpa pecah.'
             }, { quoted: m });
 
             await sock.sendMessage(jid, { react: { text: '✅', key: m.key } });
 
         } catch (error) {
-            console.error('[PureStatus Error]:', error);
+            console.error('[ShadowStatus Error]:', error);
             await sock.sendMessage(jid, { text: '❌ Ralat ketika memproses video.' }, { quoted: m });
             await sock.sendMessage(jid, { react: { text: '❌', key: m.key } });
         } finally {
