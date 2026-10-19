@@ -27,7 +27,7 @@ export default {
             const statusPlat = user?.vehicle?.plate ? `[${user.vehicle.plate}]` : '';
 
             const menuText = `
-╭━━━「 🌸 𝗔𝗜𝗥𝗜 𝗖𝗬𝗕𝗘𝗥 𝗢𝗦 𝗩𝟱.𝟬 」━━━
+╭━━━「 🌸 𝗔𝗜𝗥𝗜 𝗖𝗬𝗕𝗘𝗥 𝗢𝗦 」━━━
 ┃ 👤 𝗪𝗮𝗿𝗴𝗮 : @${cleanSender}
 ┃ 💵 𝗧𝘂𝗻𝗮𝗶 : RM ${cashRingkas} 
 ┃ 🏦 𝗕𝗮𝗻𝗸  : RM ${bankRingkas}
