@@ -5,7 +5,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 
-// Konfigurasi binary static FFmpeg untuk Linux Render
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,16 +16,18 @@ function compressVideo(inputPath, outputPath) {
             .outputOptions([
                 '-c:v libx264',
                 '-profile:v high',
-                '-level 4.0',
+                '-level 4.1',
                 '-pix_fmt yuv420p',
-                '-preset faster',
-                '-crf 22',
-                '-maxrate 2800k',
-                '-bufsize 5000k',
+                '-preset slow',
+                '-crf 19',
+                '-maxrate 3500k',
+                '-bufsize 6000k',
                 '-r 30',
-                '-vf scale=-2:min(ih\\,720)',
+                // Penskalaan pintar: 720p mengikut orientasi (landscape vs portrait)
+                "-vf scale='if(gt(iw,ih),-2,720)':'if(gt(iw,ih),720,-2)':force_original_aspect_ratio=decrease",
                 '-c:a aac',
                 '-b:a 128k',
+                '-ar 44100',
                 '-movflags +faststart'
             ])
             .save(outputPath)
@@ -39,24 +40,20 @@ export default {
     name: 'hd',
     aliases: ['shadowstatus', 'purestatus'],
     category: 'tools',
-    desc: 'Mampatkan video kualiti HD WhatsApp Status',
+    desc: 'Mampatkan video kualiti HD sebenar untuk WhatsApp Status',
 
-    async execute({ sock, m, user, db, args }) {
+    async execute({ sock, m, args }) {
         const jid = m.key.remoteJid;
-        console.log(`[SHADOWSTATUS] Menerima proses kompresi daripada ${jid}`);
-
-        // Semak sama ada quoted video atau direct video
         const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage;
         const isQuotedVideo = quoted?.videoMessage;
         const isDirectVideo = m.message?.videoMessage;
 
         if (!isDirectVideo && !isQuotedVideo) {
             return sock.sendMessage(jid, {
-                text: '⚠️ *Cara Guna:*\nReply mana-mana video dengan `.hd` atau hantar video bersama kapsyen `.hd`'
+                text: '⚠️ Sila reply mana-mana video dengan `.hd` atau hantar video bersama kapsyen `.hd`'
             }, { quoted: m });
         }
 
-        // Reaksi tanda mula memproses
         await sock.sendMessage(jid, { react: { text: '⏳', key: m.key } }).catch(() => {});
 
         const tempDir = process.env.RENDER ? '/tmp' : __dirname;
@@ -73,17 +70,28 @@ export default {
             fs.writeFileSync(tempIn, buffer);
 
             await compressVideo(tempIn, tempOut);
+            const videoBuffer = fs.readFileSync(tempOut);
 
+            // 1. Hantar video HD kepada pengguna
             await sock.sendMessage(jid, {
-                video: fs.readFileSync(tempOut),
-                caption: '⚡ *ShadowStatus HD Berjaya Diproses!*\n\nVideo telah dioptimumkan khas untuk WhatsApp Status tanpa pecah. Sila download dan upload ke status anda.'
+                video: videoBuffer,
+                caption: '⚡ *ShadowStatus HD Sedia!*\n\n💡 *Tips Elak Kabur:*\nSemasa upload ke Status di WhatsApp, pastikan anda tekan ikon *HD* di bahagian atas skrin sebelum tekan hantar.'
             }, { quoted: m });
+
+            // 2. Jika taip ".hd status", bot akan terus pos video ke WhatsApp Status akaun bot secara automatik
+            if (args && args.includes('status')) {
+                await sock.sendMessage('status@broadcast', {
+                    video: videoBuffer,
+                    caption: '⚡ Posted via ShadowStatus HD'
+                });
+                await sock.sendMessage(jid, { text: '✅ Video berjaya dimuat naik terus ke Status WhatsApp!' }, { quoted: m });
+            }
 
             await sock.sendMessage(jid, { react: { text: '✅', key: m.key } }).catch(() => {});
 
         } catch (error) {
             console.error('[SHADOWSTATUS ERROR]:', error);
-            await sock.sendMessage(jid, { text: '❌ Ralat ketika memproses mampatan video.' }, { quoted: m });
+            await sock.sendMessage(jid, { text: '❌ Ralat ketika memproses video.' }, { quoted: m });
             await sock.sendMessage(jid, { react: { text: '❌', key: m.key } }).catch(() => {});
         } finally {
             if (fs.existsSync(tempIn)) fs.unlinkSync(tempIn);
