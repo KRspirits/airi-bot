@@ -2,6 +2,7 @@ import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeys
 import pino from 'pino';
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import qrcodeTerminal from 'qrcode-terminal';
 import QRCode from 'qrcode';
@@ -30,8 +31,8 @@ app.get('/ping', (_, res) => res.send('pong'));
 app.get('/health', (_, res) => res.json({ ok: true, connected: isConnected, mongo: db.isMongo(), plugins: commands.size, up: Math.round(process.uptime()) }));
 app.get('/', async (_, res) => {
     if (isConnected) return res.send(page(`<h2>🌸 Airi's Corner Cyber OS</h2><p style="color:#38e8ff">🟢 Bot aktif dan bersedia.</p><small>${commands.size} command${db.isMongo() ? '' : ' | ⚠️ tiada MongoDB: data hilang bila restart'}</small>`));
-    if (currentQR) return res.send(page(`<h2>⚡ Imbas QR Airi</h2><p style="color:#94a3b8;font-size:14px">WhatsApp ➜ Linked Devices ➜ Link a Device</p><img src="${await QRCode.toDataURL(currentQR)}" style="width:280px;height:280px;border-radius:16px;background:#fff;padding:12px"/><p style="color:#ff5555;font-size:12px;margin-top:10px;">Refresh page jika QR tamat tempoh.</p>`));
-    res.send(page('<h2>⏳ Menjana QR...</h2><p>Muat semula sebentar lagi.</p>'));
+    if (currentQR) return res.send(page(`<h2>⚡ Imbas QR Airi</h2><p style="color:#94a3b8;font-size:14px">WhatsApp ➜ Linked Devices ➜ Link a Device</p><img src="${await QRCode.toDataURL(currentQR)}" style="width:280px;height:280px;border-radius:16px;background:#fff;padding:12px"/><p style="color:#ff5555;font-size:12px;margin-top:10px;">Halaman akan auto-kemas kini bila QR baharu dijana.</p>`));
+    res.send(page('<h2>⏳ Menjana QR...</h2><p>Sila refresh laman web ini dalam 5 saat.</p>'));
 });
 app.listen(config.port, () => console.log(`[HTTP] Server aktif di port ${config.port}`));
 
@@ -41,29 +42,66 @@ app.listen(config.port, () => console.log(`[HTTP] Server aktif di port ${config.
 let backoff = 2000, connecting = false;
 
 async function connect() {
-    if (connecting) return; connecting = true;
+    if (connecting) return; 
+    connecting = true;
     try {
-        try { sock?.ev?.removeAllListeners?.(); sock?.end?.(undefined); } catch { /* soket lama */ }
-        // Session: MongoDB bila ada (tak perlu scan QR lepas restart Render), jika tidak fail tempatan.
-        const auth = db.isMongo() ? await useMongoAuthState() : await useMultiFileAuthState('./session_airi');
-        sock = makeWASocket({ auth: auth.state, logger: pino({ level: 'silent' }), browser: ['Airi OS', 'Safari', '2.0.0'], markOnlineOnConnect: false });
+        try { sock?.ev?.removeAllListeners?.(); sock?.end?.(undefined); } catch { /* tutup soket lama */ }
+
+        // Pengurusan Sesi: MongoDB jika ada, jika tidak gunakan storan fail setempat
+        let auth;
+        try {
+            auth = db.isMongo() ? await useMongoAuthState() : await useMultiFileAuthState('./session_airi');
+        } catch (authErr) {
+            console.error('Gagal memuatkan auth state lama. Mengosongkan fail sesi:', authErr.message);
+            if (fs.existsSync('./session_airi')) fs.rmSync('./session_airi', { recursive: true, force: true });
+            auth = await useMultiFileAuthState('./session_airi');
+        }
+
+        sock = makeWASocket({ 
+            auth: auth.state, 
+            logger: pino({ level: 'silent' }), 
+            browser: ['Airi OS', 'Safari', '2.0.0'], 
+            markOnlineOnConnect: false 
+        });
+        
         sock.ev.on('creds.update', auth.saveCreds);
 
-        sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+        sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
             if (qr) { 
                 currentQR = qr; 
                 isConnected = false; 
                 const renderLink = process.env.RENDER_EXTERNAL_URL || `http://localhost:${config.port}`;
-                console.log(`\n⚡ [QR READY] Buka link ini di browser telefon/PC untuk imbas QR:\n👉 ${renderLink}\n`);
+                console.log(`\n⚡ [QR DIJANA] Buka link ini di browser telefon/PC untuk imbas:\n👉 ${renderLink}\n`);
                 qrcodeTerminal.generate(qr, { small: true }); 
             }
-            if (connection === 'open') { isConnected = true; currentQR = ''; backoff = 2000; console.log('✅ Airi selamat terhubung ke WhatsApp!'); }
+            if (connection === 'open') { 
+                isConnected = true; 
+                currentQR = ''; 
+                backoff = 2000; 
+                console.log('✅ Airi selamat terhubung ke WhatsApp!'); 
+            }
             if (connection === 'close') {
                 isConnected = false;
                 const code = lastDisconnect?.error?.output?.statusCode;
-                if (code === DisconnectReason.loggedOut) return console.log('🚪 Logged out. Padam session (folder session_airi / koleksi auth Mongo) dan imbas QR semula.');
+                
+                // Jika WhatsApp force logout, buang folder fail rosak dan minta QR baru
+                if (code === DisconnectReason.loggedOut) {
+                    console.log('🚪 Logged out dikesan. Memadam fail sesi lama untuk menjana QR baharu...');
+                    try {
+                        if (fs.existsSync('./session_airi')) {
+                            fs.rmSync('./session_airi', { recursive: true, force: true });
+                        }
+                    } catch (e) {
+                        console.error('Gagal memadam sesi:', e.message);
+                    }
+                    connecting = false;
+                    setTimeout(() => connect(), 2000);
+                    return;
+                }
+
                 console.log(`⚠️ Sambungan terputus (${code ?? '?'}). Sambung semula dalam ${backoff / 1000}s...`);
-                setTimeout(() => { connecting = false; connect(); }, backoff); backoff = Math.min(backoff * 2, 30000);
+                setTimeout(() => { connecting = false; connect(); }, backoff); 
+                backoff = Math.min(backoff * 2, 30000);
             }
         });
 
@@ -72,7 +110,9 @@ async function connect() {
             if (type !== 'notify') return;
             for (const m of messages) onMessage(m).catch(e => console.error('[MESSAGE ERROR]', e));
         });
-    } finally { connecting = false; }
+    } finally { 
+        connecting = false; 
+    }
 }
 
 // =========================================================================
@@ -83,7 +123,7 @@ const chatCooldown = new Map();
 async function onMessage(m) {
     if (!m.message || m.key.remoteJid === 'status@broadcast') return;
     
-    m.message = unwrap(m.message); // buka bungkusan ephemeral/viewOnce supaya SEMUA plugin nampak teks
+    m.message = unwrap(m.message); // Buka viewOnce / ephemeral teks
     const jid = m.key.remoteJid;
     const isMe = Boolean(m.key.fromMe);
     const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : (m.key.participant || jid);
@@ -94,7 +134,9 @@ async function onMessage(m) {
 
     const parsed = parseCmd(teks, config.prefix);
     if (parsed) {
-        const action = commands.get(parsed.cmd); if (!action) return;
+        const action = commands.get(parsed.cmd); 
+        if (!action) return;
+        
         if (state.maintenance && !isOwner(senderJid)) {
             if (allow('maint:' + jid, 60000)) await sock.sendMessage(jid, { text: '🛠️ Airi tengah dikemaskini sekejap. Cuba lagi nanti ya!' }, { quoted: m });
             return;
@@ -114,10 +156,10 @@ async function onMessage(m) {
         return;
     }
 
-    // Jika mesej daripada diri sendiri dan bukan command, hentikan supaya AI tidak bersembang sendiri
+    // Jika mesej dari diri sendiri dan bukan arahan, abaikan sembang AI
     if (isMe) return;
 
-    // Airi menyampuk (dengan had masa supaya tak spam)
+    // Airi menyampuk sembang
     const low = teks.toLowerCase();
     const hot = ['kalah', 'sengkek', 'scam', 'koyak', 'pinjam seratus', 'sedih', 'takde duit', 'barai'].some(k => low.includes(k));
     if (!(low.includes('airi') || (hot && Math.random() < 0.06 && teks.length > 5))) return;
@@ -132,10 +174,10 @@ async function onMessage(m) {
     } catch (err) { console.error('[AI CHAT ERROR]', err.message); }
 }
 
-// Selepas command: kuatkuasa acara/Hari Pembersihan, log kejadian, kira misi harian.
+// Selepas command
 async function afterCommand({ m, jid, senderJid, senderName, cmd, action, before }) {
     try {
-        const fresh = await db.getUser(senderJid, senderName); // baca semula supaya perubahan plugin tak hilang
+        const fresh = await db.getUser(senderJid, senderName);
         const isCrime = CRIME_CMDS.has(cmd) || CRIME_PLUGINS.has(action.name);
         const res = applyEffects({ cmd, isCrime, user: fresh, before, event: activeEvent(), purge: purgeActive() });
         bump(fresh, cmd);
