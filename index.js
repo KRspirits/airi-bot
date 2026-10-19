@@ -30,7 +30,7 @@ app.get('/ping', (_, res) => res.send('pong'));
 app.get('/health', (_, res) => res.json({ ok: true, connected: isConnected, mongo: db.isMongo(), plugins: commands.size, up: Math.round(process.uptime()) }));
 app.get('/', async (_, res) => {
     if (isConnected) return res.send(page(`<h2>🌸 Airi's Corner Cyber OS</h2><p style="color:#38e8ff">🟢 Bot aktif dan bersedia.</p><small>${commands.size} command${db.isMongo() ? '' : ' | ⚠️ tiada MongoDB: data hilang bila restart'}</small>`));
-    if (currentQR) return res.send(page(`<h2>⚡ Imbas QR Airi</h2><p style="color:#94a3b8;font-size:14px">WhatsApp ➜ Linked Devices ➜ Link a Device</p><img src="${await QRCode.toDataURL(currentQR)}" style="width:280px;height:280px;border-radius:16px;background:#fff;padding:12px"/>`));
+    if (currentQR) return res.send(page(`<h2>⚡ Imbas QR Airi</h2><p style="color:#94a3b8;font-size:14px">WhatsApp ➜ Linked Devices ➜ Link a Device</p><img src="${await QRCode.toDataURL(currentQR)}" style="width:280px;height:280px;border-radius:16px;background:#fff;padding:12px"/><p style="color:#ff5555;font-size:12px;margin-top:10px;">Refresh page jika QR tamat tempoh.</p>`));
     res.send(page('<h2>⏳ Menjana QR...</h2><p>Muat semula sebentar lagi.</p>'));
 });
 app.listen(config.port, () => console.log(`[HTTP] Server aktif di port ${config.port}`));
@@ -50,7 +50,13 @@ async function connect() {
         sock.ev.on('creds.update', auth.saveCreds);
 
         sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
-            if (qr) { currentQR = qr; isConnected = false; console.log('\n⚡ [QR] Imbas di bawah atau buka laman web:'); qrcodeTerminal.generate(qr, { small: true }); }
+            if (qr) { 
+                currentQR = qr; 
+                isConnected = false; 
+                const renderLink = process.env.RENDER_EXTERNAL_URL || `http://localhost:${config.port}`;
+                console.log(`\n⚡ [QR READY] Buka link ini di browser telefon/PC untuk imbas QR:\n👉 ${renderLink}\n`);
+                qrcodeTerminal.generate(qr, { small: true }); 
+            }
             if (connection === 'open') { isConnected = true; currentQR = ''; backoff = 2000; console.log('✅ Airi selamat terhubung ke WhatsApp!'); }
             if (connection === 'close') {
                 isConnected = false;
@@ -75,10 +81,15 @@ async function connect() {
 const chatCooldown = new Map();
 
 async function onMessage(m) {
-    if (!m.message || m.key.fromMe || m.key.remoteJid === 'status@broadcast') return;
+    if (!m.message || m.key.remoteJid === 'status@broadcast') return;
+    
     m.message = unwrap(m.message); // buka bungkusan ephemeral/viewOnce supaya SEMUA plugin nampak teks
-    const jid = m.key.remoteJid, senderJid = m.key.participant || jid, senderName = m.pushName || 'Warga Gelap';
+    const jid = m.key.remoteJid;
+    const isMe = Boolean(m.key.fromMe);
+    const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : (m.key.participant || jid);
+    const senderName = isMe ? 'Owner' : (m.pushName || 'Warga Gelap');
     const teks = extractText(m.message);
+    
     if (jid.endsWith('@g.us')) addGroup(jid);
 
     const parsed = parseCmd(teks, config.prefix);
@@ -88,10 +99,12 @@ async function onMessage(m) {
             if (allow('maint:' + jid, 60000)) await sock.sendMessage(jid, { text: '🛠️ Airi tengah dikemaskini sekejap. Cuba lagi nanti ya!' }, { quoted: m });
             return;
         }
-        if (!allow(senderJid, 1500)) return sock.sendMessage(jid, { react: { text: '⏳', key: m.key } }).catch(() => {});
+        if (!isMe && !allow(senderJid, 1500)) return sock.sendMessage(jid, { react: { text: '⏳', key: m.key } }).catch(() => {});
 
         const user = await db.getUser(senderJid, senderName), before = snapshot(user);
-        try { await action.execute({ sock, m, user, db }); }
+        try { 
+            await action.execute({ sock, m, user, db, args: parsed.args || [] }); 
+        }
         catch (err) {
             console.error(`[COMMAND ERROR] .${parsed.cmd}:`, err);
             await sock.sendMessage(jid, { text: 'Aduh, ada wayar tersangkut sekejap hehe~ Cuba lagi kejap lagi ya! 🥺' }, { quoted: m }).catch(() => {});
@@ -100,6 +113,9 @@ async function onMessage(m) {
         await afterCommand({ m, jid, senderJid, senderName, cmd: parsed.cmd, action, before });
         return;
     }
+
+    // Jika mesej daripada diri sendiri dan bukan command, hentikan supaya AI tidak bersembang sendiri
+    if (isMe) return;
 
     // Airi menyampuk (dengan had masa supaya tak spam)
     const low = teks.toLowerCase();
