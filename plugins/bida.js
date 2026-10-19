@@ -1,3 +1,6 @@
+import { speak } from '../lib/voice.js';
+import { config } from '../config.js';
+import { line } from '../lib/airi_lines.js';
 // State lelongan global (Diubah kepada objek per-group untuk elak timer crash)
 export const auctionState = {};
 
@@ -88,6 +91,7 @@ export async function triggerRandomAuction(sock, chatId) {
 👉 Taip: \`.bida [jumlah_rm]\` untuk membida!`;
 
     await sock.sendMessage(chatId, { text: notis });
+    if (config.voice) speak(sock, chatId, line('auction')).catch(() => {});
 
     // Tamat Lelongan Selepas 60 Saat
     setTimeout(async () => {
@@ -105,6 +109,8 @@ export async function triggerRandomAuction(sock, chatId) {
         const hasilLoot = AUCTION_LOOT_POOL[Math.floor(Math.random() * AUCTION_LOOT_POOL.length)];
 
         pemenang.wallet += hasilLoot.value;
+        pemenang.stats = pemenang.stats || {};
+        pemenang.stats.lelong_menang = (pemenang.stats.lelong_menang || 0) + 1;
         await db.saveUser(pemenang);
 
         const roaster = hasilLoot.type === "untung"

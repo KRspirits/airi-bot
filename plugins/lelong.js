@@ -3,7 +3,7 @@ const lelongGlobalState = {};
 
 export default {
     name: 'lelong_kontena',
-    alias: ['bida'],
+    alias: [],
     execute: async ({ sock, m, user, db }) => {
         try {
             const jid = m.key.remoteJid;

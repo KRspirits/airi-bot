@@ -88,7 +88,7 @@ export default {
             return sock.sendMessage(jid, { text: '⛓️ Kau dalam lokap, tak boleh baling magnet!' }, { quoted: m });
         }
 
-        const cd = 40 * 1000;
+        const cd = 90 * 1000;
         const lastRun = cooldownMagnet.get(senderId) || 0;
         if (now - lastRun < cd) {
             return sock.sendMessage(jid, { text: `⏳ Tali sangkut lumpur! Tunggu ${Math.ceil((cd - (now - lastRun)) / 1000)} saat lagi.` }, { quoted: m });
@@ -96,6 +96,20 @@ export default {
         cooldownMagnet.set(senderId, now);
 
         const currentTier = user.magnet?.tier || 1;
+        user.stats = user.stats || {};
+        user.stats.magnet_tarik = (user.stats.magnet_tarik || 0) + 1;
+
+        // Harta karun: jarang (0.5% x tier), nilai naik mengikut tier
+        if (Math.random() < 0.005 * currentTier) {
+            const nilai = Math.round((5000 + Math.random() * 25000) * (0.8 + currentTier * 0.1) / 10) * 10;
+            user.wallet += nilai;
+            user.stats.magnet_treasure = (user.stats.magnet_treasure || 0) + 1;
+            await db.saveUser(user);
+            return sock.sendMessage(jid, {
+                text: `💎 *HARTA KARUN!*\nMagnet kau tarik sesuatu berkilau dari dasar sungai!\nNilai: *+RM ${nilai.toLocaleString()}*`
+            }, { quoted: m });
+        }
+
         const roll = Math.random();
 
         // Peluang Peti Misteri mengikut tier
@@ -108,7 +122,7 @@ export default {
         }
 
         // Loot Besi Buruk Kilo
-        const kutipanKg = Math.floor((Math.random() * 20 + 5) * currentTier);
+        const kutipanKg = Math.floor((Math.random() * 20 + 5) * (1 + (currentTier - 1) * 0.15)); // naik perlahan ikut tier
         user.inventory.scrap_metal = (user.inventory.scrap_metal || 0) + kutipanKg;
         await db.saveUser(user);
 

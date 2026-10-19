@@ -10,42 +10,28 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function renderOptimizedTarget(inputPath, outputPath) {
+function compressVideo(inputPath, outputPath) {
+    // Status WhatsApp ialah menegak 9:16. Sasaran 1080x1920 supaya WhatsApp ada banyak data untuk dimampatkan.
+    // Video landskap dimuatkan dalam kanvas 1080x1920 (letterbox hitam), tanpa potong kandungan.
+    // Video kecil TIDAK dibesarkan lebih daripada sumber asal untuk elak kualiti palsu.
+    const vf = "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1";
     return new Promise((resolve, reject) => {
         ffmpeg(inputPath)
             .outputOptions([
-                // Enkoder asas yang disukai enjin transcode WhatsApp
-                '-c:v libx264',
-                '-profile:v baseline',
-                '-level 3.0',
-                '-pix_fmt yuv420p',
-                '-preset ultrafast',
-
-                // Hadkan kadar bit tepat pada siling pemampat WhatsApp
-                // Jika bitrate terlalu tinggi, WhatsApp akan hancurkan kualiti
-                '-b:v 1100k',
-                '-maxrate 1200k',
-                '-bufsize 1500k',
-
-                // Kunci 30fps dan susunan keyframe pendek
-                '-r 30',
-                '-g 30',
-                '-keyint_min 30',
-                '-sc_threshold 0',
-
-                // Skala 720p tegak + Penapis Penajaman (Unsharp Mask)
-                // Penapis ini menaikkan kontras garisan supaya apabila WhatsApp mampatkan, butiran kekal kelihatan
-                "-vf scale=720:-2:force_original_aspect_ratio=decrease,unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=1.5",
-
-                // Audio
-                '-c:a aac',
-                '-b:a 64k',
-                '-ar 44100',
-                '-ac 1',
-
-                // Hadkan durasi kepada 29 saat (elak pemotongan automatik Meta)
-                '-t 29',
-                '-movflags +faststart'
+                '-c:v', 'libx264',
+                '-profile:v', 'high',
+                '-level', '4.2',
+                '-pix_fmt', 'yuv420p',
+                '-preset', 'medium',
+                '-crf', '18',
+                '-maxrate', '6000k',
+                '-bufsize', '12000k',
+                '-r', '30',
+                '-vf', vf,
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-ar', '44100',
+                '-movflags', '+faststart'
             ])
             .save(outputPath)
             .on('end', () => resolve(outputPath))
@@ -54,12 +40,12 @@ function renderOptimizedTarget(inputPath, outputPath) {
 }
 
 export default {
-    name: 'hd',
-    aliases: ['shadowstatus', 'purestatus'],
+    name: 'shadowstatus',
+    alias: ['hd', 'purestatus'],
     category: 'tools',
-    desc: 'Optimumkan video untuk mengurangkan kekaburan Status WhatsApp',
+    desc: 'Mampatkan video kualiti HD sebenar untuk WhatsApp Status',
 
-    async execute({ sock, m, user, db, args }) {
+    async execute({ sock, m, args }) {
         const jid = m.key.remoteJid;
         const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage;
         const isQuotedVideo = quoted?.videoMessage;
@@ -67,7 +53,7 @@ export default {
 
         if (!isDirectVideo && !isQuotedVideo) {
             return sock.sendMessage(jid, {
-                text: '⚠️ *Cara Guna:*\nReply video (bawah 30s) dengan `.hd`'
+                text: '⚠️ Sila reply mana-mana video dengan `.shadowstatus` atau hantar video bersama kapsyen `.shadowstatus`'
             }, { quoted: m });
         }
 
@@ -75,8 +61,8 @@ export default {
 
         const tempDir = process.env.RENDER ? '/tmp' : __dirname;
         const timestamp = Date.now();
-        const tempIn = path.join(tempDir, `raw_${timestamp}.mp4`);
-        const tempOut = path.join(tempDir, `opt_${timestamp}.mp4`);
+        const tempIn = path.join(tempDir, `in_${timestamp}.mp4`);
+        const tempOut = path.join(tempDir, `out_${timestamp}.mp4`);
 
         try {
             const mediaSource = isQuotedVideo 
@@ -86,19 +72,21 @@ export default {
             const buffer = await downloadMediaMessage(mediaSource, 'buffer', {});
             fs.writeFileSync(tempIn, buffer);
 
-            await renderOptimizedTarget(tempIn, tempOut);
+            await compressVideo(tempIn, tempOut);
             const videoBuffer = fs.readFileSync(tempOut);
 
-            // Hantar video yang telah dioptimumkan
+            // 1. Hantar video HD kepada pengguna
             await sock.sendMessage(jid, {
-                video: videoBuffer,
-                caption: '✅ *Video Sedia!*\n\n📲 *Cara Muat Naik Terbaik:*\n1. Tekan butang **Forward (Anak Panah Kanan)** di sebelah video ini > Pilih **Status Saya**.\n2. Jika anda simpan ke telefon dan muat naik manual dari galeri, pastikan anda menekan ikon **[HD]** di bar atas editor Status WhatsApp sebelum menghantar.'
+                document: videoBuffer, mimetype: 'video/mp4', fileName: 'airi_shadowstatus_hd.mp4',
+                caption: '⚡ *ShadowStatus HD Sedia!*\n\n💡 *Tips Elak Kabur:*\nSemasa upload ke Status di WhatsApp, pastikan anda tekan ikon *HD* di bahagian atas skrin sebelum tekan hantar.'
             }, { quoted: m });
 
+            // Sengaja TIDAK auto-post ke Status. Ia akan jadi status akaun bot, dan WhatsApp mampatkan semula bila muat naik.
+            // Simpan fail dokumen ini, kemudian upload dari galeri ke Status dan tekan HD.
             await sock.sendMessage(jid, { react: { text: '✅', key: m.key } }).catch(() => {});
 
         } catch (error) {
-            console.error('[OPTIMIZER ERROR]:', error);
+            console.error('[SHADOWSTATUS ERROR]:', error);
             await sock.sendMessage(jid, { text: '❌ Ralat ketika memproses video.' }, { quoted: m });
             await sock.sendMessage(jid, { react: { text: '❌', key: m.key } }).catch(() => {});
         } finally {

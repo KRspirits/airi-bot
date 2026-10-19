@@ -107,6 +107,10 @@ export default {
 📸 *[ 𝗭𝗢𝗡 𝟭𝟯: 𝗕𝗘𝗥𝗜𝗧𝗔 & 𝗝𝗨𝗔𝗟 𝗚𝗔𝗠𝗕𝗔𝗥 ]*
  ✧ .berita_cyber ︲ .jual_gambar (hantar gambar barang)
  ✧ .setuju (sahkan jualan dalam 60 saat)
+
+🏆 *[ 𝗭𝗢𝗡 𝟭𝟰: 𝗣𝗘𝗡𝗖𝗔𝗣𝗔𝗜𝗔𝗡 & 𝗩𝗜𝗗𝗘𝗢 ]*
+ ✧ .achievement ︲ .pencapaian (kad pencapaian)
+ ✧ .shadowstatus (hantar video, dapat versi HD untuk Status)
 ─────────────────────────────
 `.trim();
 

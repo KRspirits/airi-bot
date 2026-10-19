@@ -1,4 +1,5 @@
-import { isOwner } from '../config.js';
+import { isOwner, config } from '../config.js';
+import { line } from '../lib/airi_lines.js';
 import { state, saveState, activeEvent, purgeActive } from '../lib/state.js';
 import { supported } from '../lib/effects.js';
 import { extractText, parseCmd, mentions, num, rm } from '../lib/util.js';
@@ -86,13 +87,18 @@ export default {
                 if (!supported(kod)) return reply(`⚠️ ${kod} belum ada kesan sebenar dalam enjin. Pilih acara lain.`);
                 state.event = { ...VETO_EVENTS[kod], code: kod, expiresAt: Date.now() + days * 864e5, days }; saveState();
                 const ev = state.event;
+                if (config.voice) for (const g of new Set([jid, ...state.groups])) speak(sock, g, line('eventStart')).catch(() => {});
                 for (const g of new Set([jid, ...state.groups])) {
                     await sendCard(sock, g, null, 'panelCard', { kicker: 'ACARA GLOBAL', title: ev.name.replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').trim(), accent: '#fbbf24', big: `${days} HARI`, bigLabel: 'BERMULA SEKARANG', lines: [ev.desc] },
                         `👑 *TITAH BOS AMAR!* ${ev.name} aktif ${days} hari!\n📜 ${ev.desc}`).catch(() => {});
                 }
                 return;
             }
-            case 'stop_event': state.event = null; saveState(); return reply('👑 Semua acara veto ditutup.');
+            case 'stop_event': {
+                state.event = null; saveState();
+                if (config.voice) for (const g of new Set([jid, ...state.groups])) speak(sock, g, line('eventEnd')).catch(() => {});
+                return reply('👑 Semua acara veto ditutup.');
+            }
             case 'set_income': { const n = parseInt(args[0]); if (isNaN(n) || n < 0) return reply('❌ Amaun tak sah.'); user.wallet = n; await db.saveUser(user); return reply(`👑 Dana tunai ditetapkan ${rm(n)}.`); }
             case 'give_cash': case 'give_gold': case 'give_btc': {
                 const n = Number(args.find(a => /^-?\d+(\.\d+)?$/.test(a))); if (!target || isNaN(n)) return reply(`❌ Format: \`.${cmd} @user [nilai]\``);

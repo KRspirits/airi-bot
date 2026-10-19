@@ -2,7 +2,7 @@ const pasarP2P = []; // Memori pasaran semasa
 
 export default {
     name: 'pasar_pemain',
-    alias: ['p2p', 'jual_market', 'beli_market', 'bida'],
+    alias: ['p2p', 'jual_market', 'beli_market'],
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid;
         const senderJid = m.key.participant || jid;

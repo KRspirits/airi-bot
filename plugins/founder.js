@@ -2,7 +2,7 @@ import { config } from '../config.js';
 
 export default {
     name: 'founder',
-    alias: ['set_income', 'jail_user', 'free_user', 'spawn_boss', 'syscheck'],
+    alias: [], // dikendalikan oleh plugins/veto.js
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid;
         const senderJid = m.key.participant || jid;
