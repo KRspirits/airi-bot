@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 
-// Konfigurasi binary FFmpeg untuk persekitaran Linux Render
+// Konfigurasi binary static FFmpeg untuk Linux Render
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,58 +36,54 @@ function compressVideo(inputPath, outputPath) {
 }
 
 export default {
-    name: 'ShadowStatus HD',
-    command: ['shadowstatus', 'hd'],
+    name: 'hd',
+    aliases: ['shadowstatus', 'purestatus'],
     category: 'tools',
-    description: 'Mampatkan video WhatsApp Status HD tanpa pecah',
+    desc: 'Mampatkan video kualiti HD WhatsApp Status',
 
     async execute({ sock, m, user, db, args }) {
+        const jid = m.key.remoteJid;
+        console.log(`[SHADOWSTATUS] Menerima proses kompresi daripada ${jid}`);
+
+        // Semak sama ada quoted video atau direct video
         const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage;
         const isQuotedVideo = quoted?.videoMessage;
         const isDirectVideo = m.message?.videoMessage;
 
         if (!isDirectVideo && !isQuotedVideo) {
-            return sock.sendMessage(m.key.remoteJid, {
-                text: '❌ Sila hantar video bersama kapsyen *.hd* atau reply mana-mana video dengan *.hd*'
+            return sock.sendMessage(jid, {
+                text: '⚠️ *Cara Guna:*\nReply mana-mana video dengan `.hd` atau hantar video bersama kapsyen `.hd`'
             }, { quoted: m });
         }
 
-        const jid = m.key.remoteJid;
+        // Reaksi tanda mula memproses
         await sock.sendMessage(jid, { react: { text: '⏳', key: m.key } }).catch(() => {});
 
-        // Gunakan direktori /tmp untuk persekitaran Linux Render
         const tempDir = process.env.RENDER ? '/tmp' : __dirname;
         const timestamp = Date.now();
         const tempIn = path.join(tempDir, `in_${timestamp}.mp4`);
         const tempOut = path.join(tempDir, `out_${timestamp}.mp4`);
 
         try {
-            let mediaToDownload;
-            if (isQuotedVideo) {
-                mediaToDownload = {
-                    message: {
-                        videoMessage: isQuotedVideo
-                    }
-                };
-            } else {
-                mediaToDownload = m;
-            }
+            const mediaSource = isQuotedVideo 
+                ? { message: { videoMessage: isQuotedVideo } } 
+                : m;
 
-            const buffer = await downloadMediaMessage(mediaToDownload, 'buffer', {});
+            const buffer = await downloadMediaMessage(mediaSource, 'buffer', {});
             fs.writeFileSync(tempIn, buffer);
 
             await compressVideo(tempIn, tempOut);
 
             await sock.sendMessage(jid, {
                 video: fs.readFileSync(tempOut),
-                caption: '⚡ *ShadowStatus HD Sedia!*\n\nVideo telah dioptimumkan untuk WhatsApp Status. Muat turun video ini dan pos terus ke status anda.'
+                caption: '⚡ *ShadowStatus HD Berjaya Diproses!*\n\nVideo telah dioptimumkan khas untuk WhatsApp Status tanpa pecah. Sila download dan upload ke status anda.'
             }, { quoted: m });
 
             await sock.sendMessage(jid, { react: { text: '✅', key: m.key } }).catch(() => {});
 
         } catch (error) {
-            console.error('[ShadowStatus Error]:', error);
-            await sock.sendMessage(jid, { text: '❌ Ralat ketika memproses video status.' }, { quoted: m });
+            console.error('[SHADOWSTATUS ERROR]:', error);
+            await sock.sendMessage(jid, { text: '❌ Ralat ketika memproses mampatan video.' }, { quoted: m });
             await sock.sendMessage(jid, { react: { text: '❌', key: m.key } }).catch(() => {});
         } finally {
             if (fs.existsSync(tempIn)) fs.unlinkSync(tempIn);
