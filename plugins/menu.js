@@ -1,4 +1,6 @@
 import { config } from '../config.js';
+import { sendCard } from '../lib/render.js';
+import { activeEvent } from '../lib/state.js';
 
 function formatCompactNumber(number) {
     if (isNaN(number) || !number) return '0';
@@ -75,11 +77,40 @@ export default {
  ✧ .tembak_botol ︲ .lumba_kuda ︲ .tikam_nombor
  ✧ .gacha_mlbb ︲ .tiktok_affiliate ︲ .split_bil
 
+🏴 *[ 𝗭𝗢𝗡 𝟵: 𝗚𝗘𝗡𝗚, 𝗗𝗥𝗔𝗠𝗔 & 𝗞𝗢𝗟𝗘𝗞𝗦𝗜 ]*
+ ✧ .geng ︲ .heist ︲ .sertai_heist ︲ .dendam ︲ .balas @user
+ ✧ .profil ︲ .top ︲ .wanted ︲ .siasat @user ︲ .roast @user
+ ✧ .album ︲ .gabung [no] [no] ︲ .pameran [no] ︲ .tangkap [kod]
+ ✧ .misi ︲ .liga ︲ .panggil [nama] ︲ .ingat [fakta]
+
 🌐 *[ 𝗭𝗢𝗡 𝟴: 𝗜𝗡𝗙𝗢 & 𝗚𝗘𝗟𝗔𝗥𝗔𝗡 ]*
  ✧ .myid ︲ .profile ︲ .badge ︲ .top ︲ .musim
+🤖 *[ 𝗭𝗢𝗡 𝟭𝟬: 𝗔𝗜 𝗦𝗘𝗧𝗜𝗔𝗣 𝗛𝗔𝗥𝗜 ]*
+ ✧ .tanya ︲ .jelas ︲ .ringkas ︲ .terjemah ︲ .inggeris ︲ .melayu
+ ✧ .loghat_kelantan ︲ .loghat_kedah ︲ .loghat_johor ︲ .bahasa_genz
+ ✧ .caption ︲ .slogan ︲ .surat ︲ .emel ︲ .syair ︲ .cerpen ︲ .lirik
+ ✧ .kod ︲ .debug ︲ .regex ︲ .semak_scam ︲ .cyber_tip
+ _(ada 50 AI; taip \`.tanya\` untuk mula)_
+
+🎉 *[ 𝗭𝗢𝗡 𝟭𝟭: 𝗛𝗜𝗕𝗨𝗥𝗔𝗡 & 𝗥𝗔𝗪𝗔𝗞 ]*
+ ✧ .dadu ︲ .koin ︲ .suit [batu/gunting/kertas] ︲ .bola8 [soalan]
+ ✧ .ship [nama1] [nama2] ︲ .rate ︲ .mood ︲ .horoskop ︲ .ramal
+ ✧ .teka ︲ .jawab_teka [jawapan] ︲ .joke ︲ .fakta ︲ .motivasi
+ ✧ .bmi [kg] [cm] ︲ .kira [a] [+-*/] [b] ︲ .passgen ︲ .lotot
+ _(ada 50 fun; taip \`.dadu\` untuk mula)_
+
+🎰 *[ 𝗭𝗢𝗡 𝟭𝟮: 𝗝𝗨𝗗𝗜 𝗔𝗜 (𝗧𝗔𝗥𝗔𝗦𝗔𝗡 𝗠𝗔𝗫 𝗥𝗠𝟱,𝟬𝟬𝟬) ]*
+ ✧ .tekaan [1-10] [rm] ︲ .roda [rm] ︲ .kad_besar h/r [rm]
+ ✧ .dadu7 atas/bawah/tujuh [rm] ︲ .peti [1-5] [rm]
+ ✧ .kupon [rm] ︲ .tarung @user [rm]
+
+📸 *[ 𝗭𝗢𝗡 𝟭𝟯: 𝗕𝗘𝗥𝗜𝗧𝗔 & 𝗝𝗨𝗔𝗟 𝗚𝗔𝗠𝗕𝗔𝗥 ]*
+ ✧ .berita_cyber ︲ .jual_gambar (hantar gambar barang)
+ ✧ .setuju (sahkan jualan dalam 60 saat)
 ─────────────────────────────
 `.trim();
 
+            await sendCard(sock, jid, m, 'menuCard', { name: user?.name, wallet: user?.wallet || 0, event: activeEvent()?.name }, "🌸 Panel Airi's Corner");
             return sock.sendMessage(jid, { text: menuText, mentions: [senderJid] }, { quoted: m });
         } catch (err) {
             console.error("Menu Error:", err);

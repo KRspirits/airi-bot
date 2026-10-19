@@ -16,7 +16,7 @@ export default {
                 }, { quoted: m });
             }
 
-            const bonusTunai = 50000;
+            const bonusTunai = 5000;
             user.wallet = (user.wallet || 0) + bonusTunai;
             user.lastDaily = now;
             await db.saveUser(user);

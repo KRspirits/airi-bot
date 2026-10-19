@@ -1,170 +1,134 @@
-import { config } from '../config.js';
+import { isOwner } from '../config.js';
+import { state, saveState, activeEvent, purgeActive } from '../lib/state.js';
+import { supported } from '../lib/effects.js';
+import { extractText, parseCmd, mentions, num, rm } from '../lib/util.js';
+import { sendCard } from '../lib/render.js';
+import { speak } from '../lib/voice.js';
+import { makeBulletin } from '../lib/news.js';
+import * as mythic from '../lib/mythic.js';
+import { handleParticipants } from '../lib/welcome.js';
+import { triggerRandomAuction } from './bida.js';
 
+// =========================================================================
+// 👑 VETO (khas pemilik bot). Pembaikan: pengesahan owner PADANAN TEPAT (dulu includes()
+// boleh dipintas), acara disimpan dalam state (kekal selepas restart) dan KESAN
+// DIKUATKUASAKAN oleh lib/effects.js. Kuasa baharu: .siar .mythic .purge .maintenance .bulletin_now .testwelcome
+// =========================================================================
 export const VETO_EVENTS = {
-    AMAR_BLESSING: { name: "👑 Berkat Bos Amar", mult: 100.0, desc: "100x ganda SEMUA hasil pendapatan!" },
-    GOLD_RUSH: { name: "💰 Gelombang Emas", mult: 3.0, desc: "Harga jualan emas & ikan naik 3x ganda!" },
-    CRYPTO_MOON: { name: "🚀 Ledakan Bullrun BTC", mult: 2.5, desc: "Keuntungan trading kripto naik 2.5x!" },
-    MEGA_HARVEST: { name: "🌊 Badai Laut Dalam", mult: 3.0, desc: "Jeti pancing dijamin tangkapan Rare & Mythic!" },
-    CYBER_REBATE: { name: "🏷️ Rebat Tunai Madani", mult: 1.5, desc: "Cashback 50% untuk pembelian showroom & gear!" },
-    BLACK_MARKET_CARNIVAL: { name: "🎪 Karnival Pasar Gelap", mult: 2.0, desc: "BM buka 24 jam & diskaun barang panas 50%!" },
-    TAX_HOLIDAY: { name: "💸 Hari Bebas Cukai", mult: 1.0, desc: "0% caj fee untuk transfer & cuci duit haram!" },
-    SPEED_DEMON: { name: "🏁 Pelesit Malam Karak", mult: 4.0, desc: "Ganjaran lumba drag haram digandakan 4x!" },
-    OVERTIME_FRENZY: { name: "⚡ Kerja Lebih Masa", mult: 2.0, desc: "Gaji kerja halal naik 2x & cooldown cuma 10 saat!" },
-    TREASURE_SURGE: { name: "🧲 Arus Khazanah Sungai", mult: 2.5, desc: "80% peluang magnet dapat Peti Besi Misteri!" },
-    CASINO_FIESTA: { name: "🎰 Pesta Jackpot Kasino", mult: 3.0, desc: "Peluang menang slot 777 melonjak ke 70%!" },
-    LANDLORD_BOOM: { name: "🏢 Dividen Hartanah Mega", mult: 3.0, desc: "Kutipan sewa rumah & premis naik 3x ganda!" },
-    ZERO_JAIL_DAY: { name: "🕊️ Hari Pengampunan", mult: 1.0, desc: "Polis bercuti; tiada hukuman lokap hari ini!" },
-    SUBSIDI_MINYAK: { name: "🚛 Subsidi Seludup", mult: 2.0, desc: "Modal seludup percuma, untung bersih maksima!" },
-    ROYAL_AIRDROP: { name: "🎁 Royal Airdrop Amar", mult: 1.0, desc: "Sistem tabur RM 10,000 tunai setiap 10 minit!" },
-    BOUNTY_HUNTER_RUSH: { name: "🎯 Pesta Pemburu Kepala", mult: 1.5, desc: "Klaim wang tebusan buronan dapat bonus +50%!" },
-    HACKER_PARADISE: { name: "💻 Kelemahan Induk Bank", mult: 2.0, desc: "Peluang hackbank naik 90% kebal serbuan!" },
-    EGG_HATCH_SPEED: { name: "🐣 Inkubator Kilat", mult: 1.0, desc: "Telur pet menetas SERTA-MERTA tanpa tunggu!" },
-    AHLONG_DISCOUNT: { name: "🦈 Pelupusan Faedah", mult: 1.0, desc: "Hutang ahlong dihapuskan bunga, bayar pokok sahaja!" },
-    GOD_OF_FORTUNE: { name: "🌟 Restu Dewa Rezeki", mult: 5.0, desc: "95% peluang menang nasib rawak dalam grup!" }
+    AMAR_BLESSING: { name: '👑 Berkat Bos Amar', desc: '100x ganda SEMUA hasil pendapatan!' },
+    GOLD_RUSH: { name: '💰 Gelombang Emas', desc: 'Jualan emas, ikan & besi terpakai 3x ganda!' },
+    CRYPTO_MOON: { name: '🚀 Ledakan Bullrun BTC', desc: 'Untung jual BTC naik 2.5x!' },
+    MEGA_HARVEST: { name: '🌊 Badai Laut Dalam', desc: 'Tangkapan pancing: hampir pasti Rare ke atas!' },
+    CYBER_REBATE: { name: '🏷️ Rebat Tunai Madani', desc: 'Cashback 50% beli showroom, gear & pancing!' },
+    BLACK_MARKET_CARNIVAL: { name: '🎪 Karnival Pasar Gelap', desc: 'Cashback 50% barang pasar gelap!' },
+    SPEED_DEMON: { name: '🏁 Pelesit Malam Karak', desc: 'Hasil lumba digandakan 4x!' },
+    OVERTIME_FRENZY: { name: '⚡ Kerja Lebih Masa', desc: 'Gaji kerja 2x ganda!' },
+    TREASURE_SURGE: { name: '🧲 Arus Khazanah Sungai', desc: 'Hasil buka peti & jual besi 2.5x!' },
+    CASINO_FIESTA: { name: '🎰 Pesta Jackpot Kasino', desc: 'Kemenangan slot digandakan 2x!' },
+    LANDLORD_BOOM: { name: '🏢 Dividen Hartanah Mega', desc: 'Kutipan sewa 3x ganda!' },
+    ZERO_JAIL_DAY: { name: '🕊️ Hari Pengampunan', desc: 'Polis bercuti; tiada lokap!' },
+    SUBSIDI_MINYAK: { name: '🚛 Subsidi Seludup', desc: 'Hasil seludup 2x ganda!' },
+    FESTIVAL_IKAN: { name: '🐟 Festival Ikan Pasar', desc: 'Jual ikan & akuarium 2x ganda!' },
+    HARI_JUDI_GILA: { name: '🎲 Hari Judi Gila', desc: 'Menang permainan judi (tekaan, roda, kad_besar, dadu7, peti, kupon) 1.5x!' },
+    TEKA_BERHADIAH: { name: '📸 Teka Gambar Berhadiah', desc: 'Jual barang guna gambar (.jual_gambar) 2x ganda!' },
+    BAYAR_BALIK_HUTANG: { name: '💳 Diskaun Bayar Hutang', desc: 'Bayar ahlong, 30% dipulangkan!' },
+    ROYAL_AIRDROP: { name: '🎁 Royal Airdrop Amar', desc: 'Sesiapa yang guna command dapat RM 10,000 setiap 10 minit!' },
+    BOUNTY_HUNTER_RUSH: { name: '🎯 Pesta Pemburu Kepala', desc: 'Ganjaran buru +50%!' },
+    HACKER_PARADISE: { name: '💻 Kelemahan Induk Bank', desc: 'Hasil hackbank 2x ganda!' },
+    GOD_OF_FORTUNE: { name: '🌟 Restu Dewa Rezeki', desc: 'Kemenangan game nasib 2x ganda!' },
+    MYTHIC_TIDE: { name: '🌀 Pasang Mitos', desc: 'Makhluk mitos muncul lebih kerap & peluang mitos pancing naik!' },
+    DAILY_FIESTA: { name: '🎉 Pesta Hadiah Harian', desc: 'Hadiah .daily 3x ganda!' },
+    EGG_HATCH_SPEED: { name: '🐣 Inkubator Kilat', desc: '(belum aktif)' },
+    AHLONG_DISCOUNT: { name: '🦈 Pelupusan Faedah', desc: '(belum aktif)' }
 };
+export const activeGlobalEvent = null; // dikekalkan untuk keserasian import lama; guna state.event
 
-export let activeGlobalEvent = null;
+const MENU = `🛡️ *PANGKALAN VETO BOS AMAR*
+
+*Acara*
+.list_event ︲ .start_event [KOD] [HARI] ︲ .stop_event ︲ .musim
+*Kuasa*
+.siar [teks] ︲ .mythic ︲ .purge on/off ︲ .maintenance on/off
+.bulletin_now ︲ .testwelcome
+*Pemain*
+.set_income [n] ︲ .give_cash @u [n] ︲ .give_gold @u [n] ︲ .give_btc @u [n]
+.jail_user @u [saat] ︲ .free_user @u ︲ .syscheck
+*Lelong*
+.bida_now ︲ buka lelongan kontena sekarang
+*Acara baharu*
+FESTIVAL_IKAN, HARI_JUDI_GILA, TEKA_BERHADIAH, BAYAR_BALIK_HUTANG
+_Taip `.list_event` untuk senarai penuh._`;
 
 export default {
-    name: 'veto_amar',
-    alias: [
-        'veto', 'list_event', 'start_event', 'stop_event', 'musim',
-        'set_income', 'give_cash', 'give_gold', 'give_btc',
-        'jail_user', 'free_user', 'syscheck'
-    ],
+    name: 'veto_amar', priority: 10,
+    alias: ['veto', 'list_event', 'start_event', 'stop_event', 'musim', 'set_income', 'give_cash', 'give_gold', 'give_btc',
+        'jail_user', 'free_user', 'syscheck', 'siar', 'mythic', 'purge', 'maintenance', 'bulletin_now', 'testwelcome', 'spawn_boss'],
     execute: async ({ sock, m, user, db }) => {
-        try {
-            const jid = m.key.remoteJid;
-            const senderJid = m.key.participant || jid;
-            const cleanSender = String(senderJid).replace(/[^0-9]/g, '');
-            
-            const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
-            const args = teks.trim().split(' ').slice(1);
-            const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
+        const jid = m.key.remoteJid, sender = m.key.participant || jid;
+        const p = parseCmd(extractText(m.message)); if (!p) return;
+        const { cmd, args } = p, target = mentions(m)[0];
+        const reply = (text, extra = {}) => sock.sendMessage(jid, { text, ...extra }, { quoted: m });
 
-            // 1. FUNGSI MUSIM (BOLEH DIBACA OLEH SEMUA ORANG)
-            if (cmd === 'musim') {
-                if (!activeGlobalEvent || Date.now() > activeGlobalEvent.expiresAt) {
-                    activeGlobalEvent = null;
-                    return sock.sendMessage(jid, { text: '🌐 *STATUS MUSIM:* Tiada sebarang acara global aktif buat masa ini.' }, { quoted: m });
+        if (cmd === 'musim') {
+            const ev = activeEvent();
+            if (!ev) return reply('🌐 *STATUS MUSIM:* Tiada acara global aktif sekarang.' + (purgeActive() ? '\n🔥 Hari Pembersihan sedang berlangsung!' : ''));
+            const left = Math.max(1, Math.ceil((ev.expiresAt - Date.now()) / 3600e3));
+            return reply(`🌐 *ACARA AKTIF*\n🔥 ${ev.name}\n📜 ${ev.desc}\n⏳ Baki: ${left} jam`);
+        }
+        if (!isOwner(sender)) { if (cmd === 'veto') return reply('⛔ *AKSES DITOLAK!* Menu Veto hanya untuk Bos Amar!'); return; }
+
+        switch (cmd) {
+            case 'veto': return reply(MENU);
+            case 'list_event': return reply('📜 *ACARA VETO*\n\n' + Object.entries(VETO_EVENTS).map(([k, v]) => `• *${k}*${supported(k) ? '' : ' (belum aktif)'}\n   ${v.name}: ${v.desc}`).join('\n') + '\n\nContoh: `.start_event AMAR_BLESSING 2`');
+            case 'start_event': {
+                const kod = (args[0] || '').toUpperCase(), days = Math.min(30, Math.max(1, parseInt(args[1]) || 1));
+                if (!VETO_EVENTS[kod]) return reply('❌ Kod tak sah. Taip `.list_event`.');
+                if (!supported(kod)) return reply(`⚠️ ${kod} belum ada kesan sebenar dalam enjin. Pilih acara lain.`);
+                state.event = { ...VETO_EVENTS[kod], code: kod, expiresAt: Date.now() + days * 864e5, days }; saveState();
+                const ev = state.event;
+                for (const g of new Set([jid, ...state.groups])) {
+                    await sendCard(sock, g, null, 'panelCard', { kicker: 'ACARA GLOBAL', title: ev.name.replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').trim(), accent: '#fbbf24', big: `${days} HARI`, bigLabel: 'BERMULA SEKARANG', lines: [ev.desc] },
+                        `👑 *TITAH BOS AMAR!* ${ev.name} aktif ${days} hari!\n📜 ${ev.desc}`).catch(() => {});
                 }
-                const bakiJam = Math.ceil((activeGlobalEvent.expiresAt - Date.now()) / (1000 * 60 * 60));
-                return sock.sendMessage(jid, {
-                    text: `┌───「 🌐 𝗦𝗧𝗔𝗧𝗨𝗦 𝗠𝗨𝗦𝗜𝗠 𝗔𝗞𝗧𝗜𝗙 」\n├ 🔥 𝗔𝗰𝗮𝗿𝗮 : ${activeGlobalEvent.name}\n├ 📜 𝗞𝗲𝘀𝗮𝗻 : ${activeGlobalEvent.desc}\n├ ⏳ 𝗕𝗮𝗸𝗶 𝗠𝗮𝘀𝗮 : ${bakiJam} Jam Lagi\n└───────────────────────────`
-                }, { quoted: m });
+                return;
             }
-
-            // KAWALAN KESELAMATAN: VERIFIKASI PENGASAS
-            const ownersList = Array.isArray(config.ownerNumbers) ? config.ownerNumbers : (config.owner ? [config.owner] : []);
-            const isOwner = ownersList.some(ownerNum => {
-                const cleanOwner = String(ownerNum).replace(/[^0-9]/g, '');
-                return cleanSender.includes(cleanOwner) || cleanOwner.includes(cleanSender);
-            });
-
-            // HALANG JIKA BUKAN AMAR YANG GUNA ARAHAN DI BAWAH
-            if (!isOwner) {
-                if (cmd === 'veto') {
-                    return sock.sendMessage(jid, { text: '⛔ *AKSES DITOLAK!* Menu Veto hanya untuk Bos Amar!' }, { quoted: m });
-                }
-                return; // Senyap jika command lain ditekan oleh orang awam
+            case 'stop_event': state.event = null; saveState(); return reply('👑 Semua acara veto ditutup.');
+            case 'set_income': { const n = parseInt(args[0]); if (isNaN(n) || n < 0) return reply('❌ Amaun tak sah.'); user.wallet = n; await db.saveUser(user); return reply(`👑 Dana tunai ditetapkan ${rm(n)}.`); }
+            case 'give_cash': case 'give_gold': case 'give_btc': {
+                const n = Number(args.find(a => /^-?\d+(\.\d+)?$/.test(a))); if (!target || isNaN(n)) return reply(`❌ Format: \`.${cmd} @user [nilai]\``);
+                const t = await db.getUser(target); t.crypto ||= { btc: 0, gold: 0 };
+                if (cmd === 'give_cash') t.wallet = (t.wallet || 0) + n; else t.crypto[cmd === 'give_gold' ? 'gold' : 'btc'] = (t.crypto[cmd === 'give_gold' ? 'gold' : 'btc'] || 0) + n;
+                await db.saveUser(t); return reply(`👑 Suntikan ${cmd.replace('give_', '')} ${n.toLocaleString('en-US')} ke @${num(target)}`, { mentions: [target] });
             }
-
-            // 2. MENU KHAS VETO (HANYA UNTUK AMAR)
-            if (cmd === 'veto') {
-                const menuKhas = `
-🛡️ *PANGKALAN VETO BOS AMAR* 🛡️
-
-1️⃣ *.list_event* - Papar 20 Acara Mutlak
-2️⃣ *.start_event [KOD] [HARI]* - Mula Acara
-3️⃣ *.stop_event* - Hentikan Acara Aktif
-4️⃣ *.set_income [nilai]* - Set duit poket sendiri
-5️⃣ *.give_cash @user [nilai]* - Suntik dana
-6️⃣ *.jail_user @user [saat]* - Sumbat ke lokap
-7️⃣ *.free_user @user* - Bebaskan pemain
-8️⃣ *.syscheck* - Semak status RAM bot
-`;
-                return sock.sendMessage(jid, { text: menuKhas.trim() }, { quoted: m });
+            case 'jail_user': {
+                if (!target) return reply('❌ Tag sasaran.'); const sec = parseInt(args.find(a => /^\d+$/.test(a))) || 120, t = await db.getUser(target);
+                t.jail = { status: true, release_at: Date.now() + sec * 1000, reason: 'Titah Bos Amar', vote_free: 0, vote_jail: 0, voters: [] }; await db.saveUser(t);
+                return reply(`🚨 @${num(target)} disumbat ke lokap (${sec} saat)!`, { mentions: [target] });
             }
-
-            // 3. SENARAI EVENT VETO
-            if (cmd === 'list_event') {
-                let str = `┌───「 📜 𝟮𝟬 𝗔𝗖𝗔𝗥𝗔 𝗩𝗘𝗧𝗢 𝗙𝗢𝗨𝗡𝗗𝗘𝗥 」\n├───────────────────────────\n`;
-                let count = 1;
-                for (const [code, ev] of Object.entries(VETO_EVENTS)) {
-                    str += `├ ${count++}. *${code}*\n│   └ ${ev.name}: _${ev.desc}_\n`;
-                }
-                str += `└───────────────────────────\nContoh: \`.start_event AMAR_BLESSING 2\``;
-                return sock.sendMessage(jid, { text: str }, { quoted: m });
+            case 'free_user': {
+                if (!target) return reply('❌ Tag sasaran.'); const t = await db.getUser(target); t.jail = { ...(t.jail || {}), status: false, release_at: 0 }; await db.saveUser(t);
+                return reply(`🕊️ @${num(target)} dibebaskan!`, { mentions: [target] });
             }
-
-            // 4. MULA EVENT
-            if (cmd === 'start_event') {
-                const kod = args[0]?.toUpperCase();
-                const tempohHari = parseInt(args[1]) || 1; 
-
-                if (!VETO_EVENTS[kod]) {
-                    return sock.sendMessage(jid, { text: '❌ Kod event tidak sah! Taip `.list_event` untuk senarai.' }, { quoted: m });
-                }
-                const durationMs = tempohHari * 24 * 60 * 60 * 1000;
-                activeGlobalEvent = {
-                    ...VETO_EVENTS[kod],
-                    code: kod,
-                    expiresAt: Date.now() + durationMs,
-                    days: tempohHari
-                };
-                return sock.sendMessage(jid, {
-                    text: `👑 *TITAH MUTLAK FOUNDER BOS AMAR!*\n\nAcara rasmi *${activeGlobalEvent.name}* kini diaktifkan untuk tempoh *${tempohHari} Hari*!\n📜 Kesan: _${activeGlobalEvent.desc}_`
-                });
+            case 'syscheck': { const mem = process.memoryUsage(); return reply(`⚙️ *DIAGNOSTIK*\nRAM: ${(mem.rss / 1048576).toFixed(0)} MB (heap ${(mem.heapUsed / 1048576).toFixed(0)} MB)\nUptime: ${Math.round(process.uptime() / 60)} minit\nGrup direkod: ${state.groups.length}\nDatabase: ${db.isMongo() ? 'MongoDB' : 'Fail tempatan (data hilang bila restart!)'}\nMaintenance: ${state.maintenance ? 'ON' : 'off'}`); }
+            case 'siar': {
+                const t = args.join(' ').trim(); if (!t) return reply('Guna: `.siar [mesej]`');
+                for (const g of state.groups) await sock.sendMessage(g, { text: `📢 *PENGUMUMAN DARIPADA BOS AMAR*\n\n${t}` }).catch(() => {});
+                return reply(`✅ Disiarkan ke ${state.groups.length} grup.`);
             }
-
-            // 5. HENTIKAN EVENT
-            if (cmd === 'stop_event') {
-                activeGlobalEvent = null;
-                return sock.sendMessage(jid, { text: '👑 Semua acara veto telah ditutup serta-merta.' }, { quoted: m });
+            case 'bida_now': await triggerRandomAuction(sock, jid); return;
+            case 'mythic': return (await mythic.trigger(sock, jid)) ? undefined : reply('Makhluk mitos masih aktif di sini.');
+            case 'spawn_boss': return reply('Gunakan `.serang_boss` untuk bos dunia (pemunculan automatik oleh enjin lama).');
+            case 'purge': {
+                const on = (args[0] || '').toLowerCase() === 'on';
+                state.purgeUntil = on ? Date.now() + 3600e3 : 0; state.purgeEndPending = on; saveState();
+                return reply(on ? '🔥 Hari Pembersihan dimulakan sejam!' : '🕊️ Hari Pembersihan dihentikan.');
             }
-
-            // 6. KAWALAN KEWANGAN & LOKAP
-            if (cmd === 'set_income') {
-                const amt = parseInt(args[0]);
-                if (isNaN(amt) || amt < 0) return sock.sendMessage(jid, { text: '❌ Amaun tidak sah!' }, { quoted: m });
-                user.wallet = amt;
-                if (db) await db.saveUser(user);
-                return sock.sendMessage(jid, { text: `👑 Dana tunai ditetapkan kepada RM ${amt.toLocaleString()}!` }, { quoted: m });
+            case 'maintenance': { state.maintenance = (args[0] || '').toLowerCase() === 'on'; saveState(); return reply(`🛠️ Mod penyelenggaraan: ${state.maintenance ? 'ON (hanya owner)' : 'OFF'}`); }
+            case 'bulletin_now': { const d = await makeBulletin(db, jid.endsWith('@g.us') ? jid : undefined); return sendCard(sock, jid, m, 'newsCard', d, `📰 ${d.headline}`); }
+            case 'testwelcome': {
+                if (!jid.endsWith('@g.us')) return reply('Guna dalam group.');
+                await handleParticipants(sock, { id: jid, participants: [sender], action: 'add' }); void speak; return;
             }
-
-            if (cmd === 'give_cash') {
-                const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-                const nilai = parseFloat(args[1]);
-                if (!targetJid || isNaN(nilai)) return sock.sendMessage(jid, { text: `❌ Format: \`.give_cash @user [nilai]\`` }, { quoted: m });
-                
-                if (db) {
-                    const targetUser = await db.getUser(targetJid);
-                    targetUser.wallet = (targetUser.wallet || 0) + nilai;
-                    await db.saveUser(targetUser);
-                }
-                return sock.sendMessage(jid, { text: `👑 Suntikan RM ${nilai.toLocaleString()} berjaya ke atas @${targetJid.split('@')[0]}`, mentions: [targetJid] }, { quoted: m });
-            }
-
-            if (cmd === 'jail_user') {
-                const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-                const saat = parseInt(args[1]) || 120;
-                if (!targetJid) return sock.sendMessage(jid, { text: '❌ Tag sasaran: `.jail_user @user [saat]`' }, { quoted: m });
-                
-                if (db) {
-                    const targetUser = await db.getUser(targetJid);
-                    targetUser.jail = { status: true, release_at: Date.now() + (saat * 1000), reason: "Titah Mutlak Bos Amar" };
-                    await db.saveUser(targetUser);
-                }
-                return sock.sendMessage(jid, { text: `🚨 @${targetJid.split('@')[0]} disumbat ke lokap (${saat} saat)!`, mentions: [targetJid] }, { quoted: m });
-            }
-
-            if (cmd === 'syscheck') {
-                const mem = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
-                return sock.sendMessage(jid, { text: `⚙️ *LAPORAN DIAGNOSTIK*\n\n✅ Penggunaan RAM: ${mem} MB\n✅ Sistem berjalan lancar.` }, { quoted: m });
-            }
-
-        } catch (err) {
-            console.error("Owner Veto Error:", err);
         }
     }
 };

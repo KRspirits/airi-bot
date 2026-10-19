@@ -115,6 +115,7 @@ export async function triggerRandomAuction(sock, chatId) {
 ┌───「 🏆 𝗞𝗘𝗣𝗨𝗧𝗨𝗦𝗔𝗡 𝗟𝗘𝗟𝗢𝗡𝗚𝗔𝗡 𝗞𝗢𝗡𝗧𝗘𝗡𝗔 」
 ├ 👤 𝗣𝗲𝗺𝗲𝗻𝗮𝗻𝗴 : @${lelong.highestBidder.split('@')[0]}
 ├ 💸 𝗛𝗮𝗿𝗴𝗮 𝗕𝗶𝗱𝗮 : RM ${lelong.currentBid.toLocaleString()}
+├ 📊 𝗕𝗲𝗿𝘀𝗶𝗵    : RM ${(hasilLoot.value - lelong.currentBid).toLocaleString()}
 ├───────────────────────────
 ├ 📦 𝗜𝘀𝗶 𝗞𝗼𝗻𝘁𝗲𝗻𝗮: *${hasilLoot.name}*
 ├ 💵 𝗡𝗶𝗹𝗮𝗶 𝗦𝗲𝗯𝗲𝗻𝗮𝗿: RM ${hasilLoot.value.toLocaleString()}
@@ -148,28 +149,29 @@ export default {
             }, { quoted: m });
         }
 
-        if (amaunBida <= lelong.currentBid) {
+        if (amaunBida < lelong.currentBid + 1000) {
             return sock.sendMessage(jid, {
-                text: `❌ Bidaan mesti LEBIH TINGGI daripada bidaan semasa (RM ${lelong.currentBid.toLocaleString()})!`
+                text: `❌ Bidaan minimum RM 1,000 lebih tinggi daripada bidaan semasa (RM ${lelong.currentBid.toLocaleString()})!`
             }, { quoted: m });
         }
 
-        if (user.wallet < amaunBida) {
-            return sock.sendMessage(jid, {
-                text: `❌ Duit poket kau tak cukup! Kau cuma ada RM ${user.wallet.toLocaleString()}`
-            }, { quoted: m });
+        // Ambil data segar (elak baki lama menimpa perubahan lain)
+        const fresh = await db.getUser(senderJid);
+        // Jika pembida sama bida semula, bidaan lamanya dipulangkan dulu dan boleh dikira sebagai baki
+        const bidaSendiri = lelong.highestBidder === senderJid ? lelong.currentBid : 0;
+        if ((fresh.wallet + bidaSendiri) < amaunBida) {
+            return sock.sendMessage(jid, { text: `❌ Duit poket kau tak cukup! Kau ada RM ${fresh.wallet.toLocaleString()}` }, { quoted: m });
         }
-
-        // Refund duit pembida sebelumnya jika ada
+        // Pulangkan bidaan pembida sebelumnya (berlaku juga jika pembida sama)
         if (lelong.highestBidder && lelong.highestBidder !== senderJid) {
             const prevUser = await db.getUser(lelong.highestBidder);
             prevUser.wallet += lelong.currentBid;
             await db.saveUser(prevUser);
         }
-
-        // Tolak duit pembida baharu
-        user.wallet -= amaunBida;
-        await db.saveUser(user);
+        fresh.wallet += bidaSendiri;
+        fresh.wallet -= amaunBida;
+        await db.saveUser(fresh);
+        user.wallet = fresh.wallet;
 
         lelong.currentBid = amaunBida;
         lelong.highestBidder = senderJid;
