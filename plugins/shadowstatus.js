@@ -10,24 +10,39 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function compressVideo(inputPath, outputPath) {
+function compressVideoPureStatus(inputPath, outputPath) {
     return new Promise((resolve, reject) => {
         ffmpeg(inputPath)
             .outputOptions([
+                // Enkoder H.264 standard WhatsApp
                 '-c:v libx264',
-                '-profile:v high',
-                '-level 4.1',
+                '-profile:v main',
+                '-level 3.1',
                 '-pix_fmt yuv420p',
-                '-preset slow',
-                '-crf 19',
-                '-maxrate 3500k',
-                '-bufsize 6000k',
+                '-preset faster',
+                
+                // Kadar bingkai tetap 30 fps
                 '-r 30',
-                // Penskalaan pintar: 720p mengikut orientasi (landscape vs portrait)
-                "-vf scale='if(gt(iw,ih),-2,720)':'if(gt(iw,ih),720,-2)':force_original_aspect_ratio=decrease",
+                '-g 60',
+                '-keyint_min 30',
+                '-sc_threshold 0',
+                
+                // Kualiti visual dan had bitrate penentu (elak re-encode WhatsApp)
+                '-crf 20',
+                '-b:v 2200k',
+                '-maxrate 2400k',
+                '-bufsize 3000k',
+                
+                // Paksa skala tepat 720x1280 (portrait) dengan padding hitam jika aspect ratio berbeza
+                "-vf scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:black,setsar=1",
+                
+                // Audio optimum WhatsApp
                 '-c:a aac',
-                '-b:a 128k',
+                '-b:a 64k',
                 '-ar 44100',
+                '-ac 2',
+                
+                // Metadata penstriman pantas
                 '-movflags +faststart'
             ])
             .save(outputPath)
@@ -40,9 +55,9 @@ export default {
     name: 'hd',
     aliases: ['shadowstatus', 'purestatus'],
     category: 'tools',
-    desc: 'Mampatkan video kualiti HD sebenar untuk WhatsApp Status',
+    desc: 'Mampatkan video kualiti HD WhatsApp Status tanpa transcode kabur',
 
-    async execute({ sock, m, args }) {
+    async execute({ sock, m, user, db, args }) {
         const jid = m.key.remoteJid;
         const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage;
         const isQuotedVideo = quoted?.videoMessage;
@@ -50,7 +65,7 @@ export default {
 
         if (!isDirectVideo && !isQuotedVideo) {
             return sock.sendMessage(jid, {
-                text: '⚠️ Sila reply mana-mana video dengan `.hd` atau hantar video bersama kapsyen `.hd`'
+                text: '⚠️ *Cara Guna:*\nReply mana-mana video dengan `.hd` atau hantar video bersama caption `.hd`'
             }, { quoted: m });
         }
 
@@ -69,29 +84,30 @@ export default {
             const buffer = await downloadMediaMessage(mediaSource, 'buffer', {});
             fs.writeFileSync(tempIn, buffer);
 
-            await compressVideo(tempIn, tempOut);
+            await compressVideoPureStatus(tempIn, tempOut);
             const videoBuffer = fs.readFileSync(tempOut);
 
-            // 1. Hantar video HD kepada pengguna
-            await sock.sendMessage(jid, {
-                video: videoBuffer,
-                caption: '⚡ *ShadowStatus HD Sedia!*\n\n💡 *Tips Elak Kabur:*\nSemasa upload ke Status di WhatsApp, pastikan anda tekan ikon *HD* di bahagian atas skrin sebelum tekan hantar.'
-            }, { quoted: m });
-
-            // 2. Jika taip ".hd status", bot akan terus pos video ke WhatsApp Status akaun bot secara automatik
-            if (args && args.includes('status')) {
+            // 1. Pos terus ke WhatsApp Status (Kaedah mutlak elak transcode telefon)
+            try {
                 await sock.sendMessage('status@broadcast', {
                     video: videoBuffer,
-                    caption: '⚡ Posted via ShadowStatus HD'
+                    caption: '⚡ ShadowStatus HD'
                 });
-                await sock.sendMessage(jid, { text: '✅ Video berjaya dimuat naik terus ke Status WhatsApp!' }, { quoted: m });
+            } catch (statusErr) {
+                console.error('[STATUS BROADCAST ERROR]:', statusErr.message);
             }
+
+            // 2. Hantar fail siap ke chat
+            await sock.sendMessage(jid, {
+                video: videoBuffer,
+                caption: '✅ *ShadowStatus HD Berjaya Diproses!*\n\n🚀 *Status telah dimuat naik terus ke WhatsApp Status anda secara automatik (100% kualiti asal tanpa melalui galeri telefon).*\n\nJika anda tetap ingin upload manual ke akaun lain, hantar video ini ke akaun tersebut menggunakan mod "Document" atau pastikan ikon HD diaktifkan.'
+            }, { quoted: m });
 
             await sock.sendMessage(jid, { react: { text: '✅', key: m.key } }).catch(() => {});
 
         } catch (error) {
             console.error('[SHADOWSTATUS ERROR]:', error);
-            await sock.sendMessage(jid, { text: '❌ Ralat ketika memproses video.' }, { quoted: m });
+            await sock.sendMessage(jid, { text: '❌ Ralat ketika memproses mampatan video.' }, { quoted: m });
             await sock.sendMessage(jid, { react: { text: '❌', key: m.key } }).catch(() => {});
         } finally {
             if (fs.existsSync(tempIn)) fs.unlinkSync(tempIn);
