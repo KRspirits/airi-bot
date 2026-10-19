@@ -32,7 +32,7 @@ function compressVideo(inputPath, outputPath) {
 }
 
 module.exports = {
-    name: 'PureStatus HD',
+    name: 'Shadow Status',
     command: ['hd', 'purestatus'],
     category: 'tools',
     description: 'Mampatkan video status HD tanpa pecah',
