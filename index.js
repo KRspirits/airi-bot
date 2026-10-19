@@ -10,7 +10,8 @@ import { config, isOwner } from './config.js';
 import { db } from './lib/database.js';
 import { loadPlugins } from './lib/loader.js';
 import { initState, state, addGroup, activeEvent, purgeActive } from './lib/state.js';
-import { useMongoAuthState, clearMongoAuth } from './lib/mongoAuth.js';
+import { useMongoAuthState } from './lib/mongoAuth.js';
+import * as store from './lib/store.js';
 import { allow } from './lib/cooldown.js';
 import { applyEffects, snapshot, CRIME_CMDS, CRIME_PLUGINS } from './lib/effects.js';
 import { logEvent } from './lib/log.js';
@@ -41,18 +42,32 @@ app.listen(config.port, () => console.log(`[HTTP] Server aktif di port ${config.
 // =========================================================================
 let backoff = 2000, connecting = false;
 
+async function resetAuthStorage() {
+    console.log('🧹 Mengosongkan sesi lama...');
+    try {
+        if (db.isMongo()) {
+            await store.del('auth', 'creds').catch(() => {});
+        }
+        if (fs.existsSync('./session_airi')) {
+            fs.rmSync('./session_airi', { recursive: true, force: true });
+        }
+    } catch (err) {
+        console.error('Ralat ketika mengosongkan storan auth:', err.message);
+    }
+}
+
 async function connect() {
     if (connecting) return; 
     connecting = true;
     try {
         try { sock?.ev?.removeAllListeners?.(); sock?.end?.(undefined); } catch { /* tutup soket lama */ }
 
-        // Session: MongoDB bila ada (elak hilang bila Render restart), jika tidak guna folder tempatan.
         let auth;
         try {
             auth = db.isMongo() ? await useMongoAuthState() : await useMultiFileAuthState('./session_airi');
         } catch (e) {
             console.error('[AUTH ERROR] Gagal muat auth state:', e.message);
+            await resetAuthStorage();
             auth = await useMultiFileAuthState('./session_airi');
         }
 
@@ -84,15 +99,8 @@ async function connect() {
                 const code = lastDisconnect?.error?.output?.statusCode;
                 
                 if (code === DisconnectReason.loggedOut) {
-                    console.log('🚪 Logged out dikesan. Memadam rekod auth lama untuk jana QR baru...');
-                    if (db.isMongo() && typeof clearMongoAuth === 'function') {
-                        await clearMongoAuth().catch(() => {});
-                    }
-                    try {
-                        if (fs.existsSync('./session_airi')) {
-                            fs.rmSync('./session_airi', { recursive: true, force: true });
-                        }
-                    } catch (e) {}
+                    console.log('🚪 Logged out dikesan. Mengosongkan rekod auth dan menjana QR baharu...');
+                    await resetAuthStorage();
                     connecting = false;
                     setTimeout(() => connect(), 3000);
                     return;
@@ -122,7 +130,7 @@ const chatCooldown = new Map();
 async function onMessage(m) {
     if (!m.message || m.key.remoteJid === 'status@broadcast') return;
     
-    m.message = unwrap(m.message); // buka bungkusan ephemeral/viewOnce supaya SEMUA plugin nampak teks
+    m.message = unwrap(m.message);
     const jid = m.key.remoteJid;
     const isMe = Boolean(m.key.fromMe);
     const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : (m.key.participant || jid);
@@ -131,7 +139,6 @@ async function onMessage(m) {
     
     if (jid.endsWith('@g.us')) addGroup(jid);
 
-    // DEBUG LOG: Semak mesej yang masuk dan status pengesanan
     if (teks) {
         console.log(`[MSG IN] Dari: ${senderJid} | Teks: "${teks}" | fromMe: ${isMe}`);
     }
@@ -164,10 +171,8 @@ async function onMessage(m) {
         return;
     }
 
-    // Jika mesej daripada diri sendiri dan bukan arahan, abaikan AI chat
     if (isMe) return;
 
-    // Airi menyampuk sembang (dengan had masa supaya tak spam)
     const low = teks.toLowerCase();
     const hot = ['kalah', 'sengkek', 'scam', 'koyak', 'pinjam seratus', 'sedih', 'takde duit', 'barai'].some(k => low.includes(k));
     if (!(low.includes('airi') || (hot && Math.random() < 0.06 && teks.length > 5))) return;
@@ -182,7 +187,6 @@ async function onMessage(m) {
     } catch (err) { console.error('[AI CHAT ERROR]', err.message); }
 }
 
-// Selepas command: kuatkuasa acara/Hari Pembersihan, log kejadian, kira misi harian.
 async function afterCommand({ m, jid, senderJid, senderName, cmd, action, before }) {
     try {
         const fresh = await db.getUser(senderJid, senderName);
