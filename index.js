@@ -3,6 +3,7 @@ import pino from 'pino';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
 import qrcodeTerminal from 'qrcode-terminal';
 import QRCode from 'qrcode';
@@ -32,7 +33,7 @@ app.get('/health', (_, res) => res.json({ ok: true, connected: isConnected, mong
 app.get('/', async (_, res) => {
     if (isConnected) return res.send(page(`<h2>🌸 Airi's Corner Cyber OS</h2><p style="color:#38e8ff">🟢 Bot aktif dan bersedia.</p><small>${commands.size} command${db.isMongo() ? '' : ' | ⚠️ tiada MongoDB: data hilang bila restart'}</small>`));
     if (currentQR) return res.send(page(`<h2>⚡ Imbas QR Airi</h2><p style="color:#94a3b8;font-size:14px">WhatsApp ➜ Linked Devices ➜ Link a Device</p><img src="${await QRCode.toDataURL(currentQR)}" style="width:280px;height:280px;border-radius:16px;background:#fff;padding:12px"/><p style="color:#ff5555;font-size:12px;margin-top:10px;">Halaman akan auto-kemas kini bila QR baharu dijana.</p>`));
-    res.send(page('<h2>⏳ Menjana QR...</h2><p>Sila refresh laman web ini dalam 5 saat.</p>'));
+    res.send(page('<h2>⏳ Menjana QR...</h2><p>Sila refresh laman web ini dalam beberapa saat.</p>'));
 });
 app.listen(config.port, () => console.log(`[HTTP] Server aktif di port ${config.port}`));
 
@@ -41,19 +42,42 @@ app.listen(config.port, () => console.log(`[HTTP] Server aktif di port ${config.
 // =========================================================================
 let backoff = 2000, connecting = false;
 
+async function clearBrokenSession() {
+    console.log('🧹 Membersihkan sesi lama yang rosak...');
+    try {
+        if (fs.existsSync('./session_airi')) {
+            fs.rmSync('./session_airi', { recursive: true, force: true });
+        }
+    } catch (e) {
+        console.error('Gagal memadam fail sesi tempatan:', e.message);
+    }
+
+    if (db.isMongo() && mongoose.connection.readyState === 1) {
+        try {
+            const collections = await mongoose.connection.db.listCollections().toArray();
+            const sessionCol = collections.find(c => ['sessions', 'auth', 'auth_state', 'auth_session'].includes(c.name.toLowerCase()));
+            if (sessionCol) {
+                await mongoose.connection.db.collection(sessionCol.name).deleteMany({});
+                console.log(`✅ Sesi lama dalam koleksi Mongo [${sessionCol.name}] berjaya dikosongkan.`);
+            }
+        } catch (e) {
+            console.error('Gagal mengosongkan koleksi sesi Mongo:', e.message);
+        }
+    }
+}
+
 async function connect() {
     if (connecting) return; 
     connecting = true;
     try {
         try { sock?.ev?.removeAllListeners?.(); sock?.end?.(undefined); } catch { /* tutup soket lama */ }
 
-        // Pengurusan Sesi: MongoDB jika ada, jika tidak gunakan storan fail setempat
         let auth;
         try {
             auth = db.isMongo() ? await useMongoAuthState() : await useMultiFileAuthState('./session_airi');
         } catch (authErr) {
-            console.error('Gagal memuatkan auth state lama. Mengosongkan fail sesi:', authErr.message);
-            if (fs.existsSync('./session_airi')) fs.rmSync('./session_airi', { recursive: true, force: true });
+            console.error('Gagal memuatkan auth state. Membersihkan sesi:', authErr.message);
+            await clearBrokenSession();
             auth = await useMultiFileAuthState('./session_airi');
         }
 
@@ -71,7 +95,7 @@ async function connect() {
                 currentQR = qr; 
                 isConnected = false; 
                 const renderLink = process.env.RENDER_EXTERNAL_URL || `http://localhost:${config.port}`;
-                console.log(`\n⚡ [QR DIJANA] Buka link ini di browser telefon/PC untuk imbas:\n👉 ${renderLink}\n`);
+                console.log(`\n⚡ [QR READY] Buka link ini di browser telefon/PC untuk imbas:\n👉 ${renderLink}\n`);
                 qrcodeTerminal.generate(qr, { small: true }); 
             }
             if (connection === 'open') { 
@@ -84,16 +108,9 @@ async function connect() {
                 isConnected = false;
                 const code = lastDisconnect?.error?.output?.statusCode;
                 
-                // Jika WhatsApp force logout, buang folder fail rosak dan minta QR baru
                 if (code === DisconnectReason.loggedOut) {
-                    console.log('🚪 Logged out dikesan. Memadam fail sesi lama untuk menjana QR baharu...');
-                    try {
-                        if (fs.existsSync('./session_airi')) {
-                            fs.rmSync('./session_airi', { recursive: true, force: true });
-                        }
-                    } catch (e) {
-                        console.error('Gagal memadam sesi:', e.message);
-                    }
+                    console.log('🚪 Logged out dikesan. Memadam rekod sesi dan menjana QR baharu...');
+                    await clearBrokenSession();
                     connecting = false;
                     setTimeout(() => connect(), 2000);
                     return;
@@ -123,7 +140,7 @@ const chatCooldown = new Map();
 async function onMessage(m) {
     if (!m.message || m.key.remoteJid === 'status@broadcast') return;
     
-    m.message = unwrap(m.message); // Buka viewOnce / ephemeral teks
+    m.message = unwrap(m.message);
     const jid = m.key.remoteJid;
     const isMe = Boolean(m.key.fromMe);
     const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : (m.key.participant || jid);
@@ -156,10 +173,8 @@ async function onMessage(m) {
         return;
     }
 
-    // Jika mesej dari diri sendiri dan bukan arahan, abaikan sembang AI
     if (isMe) return;
 
-    // Airi menyampuk sembang
     const low = teks.toLowerCase();
     const hot = ['kalah', 'sengkek', 'scam', 'koyak', 'pinjam seratus', 'sedih', 'takde duit', 'barai'].some(k => low.includes(k));
     if (!(low.includes('airi') || (hot && Math.random() < 0.06 && teks.length > 5))) return;
@@ -174,7 +189,6 @@ async function onMessage(m) {
     } catch (err) { console.error('[AI CHAT ERROR]', err.message); }
 }
 
-// Selepas command
 async function afterCommand({ m, jid, senderJid, senderName, cmd, action, before }) {
     try {
         const fresh = await db.getUser(senderJid, senderName);
