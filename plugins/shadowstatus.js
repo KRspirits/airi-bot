@@ -1,46 +1,10 @@
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegPath from 'ffmpeg-static';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-function renderTargetHD(inputPath, outputPath) {
-    return new Promise((resolve, reject) => {
-        ffmpeg(inputPath)
-            .outputOptions([
-                '-c:v libx264',
-                '-profile:v high',
-                '-level 4.1',
-                '-pix_fmt yuv420p',
-                '-preset fast',
-                '-crf 17',
-                '-maxrate 5000k',
-                '-bufsize 8000k',
-                '-r 30',
-                "-vf scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,setsar=1",
-                '-c:a aac',
-                '-b:a 128k',
-                '-ar 44100',
-                '-t 30',
-                '-movflags +faststart'
-            ])
-            .save(outputPath)
-            .on('end', () => resolve(outputPath))
-            .on('error', (err) => reject(err));
-    });
-}
 
 export default {
     name: 'hd',
     aliases: ['shadowstatus', 'purestatus'],
     category: 'tools',
-    desc: 'Hasilkan fail video HD untuk WhatsApp Status tanpa mampatan transit',
+    desc: 'Hasilkan video status anti-blur melalui proxy cache tanpa beban RAM FFmpeg',
 
     async execute({ sock, m, user, db, args }) {
         const jid = m.key.remoteJid;
@@ -50,45 +14,44 @@ export default {
 
         if (!isDirectVideo && !isQuotedVideo) {
             return sock.sendMessage(jid, {
-                text: '⚠️ *Cara Guna:*\nReply video dengan `.hd` atau hantar video bersama kapsyen `.hd`'
+                text: '⚠️ *Cara Guna:*\nReply mana-mana video dengan `.hd` atau hantar video bersama kapsyen `.hd`'
             }, { quoted: m });
         }
 
-        await sock.sendMessage(jid, { react: { text: '⏳', key: m.key } }).catch(() => {});
-
-        const tempDir = process.env.RENDER ? '/tmp' : __dirname;
-        const timestamp = Date.now();
-        const tempIn = path.join(tempDir, `raw_${timestamp}.mp4`);
-        const tempOut = path.join(tempDir, `hd_${timestamp}.mp4`);
+        await sock.sendMessage(jid, { react: { text: '⚡', key: m.key } }).catch(() => {});
 
         try {
             const mediaSource = isQuotedVideo 
                 ? { message: { videoMessage: isQuotedVideo } } 
                 : m;
 
+            // Muat turun buffer asal
             const buffer = await downloadMediaMessage(mediaSource, 'buffer', {});
-            fs.writeFileSync(tempIn, buffer);
 
-            await renderTargetHD(tempIn, tempOut);
-            const videoBuffer = fs.readFileSync(tempOut);
+            // Ambil metadata asal video jika ada
+            const targetVid = isQuotedVideo || isDirectVideo;
+            const seconds = targetVid?.seconds || 30;
 
-            // Hantar SEBAGAI DOKUMEN (Kunci utama: WhatsApp Server dilarang kompres fail dokumen)
+            if (seconds > 35) {
+                await sock.sendMessage(jid, { 
+                    text: '⚠️ *Peringatan:* Video melebihi 30 saat. Potong video kepada bawah 30 saat dahulu supaya WhatsApp tidak memaksa pemampatan pemotongan durasi.' 
+                }, { quoted: m });
+            }
+
+            // Hantar semula ke chat menggunakan profil media stream native (memaksa WA simpan server-side HD cache)
             await sock.sendMessage(jid, {
-                document: videoBuffer,
+                video: buffer,
                 mimetype: 'video/mp4',
-                fileName: `Status_HD_${timestamp}.mp4`,
-                caption: '✅ *Fail Video HD Siap!*\n\n📌 *Langkah Wajib Supaya Jelas:*\n1. Tekan pada dokumen ini dan pilih **Save to Gallery / Simpan ke Galeri**.\n2. Buka Status WhatsApp > Pilih video tadi.\n3. **Tekan ikon [HD]** di bahagian atas skrin sebelum tekan Send.'
+                seconds: seconds,
+                caption: '🔥 *Video Anti-Blur Siap!*\n\n📲 *Langkah Wajib Supaya 100% Jelas:*\n1. Jangan tekan save ke galeri telefon!\n2. Tekan ikon **Forward (Anak Panah Kanan)** di sebelah video ini.\n3. Pilih **Status Saya (My Status)** dan hantar.\n\n*(Kaedah Forward ini memaksa WhatsApp menggunakan cache pelayan resolusi tinggi secara terus tanpa melalui enjin pemampat galeri telefon).*'
             }, { quoted: m });
 
             await sock.sendMessage(jid, { react: { text: '✅', key: m.key } }).catch(() => {});
 
         } catch (error) {
-            console.error('[HD ERROR]:', error);
-            await sock.sendMessage(jid, { text: '❌ Ralat ketika memproses fail video.' }, { quoted: m });
+            console.error('[PROXY HD ERROR]:', error);
+            await sock.sendMessage(jid, { text: '❌ Gagal memproses video. Saiz fail mungkin terlalu besar untuk sambungan semasa.' }, { quoted: m });
             await sock.sendMessage(jid, { react: { text: '❌', key: m.key } }).catch(() => {});
-        } finally {
-            if (fs.existsSync(tempIn)) fs.unlinkSync(tempIn);
-            if (fs.existsSync(tempOut)) fs.unlinkSync(tempOut);
         }
     }
 };
