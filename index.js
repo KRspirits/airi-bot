@@ -8,6 +8,7 @@ import qrcodeTerminal from 'qrcode-terminal';
 import QRCode from 'qrcode';
 import { config, isOwner, isOwnerMsg } from './config.js';
 import { withUserLock } from './lib/money.js';
+import { patchSend } from './lib/textcards.js';
 import { db } from './lib/database.js';
 import { loadPlugins } from './lib/loader.js';
 import { initState, state, addGroup, activeEvent, purgeActive } from './lib/state.js';
@@ -114,6 +115,7 @@ async function connect() {
         });
 
         sock.ev.on('group-participants.update', ev => handleParticipants(sock, ev).catch(e => console.error('[WELCOME]', e.message)));
+        patchSend(sock);
         sock.ev.on('messages.upsert', ({ messages, type }) => {
             if (type !== 'notify') return;
             for (const m of messages) onMessage(m).catch(e => console.error('[MESSAGE ERROR]', e));
