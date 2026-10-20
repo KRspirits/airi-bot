@@ -24,7 +24,7 @@ export default {
 ━━ 1. AI, MUZIK & RPG ━━
    .airi [teks]   ·   .misi (RPG)   ·   .roast @user
    .puji @user   ·   .pantun_ai   ·   .teka_lagu
-   .jawab [lirik]   ·   .buletin_cyber   ·   .taksir [gambar/teks]
+   .jawab [lirik]   ·   .buletin_cyber   
 
 ━━ 2. EKONOMI, PASARAN & EVENT ━━
    .kerja   ·   .daily   ·   .bal
@@ -75,7 +75,7 @@ export default {
    .gabung [no] [no]   ·   .pameran [no]   ·   .tangkap [kod]
    .liga   ·   .panggil [nama]   ·   .ingat [fakta]
 
-━━ 11. HIBURAN & RAWAK ━━
+━━ 10. HIBURAN & RAWAK ━━
    .dadu   ·   .koin   ·   .suit [batu/gunting/kertas]
    .bola8 [soalan]   ·   .ship [nama1] [nama2]   ·   .rate
    .mood   ·   .horoskop   ·   .ramal
@@ -84,15 +84,15 @@ export default {
    .kira [a] [+-*/] [b]   ·   .passgen   ·   .lotot
    ada 50 fun; taip .dadu untuk mula
 
-━━ 12. JUDI AI (TARASAN MAX RM5,000) ━━
+━━ 11. JUDI AI (TARASAN MAX RM5,000) ━━
    .tekaan [1-10] [rm]   ·   .roda [rm]   ·   .kad_besar h/r [rm]
    .dadu7 atas/bawah/tujuh [rm]   ·   .peti [1-5] [rm]   ·   .kupon [rm]
    .tarung @user [rm]
 
-━━ 13. BERITA & JUAL GAMBAR ━━
+━━ 12. BERITA & JUAL GAMBAR ━━
    .berita_cyber   ·   .jual_gambar (hantar gambar barang)
 
-━━ 14. PENCAPAIAN & ALBUM ━━
+━━ 13. PENCAPAIAN & ALBUM ━━
    .achievement   ·   .pencapaian (kad pencapaian)   ·   .album
 
 Taip nama command untuk guna. Contoh: .mancing`;
