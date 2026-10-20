@@ -76,7 +76,17 @@ export default {
             const left = Math.max(1, Math.ceil((ev.expiresAt - Date.now()) / 3600e3));
             return reply(`🌐 *ACARA AKTIF*\n🔥 ${ev.name}\n📜 ${ev.desc}\n⏳ Baki: ${left} jam`);
         }
-        if (!isOwnerMsg(m)) { if (cmd === 'veto') return reply('⛔ *AKSES DITOLAK!* Menu Veto hanya untuk Bos Amar!'); return; }
+        if (!isOwnerMsg(m)) {
+            if (cmd === 'veto') {
+                // Tunjuk pengenal akaun ni supaya owner boleh salin ke OWNER_NUMBERS (hanya untuk pemanggil sendiri)
+                const k = m.key || {};
+                const ids = [k.participant, k.participantAlt, k.remoteJidAlt].filter(Boolean)
+                    .map(x => String(x).replace(/@.*$/, '').replace(/:.*$/, '').replace(/\D/g, '')).filter(Boolean);
+                console.log('[VETO DENIED] pengenal:', ids.join(',') || '-');
+                return reply(`⛔ *AKSES DITOLAK!* Menu Veto hanya untuk Bos Amar!\n\nPengenal akaun ni: ${ids.join(' / ') || 'tak dikesan'}\nKalau ni akaun owner, tambah nombor ni ke OWNER_NUMBERS di Render (pisah dengan koma), kemudian redeploy.`);
+            }
+            return;
+        }
 
         switch (cmd) {
             case 'veto': return reply(MENU);
