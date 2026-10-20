@@ -71,7 +71,7 @@ const MENU = `╭━━━━━━━━━━━━━━━━━━━━━
 
 export default {
     name: 'veto_amar', priority: 10,
-    alias: ['veto', 'reset_session', 'list_event', 'start_event', 'stop_event', 'musim', 'set_income', 'give_cash', 'give_gold', 'give_btc',
+    alias: ['veto', 'reset_season', 'reset_session', 'list_event', 'start_event', 'stop_event', 'musim', 'set_income', 'give_cash', 'give_gold', 'give_btc',
         'jail_user', 'free_user', 'syscheck', 'siar', 'mythic', 'purge', 'maintenance', 'bulletin_now', 'testwelcome', 'spawn_boss'],
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid, sender = m.key.participant || jid;
