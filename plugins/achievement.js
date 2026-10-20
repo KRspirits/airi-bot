@@ -61,7 +61,7 @@ async function drawCard(list, nama) {
     const shade = ctx.createLinearGradient(0, 0, 0, H);
     shade.addColorStop(0, 'rgba(4,18,31,0.60)'); shade.addColorStop(0.35, 'rgba(4,18,31,0.85)'); shade.addColorStop(1, 'rgba(4,18,31,0.96)');
     ctx.fillStyle = shade; ctx.fillRect(0, 0, W, H);
-    paintLogo(ctx, W - 170, 24, 130, 0.9);
+    paintLogo(ctx, W - 190, 8, 170);
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#7dd3fc'; ctx.font = 'bold 22px sans-serif';

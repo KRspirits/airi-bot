@@ -72,8 +72,15 @@ export default {
             const buffer = await downloadMediaMessage(mediaSource, 'buffer', {});
             fs.writeFileSync(tempIn, buffer);
 
-            await compressVideo(tempIn, tempOut);
-            const videoBuffer = fs.readFileSync(tempOut);
+            let videoBuffer;
+            try {
+                await compressVideo(tempIn, tempOut);
+                videoBuffer = fs.readFileSync(tempOut);
+                console.log('[SHADOWSTATUS] mampatan siap', videoBuffer.length, 'bait');
+            } catch (encErr) {
+                console.error('[SHADOWSTATUS] mampatan gagal, hantar asal:', encErr.message);
+                videoBuffer = buffer;
+            }
 
             // 1. Hantar video HD kepada pengguna
             await sock.sendMessage(jid, {

@@ -58,7 +58,7 @@ const MENU = `🛡️ *PANGKALAN VETO BOS AMAR*
 .bida_now ︲ buka lelongan kontena sekarang
 *Acara baharu*
 FESTIVAL_IKAN, HARI_JUDI_GILA, TEKA_BERHADIAH, BAYAR_BALIK_HUTANG
-_Taip `.list_event` untuk senarai penuh._`;
+_Taip .list_event untuk senarai penuh._`;
 
 export default {
     name: 'veto_amar', priority: 10,

@@ -27,91 +27,100 @@ export default {
             const statusPlat = user?.vehicle?.plate ? `[${user.vehicle.plate}]` : '';
 
             const menuText = `
-╭━━━「 🌸 𝗔𝗜𝗥𝗜 𝗖𝗬𝗕𝗘𝗥 𝗢𝗦 」━━━
-┃ 👤 𝗪𝗮𝗿𝗴𝗮 : @${cleanSender}
-┃ 💵 𝗧𝘂𝗻𝗮𝗶 : RM ${cashRingkas} 
-┃ 🏦 𝗕𝗮𝗻𝗸  : RM ${bankRingkas}
-┃ 🚗 𝗚𝗮𝗿𝗮𝗷 : ${jenteraNama} ${statusPlat}
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+   ✨  AIRI'S CORNER  ·  MENU
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+👤  @${cleanSender}
+💵  Tunai   RM ${cashRingkas}
+🏦  Bank    RM ${bankRingkas}
+🚗  Kenderaan  ${jenteraNama} ${statusPlat}
 
-🤖 *[ 𝗭𝗢𝗡 𝟭: 𝗔𝗜, 𝗠𝗨𝗭𝗜𝗞 & 𝗥𝗣𝗚 ]*
- ✧ .airi [teks] ︲ .misi (RPG)
- ✧ .roast @user ︲ .puji @user ︲ .pantun_ai
- ✧ .teka_lagu ︲ .jawab [lirik] ︲ .buletin_cyber
- ✧ .taksir [gambar/teks]
+━━ 1. AI, MUZIK & RPG ━━
+   .airi [teks]   ·   .misi (RPG)   ·   .roast @user
+   .puji @user   ·   .pantun_ai   ·   .teka_lagu
+   .jawab [lirik]   ·   .buletin_cyber   ·   .taksir [gambar/teks]
 
-💼 *[ 𝗭𝗢𝗡 𝟮: 𝗘𝗞𝗢𝗡𝗢𝗠𝗜, 𝗣𝗔𝗦𝗔𝗥𝗔𝗡 & 𝗘𝗩𝗘𝗡𝗧 ]*
- ✧ .kerja ︲ .daily ︲ .bal ︲ .transfer @user
- ✧ .pasaran ︲ .beli_emas ︲ .beli_btc
- ✧ .pasar_pemain ︲ .jual_emas ︲ .jual_btc
- ✧ .lelong_kontena ︲ .bida [rm] ︲ .kutip [kod]
+━━ 2. EKONOMI, PASARAN & EVENT ━━
+   .kerja   ·   .daily   ·   .bal
+   .transfer @user   ·   .pasaran   ·   .beli_emas
+   .beli_btc   ·   .pasar_pemain   ·   .jual_emas
+   .jual_btc   ·   .lelong_kontena   ·   .bida [rm]
+   .kutip [kod]
 
-🏎️ *[ 𝗭𝗢𝗡 𝟯: 𝗝𝗘𝗡𝗧𝗘𝗥𝗔, 𝗣𝗟𝗔𝗧 & 𝗛𝗔𝗥𝗧𝗔 ]*
- ✧ .showroom [1-5] ︲ .beli_kenderaan [id]
- ✧ .lelong_plat ︲ .beli_plat [no] ︲ .lumba [id]
- ✧ .bengkel ︲ .pasang ︲ .list_hartanah
- ✧ .beli_rumah [id] ︲ .kutip_sewa
+━━ 3. JENTERA, PLAT & HARTA ━━
+   .showroom [1-5]   ·   .beli_kenderaan [id]   ·   .lelong_plat
+   .beli_plat [no]   ·   .lumba [id]   ·   .bengkel
+   .pasang   ·   .list_hartanah   ·   .beli_rumah [id]
+   .kutip_sewa
 
-🌊 *[ 𝗭𝗢𝗡 𝟰: 𝗣𝗘𝗥𝗧𝗔𝗡𝗜𝗔𝗡 & 𝗝𝗘𝗧𝗜 𝗠𝗘𝗚𝗔 ]*
- ✧ .kebun ︲ .tanam [cili/strawberi] ︲ .tuai
- ✧ .kedai_pancing ︲ .beli_pancing [kategori] [id]
- ✧ .mancing (Joran) ︲ .jala (Tebaran Pukal)
- ✧ .ikan ︲ .jual_ikan ︲ .akuarium ︲ .bela_ikan [no]
- ✧ .baling_magnet ︲ .kedai_magnet ︲ .jual_besi
+━━ 4. PERTANIAN & JETI MEGA ━━
+   .kebun   ·   .tanam [cili/strawberi]   ·   .tuai
+   .kedai_pancing   ·   .beli_pancing [kategori] [id]   ·   .mancing (Joran)
+   .jala (Tebaran Pukal)   ·   .ikan   ·   .jual_ikan
+   .akuarium   ·   .bela_ikan [no]   ·   .baling_magnet
+   .kedai_magnet   ·   .jual_besi
 
-🏴‍☠️ *[ 𝗭𝗢𝗡 𝟱: 𝗨𝗡𝗗𝗘𝗥𝗪𝗢𝗥𝗟𝗗 & 𝗠𝗔𝗛𝗞𝗔𝗠𝗔𝗛 ]*
- ✧ .jenayah (Senarai) ︲ .bm (Pasar Gelap)
- ✧ .beli_bm [nama] ︲ .cuci_duit [jumlah]
- ✧ .rompak @user ︲ .santau @user ︲ .hackbank
- ✧ .rayu [alasan] ︲ .ikat_jamin @user
- ✧ .hutang_ahlong ︲ .bayar_ahlong ︲ .bounty
+━━ 5. UNDERWORLD & MAHKAMAH ━━
+   .jenayah (Senarai)   ·   .bm (Pasar Gelap)   ·   .beli_bm [nama]
+   .cuci_duit [jumlah]   ·   .rompak @user   ·   .santau @user
+   .hackbank   ·   .rayu [alasan]   ·   .ikat_jamin @user
+   .hutang_ahlong   ·   .bayar_ahlong   ·   .bounty
 
-🛍️ *[ 𝗭𝗢𝗡 𝟲: 𝗚𝗔𝗗𝗚𝗘𝗧, 𝗣𝗘𝗧 & 𝗪𝗔𝗥𝗨𝗡𝗚 ]*
- ✧ .device ︲ .beli_phone [id] ︲ .shop (Warung)
- ✧ .makan [id] ︲ .kedai_pet ︲ .beli_pet [nama]
- ✧ .beli_telur ︲ .tetas_telur
+━━ 6. GADGET, PET & WARUNG ━━
+   .device   ·   .beli_phone [id]   ·   .shop (Warung)
+   .makan [id]   ·   .kedai_pet   ·   .beli_pet [nama]
+   .beli_telur   ·   .tetas_telur
 
-🎲 *[ 𝗭𝗢𝗡 𝟳: 𝗞𝗔𝗦𝗜𝗡𝗢 & 𝗠𝗜𝗡𝗜-𝗚𝗔𝗠𝗘𝗦 ]*
- ✧ .serang_boss ︲ .bgk ︲ .coinflip ︲ .slot
- ✧ .tarik_tali ︲ .teka_nombor ︲ .kotak_beracun
- ✧ .tembak_botol ︲ .lumba_kuda ︲ .tikam_nombor
- ✧ .gacha_mlbb ︲ .tiktok_affiliate ︲ .split_bil
+━━ 7. KASINO & MINI-GAMES ━━
+   .serang_boss   ·   .bgk   ·   .coinflip
+   .slot   ·   .tarik_tali   ·   .teka_nombor
+   .kotak_beracun   ·   .tembak_botol   ·   .lumba_kuda
+   .tikam_nombor   ·   .gacha_mlbb   ·   .tiktok_affiliate
+   .split_bil
 
-🏴 *[ 𝗭𝗢𝗡 𝟵: 𝗚𝗘𝗡𝗚, 𝗗𝗥𝗔𝗠𝗔 & 𝗞𝗢𝗟𝗘𝗞𝗦𝗜 ]*
- ✧ .geng ︲ .heist ︲ .sertai_heist ︲ .dendam ︲ .balas @user
- ✧ .profil ︲ .top ︲ .wanted ︲ .siasat @user ︲ .roast @user
- ✧ .album ︲ .gabung [no] [no] ︲ .pameran [no] ︲ .tangkap [kod]
- ✧ .misi ︲ .liga ︲ .panggil [nama] ︲ .ingat [fakta]
+━━ 8. INFO & GELARAN ━━
+   .myid   ·   .profile   ·   .badge
+   .top   ·   .musim
 
-🌐 *[ 𝗭𝗢𝗡 𝟴: 𝗜𝗡𝗙𝗢 & 𝗚𝗘𝗟𝗔𝗥𝗔𝗡 ]*
- ✧ .myid ︲ .profile ︲ .badge ︲ .top ︲ .musim
-🤖 *[ 𝗭𝗢𝗡 𝟭𝟬: 𝗔𝗜 𝗦𝗘𝗧𝗜𝗔𝗣 𝗛𝗔𝗥𝗜 ]*
- ✧ .tanya ︲ .jelas ︲ .ringkas ︲ .terjemah ︲ .inggeris ︲ .melayu
- ✧ .loghat_kelantan ︲ .loghat_kedah ︲ .loghat_johor ︲ .bahasa_genz
- ✧ .caption ︲ .slogan ︲ .surat ︲ .emel ︲ .syair ︲ .cerpen ︲ .lirik
- ✧ .kod ︲ .debug ︲ .regex ︲ .semak_scam ︲ .cyber_tip
- _(ada 50 AI; taip \`.tanya\` untuk mula)_
+━━ 9. GENG, DRAMA & KOLEKSI ━━
+   .geng   ·   .heist   ·   .sertai_heist
+   .dendam   ·   .balas @user   ·   .profil
+   .wanted   ·   .siasat @user   ·   .album
+   .gabung [no] [no]   ·   .pameran [no]   ·   .tangkap [kod]
+   .liga   ·   .panggil [nama]   ·   .ingat [fakta]
 
-🎉 *[ 𝗭𝗢𝗡 𝟭𝟭: 𝗛𝗜𝗕𝗨𝗥𝗔𝗡 & 𝗥𝗔𝗪𝗔𝗞 ]*
- ✧ .dadu ︲ .koin ︲ .suit [batu/gunting/kertas] ︲ .bola8 [soalan]
- ✧ .ship [nama1] [nama2] ︲ .rate ︲ .mood ︲ .horoskop ︲ .ramal
- ✧ .teka ︲ .jawab_teka [jawapan] ︲ .joke ︲ .fakta ︲ .motivasi
- ✧ .bmi [kg] [cm] ︲ .kira [a] [+-*/] [b] ︲ .passgen ︲ .lotot
- _(ada 50 fun; taip \`.dadu\` untuk mula)_
+━━ 10. AI SETIAP HARI ━━
+   .tanya   ·   .jelas   ·   .ringkas
+   .terjemah   ·   .inggeris   ·   .melayu
+   .loghat_kelantan   ·   .loghat_kedah   ·   .loghat_johor
+   .bahasa_genz   ·   .caption   ·   .slogan
+   .surat   ·   .emel   ·   .syair
+   .cerpen   ·   .lirik   ·   .kod
+   .debug   ·   .regex   ·   .semak_scam
+   .cyber_tip
+   ada 50 AI; taip .tanya untuk mula
 
-🎰 *[ 𝗭𝗢𝗡 𝟭𝟮: 𝗝𝗨𝗗𝗜 𝗔𝗜 (𝗧𝗔𝗥𝗔𝗦𝗔𝗡 𝗠𝗔𝗫 𝗥𝗠𝟱,𝟬𝟬𝟬) ]*
- ✧ .tekaan [1-10] [rm] ︲ .roda [rm] ︲ .kad_besar h/r [rm]
- ✧ .dadu7 atas/bawah/tujuh [rm] ︲ .peti [1-5] [rm]
- ✧ .kupon [rm] ︲ .tarung @user [rm]
+━━ 11. HIBURAN & RAWAK ━━
+   .dadu   ·   .koin   ·   .suit [batu/gunting/kertas]
+   .bola8 [soalan]   ·   .ship [nama1] [nama2]   ·   .rate
+   .mood   ·   .horoskop   ·   .ramal
+   .teka   ·   .jawab_teka [jawapan]   ·   .joke
+   .fakta   ·   .motivasi   ·   .bmi [kg] [cm]
+   .kira [a] [+-*/] [b]   ·   .passgen   ·   .lotot
+   ada 50 fun; taip .dadu untuk mula
 
-📸 *[ 𝗭𝗢𝗡 𝟭𝟯: 𝗕𝗘𝗥𝗜𝗧𝗔 & 𝗝𝗨𝗔𝗟 𝗚𝗔𝗠𝗕𝗔𝗥 ]*
- ✧ .berita_cyber ︲ .jual_gambar (hantar gambar barang)
- ✧ .setuju (sahkan jualan dalam 60 saat)
+━━ 12. JUDI AI (TARASAN MAX RM5,000) ━━
+   .tekaan [1-10] [rm]   ·   .roda [rm]   ·   .kad_besar h/r [rm]
+   .dadu7 atas/bawah/tujuh [rm]   ·   .peti [1-5] [rm]   ·   .kupon [rm]
+   .tarung @user [rm]
 
-🏆 *[ 𝗭𝗢𝗡 𝟭𝟰: 𝗣𝗘𝗡𝗖𝗔𝗣𝗔𝗜𝗔𝗡 & 𝗩𝗜𝗗𝗘𝗢 ]*
- ✧ .achievement ︲ .pencapaian (kad pencapaian)
- ✧ .shadowstatus (hantar video, dapat versi HD untuk Status)
-─────────────────────────────
+━━ 13. BERITA & JUAL GAMBAR ━━
+   .berita_cyber   ·   .jual_gambar (hantar gambar barang)   ·   .setuju (sahkan jualan dalam 60 saat)
+
+━━ 14. PENCAPAIAN & VIDEO ━━
+   .achievement   ·   .pencapaian (kad pencapaian)   ·   .shadowstatus (hantar video, dapat versi HD untuk Status)
+
+Taip nama command untuk guna. Contoh: .mancing
 `.trim();
 
             await sendCard(sock, jid, m, 'menuCard', { name: user?.name, wallet: user?.wallet || 0, event: activeEvent()?.name }, "🌸 Panel Airi's Corner");
