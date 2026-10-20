@@ -8,7 +8,11 @@ import { logEvent } from '../lib/log.js';
 
 // Koleksi: album, gabung ikan (hibrid), liga mingguan, tangkap makhluk mitos.
 const ORDER = ['sampah', 'biasa', 'rare', 'mitos'];
-const SET_REWARD = { biasa: 100000, rare: 750000, mitos: 5000000 };
+// Hadiah lengkap set (sekali je per set). Besar sengaja, ikut arahan owner.
+const SET_REWARD = { biasa: 10000000, rare: 100000000, mitos: 1000000000 };
+// Nombor album: 1 = biasa, 2 = rare, 3 = mitos.
+const ALBUM_NO = { '1': 'biasa', '2': 'rare', '3': 'mitos' };
+const ALBUM_LABEL = { biasa: 'ALBUM 1 · BIASA', rare: 'ALBUM 2 · RARE', mitos: 'ALBUM 3 · MITOS' };
 const noEmoji = s => String(s || '').replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').trim();
 const part = (n, first) => { const w = noEmoji(n).replace(/^(Ikan|Pari|Bawal|Keli)\s+/i, '').split(/\s+/); return first ? w[0] : w[w.length - 1]; };
 
@@ -41,10 +45,17 @@ export default {
                 user.wallet += total; await db.saveUser(user);
                 return reply(`🎉 *ALBUM LENGKAP!* Set ${got.join(', ')} siap. Hadiah ${rm(total)} + lencana baru!`);
             }
-            if (!CATALOG[sub] || sub === 'sampah') return reply('Pilihan: `.album mitos` | `.album rare` | `.album biasa` | `.album klaim`');
-            const species = CATALOG[sub].map(f => ({ nama: f.nama, rarity: sub, owned: owned.has(f.nama) }));
-            return sendCard(sock, jid, m, 'albumCard', { title: `ALBUM ${sub.toUpperCase()}`, species, owned: species.filter(s => s.owned).length,
-                accent: { biasa: '#38bdf8', rare: '#c084fc', mitos: '#fbbf24' }[sub] }, `📖 Album ${sub}. Lengkapkan set untuk hadiah: \`.album klaim\``);
+            sub = ALBUM_NO[sub] || sub;
+            if (!CATALOG[sub] || sub === 'sampah') return reply('Pilihan: `.album 1` (biasa) | `.album 2` (rare) | `.album 3` (mitos) | `.album klaim`\nTambah nombor halaman, contoh: `.album mitos 2`');
+            const semua = CATALOG[sub].map(f => ({ nama: f.nama, rarity: sub, owned: owned.has(f.nama) }));
+            const PER = 12;
+            const pages = Math.max(1, Math.ceil(semua.length / PER));
+            const page = Math.min(pages, Math.max(1, parseInt(args[1]) || 1));
+            const species = semua.slice((page - 1) * PER, page * PER);
+            const dimiliki = semua.filter(x => x.owned);
+            const senaraiNama = dimiliki.map(x => x.nama).join(', ') || 'belum ada';
+            return sendCard(sock, jid, m, 'albumCard', { title: ALBUM_LABEL[sub] || `ALBUM ${sub.toUpperCase()}`, species, owned: dimiliki.length, total: semua.length, page, pages,
+                accent: { biasa: '#38bdf8', rare: '#c084fc', mitos: '#fbbf24' }[sub] }, `📖 Album ${sub} (halaman ${page}/${pages})\nDah dapat: ${senaraiNama}\n${page < pages ? `Halaman seterusnya: .album ${sub} ${page + 1}` : ''}Lengkapkan set untuk hadiah: \`.album klaim\``);
         }
 
         if (cmd === 'gabung') {

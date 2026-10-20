@@ -7,6 +7,9 @@ const owners = (process.env.OWNER_NUMBERS || '')
 // Ditambah terus dalam kod, digabung dengan OWNER_NUMBERS dari env.
 const OWNER_UTAMA = '601166533534';
 if (!owners.includes(OWNER_UTAMA)) owners.push(OWNER_UTAMA);
+// Pengenal LID akaun owner (WhatsApp hantar LID dalam group, bukan nombor telefon).
+const OWNER_LID = '38956007690292';
+if (!owners.includes(OWNER_LID)) owners.push(OWNER_LID);
 
 export const config = {
     port: process.env.PORT || 3000,
