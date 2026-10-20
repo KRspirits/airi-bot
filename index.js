@@ -9,6 +9,7 @@ import QRCode from 'qrcode';
 import { config, isOwner, isOwnerMsg } from './config.js';
 import { withUserLock } from './lib/money.js';
 import { patchSend } from './lib/textcards.js';
+import { clearSession } from './lib/session.js';
 import { db } from './lib/database.js';
 import { loadPlugins } from './lib/loader.js';
 import { initState, state, addGroup, activeEvent, purgeActive } from './lib/state.js';
@@ -46,16 +47,7 @@ let backoff = 2000, connecting = false;
 
 async function resetAuthStorage() {
     console.log('🧹 Mengosongkan sesi lama...');
-    try {
-        if (db.isMongo()) {
-            await store.del('auth', 'creds').catch(() => {});
-        }
-        if (fs.existsSync('./session_airi')) {
-            fs.rmSync('./session_airi', { recursive: true, force: true });
-        }
-    } catch (err) {
-        console.error('Ralat ketika mengosongkan storan auth:', err.message);
-    }
+    await clearSession(db.isMongo());
 }
 
 async function connect() {
