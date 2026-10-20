@@ -90,7 +90,7 @@ export default {
    .tarung @user [rm]
 
 ━━ 13. BERITA & JUAL GAMBAR ━━
-   .berita_cyber   ·   .jual_gambar (hantar gambar barang)
+   .berita_cyber   ·   
 
 ━━ 14. PENCAPAIAN & ALBUM ━━
    .achievement   ·   .pencapaian (kad pencapaian)   ·   .album
