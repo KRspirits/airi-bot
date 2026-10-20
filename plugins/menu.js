@@ -89,7 +89,18 @@ export default {
    .gabung [no] [no]   ·   .pameran [no]   ·   .tangkap [kod]
    .liga   ·   .panggil [nama]   ·   .ingat [fakta]
 
-━━ 10. HIBURAN & RAWAK ━━
+━━ 10. AI SETIAP HARI ━━
+   .tanya   ·   .jelas   ·   .ringkas
+   .terjemah   ·   .inggeris   ·   .melayu
+   .loghat_kelantan   ·   .loghat_kedah   ·   .loghat_johor
+   .bahasa_genz   ·   .caption   ·   .slogan
+   .surat   ·   .emel   ·   .syair
+   .cerpen   ·   .lirik   ·   .kod
+   .debug   ·   .regex   ·   .semak_scam
+   .cyber_tip
+   ada 50 AI; taip .tanya untuk mula
+
+━━ 11. HIBURAN & RAWAK ━━
    .dadu   ·   .koin   ·   .suit [batu/gunting/kertas]
    .bola8 [soalan]   ·   .ship [nama1] [nama2]   ·   .rate
    .mood   ·   .horoskop   ·   .ramal
@@ -98,16 +109,16 @@ export default {
    .kira [a] [+-*/] [b]   ·   .passgen   ·   .lotot
    ada 50 fun; taip .dadu untuk mula
 
-━━ 11. JUDI AI (TARASAN MAX RM5,000) ━━
+━━ 12. JUDI AI (TARASAN MAX RM5,000) ━━
    .tekaan [1-10] [rm]   ·   .roda [rm]   ·   .kad_besar h/r [rm]
    .dadu7 atas/bawah/tujuh [rm]   ·   .peti [1-5] [rm]   ·   .kupon [rm]
    .tarung @user [rm]
 
-━━ 12. BERITA & JUAL GAMBAR ━━
-   .berita_cyber   ·   .jual_gambar (hantar gambar barang) 
+━━ 13. BERITA & JUAL GAMBAR ━━
+   .berita_cyber   ·   .jual_gambar (hantar gambar barang)   ·   .setuju (sahkan jualan dalam 60 saat)
 
-━━ 13. PENCAPAIAN & VIDEO ━━
-   .achievement   ·   .pencapaian (kad pencapaian)   
+━━ 14. PENCAPAIAN & VIDEO ━━
+   .achievement   ·   .pencapaian (kad pencapaian)   ·   .shadowstatus (hantar video, dapat versi HD untuk Status)
 
 Taip nama command untuk guna. Contoh: .mancing
 `.trim();

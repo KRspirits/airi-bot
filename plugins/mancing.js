@@ -239,12 +239,20 @@ export default {
                     return sock.sendMessage(jid, { text: `⏳ Ikan tengah riki umpan tu! Sabar ${Math.ceil((120000 - (now - (cdMancing.get(senderId) || 0))) / 1000)} saat lagi.` }, { quoted: m });
                 }
 
-                if (!pData.umpan || pData.umpan.qty <= 0) {
+                // Newbie (akaun <= 7 hari): 3 cast percuma tanpa umpan
+                user.stats = user.stats || {};
+                const baruAkaun = user.createdAt && (now - user.createdAt) < 7 * 864e5;
+                if (user.stats.free_mancing === undefined && baruAkaun) user.stats.free_mancing = 3;
+                const percuma = (user.stats.free_mancing || 0) > 0;
+
+                if (!percuma && (!pData.umpan || pData.umpan.qty <= 0)) {
                     return sock.sendMessage(jid, { text: `❌ Kotak umpan kosong! Pergi borong di \`.kedai_pancing\` dulu.` }, { quoted: m });
                 }
 
                 cdMancing.set(senderId, now);
-                pData.umpan.qty -= 1; 
+                if (percuma) { user.stats.free_mancing -= 1; await db.saveUser(user); }
+                else { pData.umpan.qty -= 1; }
+
 
                 // NERF PELUANG: Mitos (0.2%), Rare (5%), Biasa (60%)
                 const rng = Math.random();

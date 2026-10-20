@@ -1,4 +1,5 @@
 import { isOwner, isOwnerMsg, config } from '../config.js';
+import { endSeason } from '../lib/season.js';
 import { line } from '../lib/airi_lines.js';
 import { state, saveState, activeEvent, purgeActive } from '../lib/state.js';
 import { supported } from '../lib/effects.js';
@@ -56,6 +57,9 @@ const MENU = `🛡️ *PANGKALAN VETO BOS AMAR*
 .jail_user @u [saat] ︲ .free_user @u ︲ .syscheck
 *Lelong*
 .bida_now ︲ buka lelongan kontena sekarang
+*Musim*
+.reset_season ︲ tutup musim, umum pemenang, simpan sejarah
+
 *Acara baharu*
 FESTIVAL_IKAN, HARI_JUDI_GILA, TEKA_BERHADIAH, BAYAR_BALIK_HUTANG
 _Taip .list_event untuk senarai penuh._`;
@@ -99,8 +103,16 @@ export default {
                 const ev = state.event;
                 if (config.voice) for (const g of new Set([jid, ...state.groups])) speak(sock, g, 'eventStart').catch(() => {});
                 for (const g of new Set([jid, ...state.groups])) {
-                    await sendCard(sock, g, null, 'panelCard', { kicker: 'ACARA GLOBAL', title: ev.name.replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').trim(), accent: '#fbbf24', big: `${days} HARI`, bigLabel: 'BERMULA SEKARANG', lines: [ev.desc] },
-                        `👑 *TITAH BOS AMAR!* ${ev.name} aktif ${days} hari!\n📜 ${ev.desc}`).catch(() => {});
+                    const fmt = t => new Date(t).toLocaleString('ms-MY', { timeZone: 'Asia/Kuala_Lumpur', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    await sendCard(sock, g, null, 'panelCard', {
+                        kicker: 'ACARA GLOBAL',
+                        title: ev.name.replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').trim(),
+                        accent: '#fbbf24',
+                        big: `${days} HARI`,
+                        bigLabel: 'TEMPOH',
+                        lines: [`Kesan: ${ev.desc}`, `Mula: ${fmt(ev.expiresAt - days * 864e5)}`, `Tamat: ${fmt(ev.expiresAt)}`],
+                        footerText: 'Titah Bos Amar. Jangan lepaskan peluang!'
+                    }).catch(() => {});
                 }
                 return;
             }
@@ -130,6 +142,16 @@ export default {
                 const t = args.join(' ').trim(); if (!t) return reply('Guna: `.siar [mesej]`');
                 for (const g of state.groups) await sock.sendMessage(g, { text: `📢 *PENGUMUMAN DARIPADA BOS AMAR*\n\n${t}` }).catch(() => {});
                 return reply(`✅ Disiarkan ke ${state.groups.length} grup.`);
+            }
+            case 'reset_season': {
+                const res = await endSeason(db);
+                const baris = res.winners.length
+                    ? res.winners.map((w, i) => `${['🥇', '🥈', '🥉'][i]} ${w.name} (+RM ${w.gain.toLocaleString('en-US')}) hadiah RM ${w.reward.toLocaleString('en-US')}`)
+                    : ['Tiada pemenang musim ni.'];
+                for (const g of new Set([jid, ...state.groups])) {
+                    sendCard(sock, g, null, 'panelCard', { kicker: 'MUSIM BARU', title: 'SEASON RESET', accent: '#fbbf24', big: 'MUSIM BARU', bigLabel: 'LIGA', lines: baris, footerText: 'Sejarah: .sejarah_musim' }).catch(() => {});
+                }
+                return reply('✅ Season direset. Pemenang dah dapat hadiah dan sejarah disimpan.');
             }
             case 'bida_now': await triggerRandomAuction(sock, jid); return;
             case 'mythic': return (await mythic.trigger(sock, jid)) ? undefined : reply('Makhluk mitos masih aktif di sini.');
