@@ -89,17 +89,6 @@ export default {
    .gabung [no] [no]   ·   .pameran [no]   ·   .tangkap [kod]
    .liga   ·   .panggil [nama]   ·   .ingat [fakta]
 
-━━ 10. AI SETIAP HARI ━━
-   .tanya   ·   .jelas   ·   .ringkas
-   .terjemah   ·   .inggeris   ·   .melayu
-   .loghat_kelantan   ·   .loghat_kedah   ·   .loghat_johor
-   .bahasa_genz   ·   .caption   ·   .slogan
-   .surat   ·   .emel   ·   .syair
-   .cerpen   ·   .lirik   ·   .kod
-   .debug   ·   .regex   ·   .semak_scam
-   .cyber_tip
-   ada 50 AI; taip .tanya untuk mula
-
 ━━ 11. HIBURAN & RAWAK ━━
    .dadu   ·   .koin   ·   .suit [batu/gunting/kertas]
    .bola8 [soalan]   ·   .ship [nama1] [nama2]   ·   .rate
@@ -115,10 +104,10 @@ export default {
    .tarung @user [rm]
 
 ━━ 13. BERITA & JUAL GAMBAR ━━
-   .berita_cyber   ·   .jual_gambar (hantar gambar barang)   ·   .setuju (sahkan jualan dalam 60 saat)
+   .berita_cyber   ·   .jual_gambar (hantar gambar barang) 
 
-━━ 14. PENCAPAIAN & VIDEO ━━
-   .achievement   ·   .pencapaian (kad pencapaian)   ·   .shadowstatus (hantar video, dapat versi HD untuk Status)
+━━ 14. PENCAPAIAN & ALBUM ━━
+   .achievement   ·   .pencapaian (kad pencapaian) .album
 
 Taip nama command untuk guna. Contoh: .mancing
 `.trim();
