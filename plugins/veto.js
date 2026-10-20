@@ -1,5 +1,6 @@
 import { isOwner, isOwnerMsg, config } from '../config.js';
-import { endSeason } from '../lib/season.js';
+import { standings, wipeSeason } from '../lib/season.js';
+import { clearSession } from '../lib/session.js';
 import { line } from '../lib/airi_lines.js';
 import { state, saveState, activeEvent, purgeActive } from '../lib/state.js';
 import { supported } from '../lib/effects.js';
@@ -59,15 +60,18 @@ const MENU = `╭━━━━━━━━━━━━━━━━━━━━━
    .jail_user @u [saat]   ·   .free_user @u   ·   .syscheck
 ━━ LELONG ━━
    .bida_now   (buka lelongan kontena sekarang)
+━━ SESI ━━
+   .reset_session   (kosong sesi WhatsApp, bot restart, scan QR baru)
 ━━ MUSIM ━━
-   .reset_season   (tutup musim, umum pemenang, simpan sejarah)
+   .reset_season   (preview reset penuh)
+   .reset_season ya   (sahkan reset penuh, tak boleh batal)
 ━━ ACARA BAHARU ━━
    FESTIVAL_IKAN   ·   HARI_JUDI_GILA   ·   TEKA_BERHADIAH   ·   BAYAR_BALIK_HUTANG
    Taip .list_event untuk senarai penuh.`;
 
 export default {
     name: 'veto_amar', priority: 10,
-    alias: ['veto', 'list_event', 'start_event', 'stop_event', 'musim', 'set_income', 'give_cash', 'give_gold', 'give_btc',
+    alias: ['veto', 'reset_session', 'list_event', 'start_event', 'stop_event', 'musim', 'set_income', 'give_cash', 'give_gold', 'give_btc',
         'jail_user', 'free_user', 'syscheck', 'siar', 'mythic', 'purge', 'maintenance', 'bulletin_now', 'testwelcome', 'spawn_boss'],
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid, sender = m.key.participant || jid;
@@ -144,15 +148,27 @@ export default {
                 for (const g of state.groups) await sock.sendMessage(g, { text: `📢 *PENGUMUMAN DARIPADA BOS AMAR*\n\n${t}` }).catch(() => {});
                 return reply(`✅ Disiarkan ke ${state.groups.length} grup.`);
             }
+            case 'reset_session': {
+                await clearSession(db.isMongo());
+                setTimeout(() => process.exit(0), 3000); // Render restart; QR baru dijana
+                return reply('🔑 Sesi dikosongkan. Bot restart dalam 3 saat. Buka link QR di Render dan scan semula.');
+            }
             case 'reset_season': {
-                const res = await endSeason(db);
+                const sahkan = (p?.args?.[0] || '').toLowerCase() === 'ya';
+                const semua = await db.getAllUsers();
+                if (!sahkan) {
+                    const st = (await standings(semua)).filter(w => w.gain > 0).slice(0, 3);
+                    const senarai = st.length ? st.map((w, i) => `${['🥇', '🥈', '🥉'][i]} ${w.name} (+RM ${w.gain.toLocaleString('en-US')})`).join('\n') : 'Tiada pemenang lagi.';
+                    return reply(`⚠️ *RESET SEASON - PREVIEW*\n\nAkan dipadam untuk ${semua.length} pemain:\n• duit poket dan bank\n• inventori, kenderaan, rumah\n• koleksi ikan dan album\n• progres misi dan pencapaian\n\nPemenang top 3 dapat badge kekal:\n${senarai}\n\nTaip \`.reset_season ya\` untuk sahkan. Tindakan ni tak boleh dibatalkan.`);
+                }
+                const res = await wipeSeason(db);
                 const baris = res.winners.length
-                    ? res.winners.map((w, i) => `${['🥇', '🥈', '🥉'][i]} ${w.name} (+RM ${w.gain.toLocaleString('en-US')}) hadiah RM ${w.reward.toLocaleString('en-US')}`)
+                    ? res.winners.map((w, i) => `${['🥇', '🥈', '🥉'][i]} ${w.name} (+RM ${w.gain.toLocaleString('en-US')})`)
                     : ['Tiada pemenang musim ni.'];
                 for (const g of new Set([jid, ...state.groups])) {
-                    sendCard(sock, g, null, 'panelCard', { kicker: 'MUSIM BARU', title: 'SEASON RESET', accent: '#fbbf24', big: 'MUSIM BARU', bigLabel: 'LIGA', lines: baris, footerText: 'Sejarah: .sejarah_musim' }).catch(() => {});
+                    sendCard(sock, g, null, 'panelCard', { kicker: 'MUSIM BARU', title: `MUSIM ${res.musim} BERMULA`, accent: '#fbbf24', big: 'RESET', bigLabel: 'SEMUA MULA DARI AWAL', lines: baris, footerText: 'Badge pemenang kekal. Sejarah: .sejarah_musim' }).catch(() => {});
                 }
-                return reply('✅ Season direset. Pemenang dah dapat hadiah dan sejarah disimpan.');
+                return reply(`✅ Musim ${res.musim} bermula. ${res.users} pemain direset. Pemenang dapat badge kekal.`);
             }
             case 'bida_now': await triggerRandomAuction(sock, jid); return;
             case 'mythic': return (await mythic.trigger(sock, jid)) ? undefined : reply('Makhluk mitos masih aktif di sini.');
