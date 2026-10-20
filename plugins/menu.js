@@ -1,39 +1,25 @@
-import { config } from '../config.js';
-import { sendCard } from '../lib/render.js';
-import { activeEvent } from '../lib/state.js';
+import { MENU_ZONES } from '../lib/menudata.js';
 
-function formatCompactNumber(number) {
-    if (isNaN(number) || !number) return '0';
-    const absVal = Math.abs(number);
-    if (absVal >= 1e12) return (number / 1e12).toFixed(1).replace(/\.0$/, '') + 'T';
-    if (absVal >= 1e9) return (number / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
-    if (absVal >= 1e6) return (number / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-    if (absVal >= 1e3) return (number / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
-    return number.toString();
-}
-
+// 📜 MENU - teks sahaja, ikut format yang dipilih owner.
+// Nama, tunai, bank dan kenderaan diambil dari profil pemain.
 export default {
     name: 'menu',
     alias: ['help', 'senarai', 'panel'],
+    category: 'info',
     execute: async ({ sock, m, user }) => {
-        try {
-            const jid = m.key.remoteJid;
-            const senderJid = m.key.participant || jid || '';
-            const cleanSender = String(senderJid).replace(/@.*$/, '').replace(/:.*$/, '').replace(/[^0-9]/g, '');
-
-            const cashRingkas = formatCompactNumber(user?.wallet || 0);
-            const bankRingkas = formatCompactNumber(user?.bank || 0);
-            const jenteraNama = user?.vehicle?.name ? String(user.vehicle.name).split(' ')[0] : 'Jalan Kaki';
-            const statusPlat = user?.vehicle?.plate ? `[${user.vehicle.plate}]` : '';
-
-            const menuText = `
-╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+        const jid = m.key.remoteJid;
+        const sender = m.key.participant || jid;
+        const nama = user?.name || sender.split('@')[0];
+        const tunai = Number(user?.wallet || 0).toLocaleString('en-US');
+        const bank = Number(user?.bank || 0).toLocaleString('en-US');
+        const kenderaan = user?.vehicle?.name ? String(user.vehicle.name).split(' ')[0] : 'Kaki';
+        const teks = `╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
    ✨  AIRI'S CORNER  ·  MENU
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-👤  @${cleanSender}
-💵  Tunai   RM ${cashRingkas}
-🏦  Bank    RM ${bankRingkas}
-🚗  Kenderaan  ${jenteraNama} ${statusPlat}
+👤  @${nama}
+💵  Tunai   RM ${tunai}
+🏦  Bank    RM ${bank}
+🚗  Kenderaan  ${kenderaan}
 
 ━━ 1. AI, MUZIK & RPG ━━
    .airi [teks]   ·   .misi (RPG)   ·   .roast @user
@@ -104,17 +90,12 @@ export default {
    .tarung @user [rm]
 
 ━━ 13. BERITA & JUAL GAMBAR ━━
-   .berita_cyber   ·   .jual_gambar (hantar gambar barang) 
+   .berita_cyber   ·   .jual_gambar (hantar gambar barang)
 
 ━━ 14. PENCAPAIAN & ALBUM ━━
-   .achievement   ·   .pencapaian (kad pencapaian) .album
+   .achievement   ·   .pencapaian (kad pencapaian)   ·   .album
 
-Taip nama command untuk guna. Contoh: .mancing
-`.trim();
-
-            return sock.sendMessage(jid, { text: menuText, mentions: [senderJid] }, { quoted: m });
-        } catch (err) {
-            console.error("Menu Error:", err);
-        }
+Taip nama command untuk guna. Contoh: .mancing`;
+        return sock.sendMessage(jid, { text: teks }, { quoted: m });
     }
 };

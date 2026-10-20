@@ -45,24 +45,25 @@ export const VETO_EVENTS = {
 };
 export const activeGlobalEvent = null; // dikekalkan untuk keserasian import lama; guna state.event
 
-const MENU = `🛡️ *PANGKALAN VETO BOS AMAR*
+const MENU = `╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+   🛡️  PANGKALAN VETO  ·  BOS AMAR
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
-*Acara*
-.list_event ︲ .start_event [KOD] [HARI] ︲ .stop_event ︲ .musim
-*Kuasa*
-.siar [teks] ︲ .mythic ︲ .purge on/off ︲ .maintenance on/off
-.bulletin_now ︲ .testwelcome
-*Pemain*
-.set_income [n] ︲ .give_cash @u [n] ︲ .give_gold @u [n] ︲ .give_btc @u [n]
-.jail_user @u [saat] ︲ .free_user @u ︲ .syscheck
-*Lelong*
-.bida_now ︲ buka lelongan kontena sekarang
-*Musim*
-.reset_season ︲ tutup musim, umum pemenang, simpan sejarah
-
-*Acara baharu*
-FESTIVAL_IKAN, HARI_JUDI_GILA, TEKA_BERHADIAH, BAYAR_BALIK_HUTANG
-_Taip .list_event untuk senarai penuh._`;
+━━ ACARA ━━
+   .list_event   ·   .start_event [KOD] [HARI]   ·   .stop_event   ·   .musim
+━━ KUASA ━━
+   .siar [teks]   ·   .mythic   ·   .purge on/off   ·   .maintenance on/off
+   .bulletin_now   ·   .testwelcome
+━━ PEMAIN ━━
+   .set_income [n]   ·   .give_cash @u [n]   ·   .give_gold @u [n]   ·   .give_btc @u [n]
+   .jail_user @u [saat]   ·   .free_user @u   ·   .syscheck
+━━ LELONG ━━
+   .bida_now   (buka lelongan kontena sekarang)
+━━ MUSIM ━━
+   .reset_season   (tutup musim, umum pemenang, simpan sejarah)
+━━ ACARA BAHARU ━━
+   FESTIVAL_IKAN   ·   HARI_JUDI_GILA   ·   TEKA_BERHADIAH   ·   BAYAR_BALIK_HUTANG
+   Taip .list_event untuk senarai penuh.`;
 
 export default {
     name: 'veto_amar', priority: 10,

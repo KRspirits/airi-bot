@@ -33,7 +33,8 @@ export default {
         }
 
         if (cmd === 'album') {
-            const pd = ensureP(sender), owned = ownedNames(pd), sub = (args[0] || 'mitos').toLowerCase();
+            const pd = ensureP(sender), owned = ownedNames(pd);
+            let sub = (args[0] || 'mitos').toLowerCase();
             if (sub === 'klaim') {
                 user.album_claim ||= {}; let total = 0; const got = [];
                 for (const r of ['biasa', 'rare', 'mitos']) {

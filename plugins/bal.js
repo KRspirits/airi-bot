@@ -17,18 +17,18 @@ export default {
             
             const jumlahTunai = poket + bank + duitGelap;
 
-            const teksBal = `
-┌───「 💳 **PORTFOLIO KEWANGAN** 」
-├ 👤 **Nama** : ${nama}
-├ 💵 **Poket** : RM ${poket.toLocaleString()}
-├ 🏦 **Bank** : RM ${bank.toLocaleString()}
-├ 🏴‍☠️ **Duit Gelap**: RM ${duitGelap.toLocaleString()}
-├ 🪙 **Emas** : ${emas.toLocaleString()} Gram
-├ ₿ **BTC** : ${btc.toLocaleString()} Unit
-├ 📊 **Jumlah** : RM ${jumlahTunai.toLocaleString()}
-└───────────────────────────
+            const teksBal = `╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+   💳  AIRI'S CORNER  ·  PORTFOLIO
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+👤  ${nama}
+💵  Poket     RM ${poket.toLocaleString()}
+🏦  Bank      RM ${bank.toLocaleString()}
+🏴‍☠️  Duit Gelap  RM ${duitGelap.toLocaleString()}
+🪙  Emas      ${emas.toLocaleString()} gram
+₿  BTC       ${btc.toLocaleString()} unit
+📊  Jumlah    RM ${jumlahTunai.toLocaleString()}
 
-💬 Airi: \"Banyak simpan kat bank, tak risau kena hack ke? Belanja aku la sikit.\"`.trim();
+💬 Airi: "Banyak simpan kat bank, tak risau kena hack ke? Belanja aku la sikit."`.trim();
 
             try {
                 const tier = bankTier(bank);
