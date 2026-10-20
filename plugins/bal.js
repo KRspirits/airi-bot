@@ -1,3 +1,5 @@
+import { renderBankCard, bankTier } from '../lib/idcards.js';
+
 export default {
     name: 'balance',
     alias: ['bal', 'duit', 'akaun', 'wallet'],
@@ -26,8 +28,15 @@ export default {
 ├ 📊 **Jumlah** : RM ${jumlahTunai.toLocaleString()}
 └───────────────────────────
 
-💬 **Airi**: "Banyak simpan dalam bank tu tak takut kena hack ke bang? Belanja la aku sikit."`.trim();
+💬 Airi: \"Banyak simpan kat bank, tak risau kena hack ke? Belanja aku la sikit.\"`.trim();
 
+            try {
+                const tier = bankTier(bank);
+                const img = renderBankCard(user, nama);
+                return sock.sendMessage(jid, { image: img, caption: `💳 Kad ${tier.label} kau\n` + teksBal }, { quoted: m });
+            } catch (e) {
+                console.error('[KAD BANK]', e.message);
+            }
             return sock.sendMessage(jid, { text: teksBal }, { quoted: m });
         } catch (err) {
             console.error("Balance Error:", err);

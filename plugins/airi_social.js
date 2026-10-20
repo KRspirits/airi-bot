@@ -93,7 +93,7 @@ export default {
             ]);
             const line = clean(ai) && !/RALAT/.test(ai || '') ? clean(ai) : fb;
             await sock.sendMessage(jid, { text: `🎤 *ROAST UNTUK ${tag(target)}*\n\n${line}\n\n_Usik manja je tau, jangan merajuk!_ 🌸`, mentions: [target] }, { quoted: m });
-            if (config.voice && args.includes('suara')) await speak(sock, jid, line);
+            if (config.voice && args.includes('suara')) await speak(sock, jid, 'welcome');
             return;
         }
 
@@ -175,7 +175,7 @@ export default {
         if (cmd === 'buletin_cyber' || cmd === 'buletin') {
             const data = await makeBulletin(db, jid.endsWith('@g.us') ? jid : undefined);
             await sendCard(sock, jid, m, 'newsCard', data, `📰 *THE AIRI TIMES* | ${data.headline}`);
-            if (config.voice && args.includes('suara')) await speak(sock, jid, data.voiceText);
+            if (config.voice && args.includes('suara')) await speak(sock, jid, 'eventStart');
         }
     }
 };

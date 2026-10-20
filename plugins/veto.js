@@ -1,4 +1,4 @@
-import { isOwner, config } from '../config.js';
+import { isOwner, isOwnerMsg, config } from '../config.js';
 import { line } from '../lib/airi_lines.js';
 import { state, saveState, activeEvent, purgeActive } from '../lib/state.js';
 import { supported } from '../lib/effects.js';
@@ -76,7 +76,7 @@ export default {
             const left = Math.max(1, Math.ceil((ev.expiresAt - Date.now()) / 3600e3));
             return reply(`🌐 *ACARA AKTIF*\n🔥 ${ev.name}\n📜 ${ev.desc}\n⏳ Baki: ${left} jam`);
         }
-        if (!isOwner(sender)) { if (cmd === 'veto') return reply('⛔ *AKSES DITOLAK!* Menu Veto hanya untuk Bos Amar!'); return; }
+        if (!isOwnerMsg(m)) { if (cmd === 'veto') return reply('⛔ *AKSES DITOLAK!* Menu Veto hanya untuk Bos Amar!'); return; }
 
         switch (cmd) {
             case 'veto': return reply(MENU);
@@ -87,7 +87,7 @@ export default {
                 if (!supported(kod)) return reply(`⚠️ ${kod} belum ada kesan sebenar dalam enjin. Pilih acara lain.`);
                 state.event = { ...VETO_EVENTS[kod], code: kod, expiresAt: Date.now() + days * 864e5, days }; saveState();
                 const ev = state.event;
-                if (config.voice) for (const g of new Set([jid, ...state.groups])) speak(sock, g, line('eventStart')).catch(() => {});
+                if (config.voice) for (const g of new Set([jid, ...state.groups])) speak(sock, g, 'eventStart').catch(() => {});
                 for (const g of new Set([jid, ...state.groups])) {
                     await sendCard(sock, g, null, 'panelCard', { kicker: 'ACARA GLOBAL', title: ev.name.replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').trim(), accent: '#fbbf24', big: `${days} HARI`, bigLabel: 'BERMULA SEKARANG', lines: [ev.desc] },
                         `👑 *TITAH BOS AMAR!* ${ev.name} aktif ${days} hari!\n📜 ${ev.desc}`).catch(() => {});
@@ -96,7 +96,7 @@ export default {
             }
             case 'stop_event': {
                 state.event = null; saveState();
-                if (config.voice) for (const g of new Set([jid, ...state.groups])) speak(sock, g, line('eventEnd')).catch(() => {});
+                if (config.voice) for (const g of new Set([jid, ...state.groups])) speak(sock, g, 'eventEnd').catch(() => {});
                 return reply('👑 Semua acara veto ditutup.');
             }
             case 'set_income': { const n = parseInt(args[0]); if (isNaN(n) || n < 0) return reply('❌ Amaun tak sah.'); user.wallet = n; await db.saveUser(user); return reply(`👑 Dana tunai ditetapkan ${rm(n)}.`); }

@@ -19,7 +19,7 @@ async function resolveHeist(sock, jid, db) {
     const ids = [...L.members.keys()], users = await Promise.all(ids.map(id => db.getUser(id)));
     if (ids.length < 2) {
         for (const u of users) { u.wallet += HEIST_FEE; await db.saveUser(u); }
-        return sock.sendMessage(jid, { text: '🚫 Heist dibatalkan sebab tak cukup orang (minimum 2). Duit masuk dikembalikan ya~' });
+        return sock.sendMessage(jid, { text: '🚫 Heist batal, orang tak cukup (minimum 2). Duit masuk dah dipulangkan.' });
     }
     const roles = ['Hacker', 'Pemandu', 'Penjaga', 'Pemecah Peti', 'Pengintip'];
     const chance = Math.min(0.8, 0.3 + 0.08 * ids.length + (purgeActive() ? 0.1 : 0));

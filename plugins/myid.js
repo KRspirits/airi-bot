@@ -1,3 +1,4 @@
+import { renderIC } from '../lib/idcards.js';
 export default {
     name: 'myid',
     alias: ['ic', 'profile'],
@@ -23,6 +24,12 @@ export default {
 ✅ *Profil Aktif & Tersimpan dalam Pangkalan Data.*
 💬 𝗔𝗶𝗿𝗶: "Simpan rekod ni elok-elok, jangan sampai terpadam waktu reset nanti!"`;
 
+        try {
+            const img = renderIC(user, senderName);
+            return sock.sendMessage(jid, { image: img, caption: `🪪 Kad pengenalan kau\nTunai: RM ${user.wallet.toLocaleString()} · Bank: RM ${user.bank.toLocaleString()}` }, { quoted: m });
+        } catch (e) {
+            console.error('[KAD IC]', e.message);
+        }
         return sock.sendMessage(jid, { text: teksId }, { quoted: m });
     }
 };

@@ -22,3 +22,11 @@ export function isOwner(jid) {
     const n = String(jid || '').replace(/@.*$/, '').replace(/:.*$/, '').replace(/\D/g, '');
     return !!n && owners.includes(n);
 }
+
+// Semak SEMUA pengenal dalam mesej. WhatsApp boleh hantar LID dalam group,
+// dan nombor telefon ada dalam participantAlt / remoteJidAlt.
+export function isOwnerMsg(m) {
+    const k = m?.key || {};
+    return [k.participant, k.participantAlt, k.remoteJidAlt, k.remoteJid].some(isOwner);
+}
+

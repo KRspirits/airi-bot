@@ -55,7 +55,7 @@ export default {
             if (JENAYAH_LIST[cmd]) {
                 if (user.jail.status && Date.now() < user.jail.release_at) {
                     const baki = Math.ceil((user.jail.release_at - Date.now()) / 60000);
-                    return sock.sendMessage(jid, { text: `⛓️ Kau masih meringkuk dalam lokap! Baki hukuman: ${baki} minit.` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `⛓️ Kau masih dalam lokap. Tinggal ${baki} minit lagi.` }, { quoted: m });
                 } else if (user.jail.status) {
                     user.jail.status = false;
                 }

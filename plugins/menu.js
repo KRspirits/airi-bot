@@ -38,7 +38,7 @@ export default {
 ━━ 1. AI, MUZIK & RPG ━━
    .airi [teks]   ·   .misi (RPG)   ·   .roast @user
    .puji @user   ·   .pantun_ai   ·   .teka_lagu
-   .jawab [lirik]   ·   .buletin_cyber
+   .jawab [lirik]   ·   .buletin_cyber   ·   .taksir [gambar/teks]
 
 ━━ 2. EKONOMI, PASARAN & EVENT ━━
    .kerja   ·   .daily   ·   .bal
@@ -89,7 +89,18 @@ export default {
    .gabung [no] [no]   ·   .pameran [no]   ·   .tangkap [kod]
    .liga   ·   .panggil [nama]   ·   .ingat [fakta]
 
-━━ 10. HIBURAN & RAWAK ━━
+━━ 10. AI SETIAP HARI ━━
+   .tanya   ·   .jelas   ·   .ringkas
+   .terjemah   ·   .inggeris   ·   .melayu
+   .loghat_kelantan   ·   .loghat_kedah   ·   .loghat_johor
+   .bahasa_genz   ·   .caption   ·   .slogan
+   .surat   ·   .emel   ·   .syair
+   .cerpen   ·   .lirik   ·   .kod
+   .debug   ·   .regex   ·   .semak_scam
+   .cyber_tip
+   ada 50 AI; taip .tanya untuk mula
+
+━━ 11. HIBURAN & RAWAK ━━
    .dadu   ·   .koin   ·   .suit [batu/gunting/kertas]
    .bola8 [soalan]   ·   .ship [nama1] [nama2]   ·   .rate
    .mood   ·   .horoskop   ·   .ramal
@@ -98,7 +109,7 @@ export default {
    .kira [a] [+-*/] [b]   ·   .passgen   ·   .lotot
    ada 50 fun; taip .dadu untuk mula
 
-━━ 12. JUDI AI (MAX RM5,000) ━━
+━━ 12. JUDI AI (TARASAN MAX RM5,000) ━━
    .tekaan [1-10] [rm]   ·   .roda [rm]   ·   .kad_besar h/r [rm]
    .dadu7 atas/bawah/tujuh [rm]   ·   .peti [1-5] [rm]   ·   .kupon [rm]
    .tarung @user [rm]
@@ -107,12 +118,11 @@ export default {
    .berita_cyber   ·   .jual_gambar (hantar gambar barang)   ·   .setuju (sahkan jualan dalam 60 saat)
 
 ━━ 14. PENCAPAIAN & VIDEO ━━
-   .achievement   ·   .pencapaian (kad pencapaian)  
+   .achievement   ·   .pencapaian (kad pencapaian)   ·   .shadowstatus (hantar video, dapat versi HD untuk Status)
 
 Taip nama command untuk guna. Contoh: .mancing
 `.trim();
 
-            await sendCard(sock, jid, m, 'menuCard', { name: user?.name, wallet: user?.wallet || 0, event: activeEvent()?.name }, "🌸 Panel Airi's Corner");
             return sock.sendMessage(jid, { text: menuText, mentions: [senderJid] }, { quoted: m });
         } catch (err) {
             console.error("Menu Error:", err);

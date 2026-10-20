@@ -1,3 +1,4 @@
+import { withUserLock } from '../lib/money.js';
 import { speak } from '../lib/voice.js';
 import { config } from '../config.js';
 import { line } from '../lib/airi_lines.js';
@@ -91,7 +92,7 @@ export async function triggerRandomAuction(sock, chatId) {
 👉 Taip: \`.bida [jumlah_rm]\` untuk membida!`;
 
     await sock.sendMessage(chatId, { text: notis });
-    if (config.voice) speak(sock, chatId, line('auction')).catch(() => {});
+    if (config.voice) speak(sock, chatId, 'auction').catch(() => {});
 
     // Tamat Lelongan Selepas 60 Saat
     setTimeout(async () => {
@@ -101,10 +102,11 @@ export async function triggerRandomAuction(sock, chatId) {
 
         if (!lelong.highestBidder) {
             delete auctionState[chatId];
-            return sock.sendMessage(chatId, { text: '🔔 *LELONGAN TAMAT!* Tiada sesiapa yang meletakkan tawaran harga.' });
+            return sock.sendMessage(chatId, { text: '🔔 *Lelongan dah habis!* Tak ada sesiapa bida langsung. Kontena tu balik ke asal.' });
         }
 
         const { db } = await import('../lib/database.js');
+        await withUserLock(lelong.highestBidder, async () => {
         const pemenang = await db.getUser(lelong.highestBidder);
         const hasilLoot = AUCTION_LOOT_POOL[Math.floor(Math.random() * AUCTION_LOOT_POOL.length)];
 
@@ -112,6 +114,7 @@ export async function triggerRandomAuction(sock, chatId) {
         pemenang.stats = pemenang.stats || {};
         pemenang.stats.lelong_menang = (pemenang.stats.lelong_menang || 0) + 1;
         await db.saveUser(pemenang);
+        });
 
         const roaster = hasilLoot.type === "untung"
             ? "PERGHHH KAYA RAYA! Rezeki terpijak dapat barang fizikal bernilai tinggi atau tunai kontang!"
@@ -145,7 +148,7 @@ export default {
         const lelong = auctionState[jid];
 
         if (!lelong || !lelong.active) {
-            return sock.sendMessage(jid, { text: '❌ Tiada lelongan kontena misteri yang sedang aktif sekarang!' }, { quoted: m });
+            return sock.sendMessage(jid, { text: '❌ Tak ada lelongan kontena sekarang. Tunggu kejap lagi.' }, { quoted: m });
         }
 
         const amaunBida = parseInt(args[0]);

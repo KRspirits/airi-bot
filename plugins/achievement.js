@@ -19,6 +19,15 @@ const ART = path.join(__dirname, '..', 'assets', 'airi.png');
  * Kira semua pencapaian. Pure function (boleh diuji tanpa WhatsApp).
  * owned: Set nama ikan. stats: user.stats. catalog: { biasa, rare, mitos }. wallet: baki wallet + bank.
  */
+// Hadiah tunai sekali (dibayar bila pertama kali dibuka). Kecil supaya tak banjir duit.
+export const REWARDS = {
+    'Pemancing Pertama': 5000, 'Koleksi 10 Spesies': 15000, 'Galeri 30 Spesies': 40000,
+    'Pemburu Rare': 25000, 'Juara Rare': 80000, 'Pemilik Mitos': 50000, 'Kaki Mitos': 150000,
+    'Mitos Lengkap': 500000, 'Album Biasa Lengkap': 100000, 'Tukang Besi': 40000,
+    'Harta Karun': 20000, 'Penjual Gambar': 15000, 'Pemenang Lelong': 30000,
+    'Penjudi Berani': 60000, 'Jutawan Kecil': 250000
+};
+
 export function computeAchievements(owned, stats = {}, catalog = CATALOG, wallet = 0) {
     const cnt = list => (list || []).filter(f => owned.has(f.nama)).length;
     const total = owned.size;
@@ -26,20 +35,20 @@ export function computeAchievements(owned, stats = {}, catalog = CATALOG, wallet
     const s = k => Number(stats[k] || 0);
     const defs = [
         { id: 'Pemancing Pertama', desc: 'Tangkap 1 spesies', cur: total, target: 1 },
-        { id: 'Koleksi 10 Spesies', desc: 'Miliki 10 spesies berbeza', cur: total, target: 10 },
-        { id: 'Galeri 30 Spesies', desc: 'Miliki 30 spesies berbeza', cur: total, target: 30 },
-        { id: 'Pemburu Rare', desc: 'Miliki 10 ikan rare', cur: rare, target: 10 },
-        { id: 'Juara Rare', desc: 'Miliki 20 ikan rare', cur: rare, target: 20 },
+        { id: 'Koleksi 10 Spesies', desc: 'Miliki 20 spesies berbeza', cur: total, target: 20 },
+        { id: 'Galeri 30 Spesies', desc: 'Miliki 60 spesies berbeza', cur: total, target: 60 },
+        { id: 'Pemburu Rare', desc: 'Miliki 25 ikan rare', cur: rare, target: 25 },
+        { id: 'Juara Rare', desc: 'Miliki 50 ikan rare', cur: rare, target: 50 },
         { id: 'Pemilik Mitos', desc: 'Tangkap 1 ikan mitos', cur: mitos, target: 1 },
-        { id: 'Kaki Mitos', desc: 'Miliki 3 ikan mitos', cur: mitos, target: 3 },
+        { id: 'Kaki Mitos', desc: 'Miliki 5 ikan mitos', cur: mitos, target: 5 },
         { id: 'Mitos Lengkap', desc: 'Lengkapkan semua ikan mitos', cur: mitos, target: (catalog.mitos || []).length || 1 },
         { id: 'Album Biasa Lengkap', desc: 'Lengkapkan semua ikan biasa', cur: biasa, target: (catalog.biasa || []).length || 1 },
-        { id: 'Tukang Besi', desc: 'Tarik magnet 50 kali', cur: s('magnet_tarik'), target: 50 },
-        { id: 'Harta Karun', desc: 'Jumpa 1 harta karun magnet', cur: s('magnet_treasure'), target: 1 },
-        { id: 'Penjual Gambar', desc: 'Jual 5 barang guna gambar', cur: s('jual_total'), target: 5 },
-        { id: 'Pemenang Lelong', desc: 'Menang 1 lelongan kontena', cur: s('lelong_menang'), target: 1 },
-        { id: 'Penjudi Berani', desc: 'Main 20 permainan judi AI', cur: s('judi_ai'), target: 20 },
-        { id: 'Jutawan Kecil', desc: 'Kumpul RM 1,000,000 (poket + bank)', cur: Math.floor(Number(wallet) || 0), target: 1000000 }
+        { id: 'Tukang Besi', desc: 'Tarik magnet 200 kali', cur: s('magnet_tarik'), target: 200 },
+        { id: 'Harta Karun', desc: 'Jumpa 3 harta karun magnet', cur: s('magnet_treasure'), target: 3 },
+        { id: 'Penjual Gambar', desc: 'Jual 20 barang guna gambar', cur: s('jual_total'), target: 20 },
+        { id: 'Pemenang Lelong', desc: 'Menang 5 lelongan kontena', cur: s('lelong_menang'), target: 5 },
+        { id: 'Penjudi Berani', desc: 'Main 100 permainan judi AI', cur: s('judi_ai'), target: 100 },
+        { id: 'Jutawan Kecil', desc: 'Kumpul RM 10,000,000 (poket + bank)', cur: Math.floor(Number(wallet) || 0), target: 10000000 }
     ];
     return defs.map(d => ({ ...d, cur: Math.min(d.cur, d.target), unlocked: d.cur >= d.target }));
 }
@@ -112,12 +121,16 @@ export default {
 
             const baru = [];
             user.badges = Array.isArray(user.badges) ? user.badges : [];
-            for (const a of list) if (a.unlocked && !user.badges.includes(a.id)) { user.badges.push(a.id); baru.push(a.id); }
+            let hadiah = 0;
+            for (const a of list) if (a.unlocked && !user.badges.includes(a.id)) {
+                user.badges.push(a.id); baru.push(a.id); hadiah += REWARDS[a.id] || 0;
+            }
+            if (hadiah) user.wallet = (user.wallet || 0) + hadiah;
             if (baru.length) await db.saveUser(user);
 
             const img = await drawCard(list, user.name || 'Warga Gelap');
             const dibuka = list.filter(x => x.unlocked).length;
-            const teks = baru.length ? `\n🎉 Badge baharu: ${baru.join(', ')}` : '';
+            const teks = baru.length ? `\n🎉 Badge baharu: ${baru.join(', ')}\n💰 Hadiah: RM ${hadiah.toLocaleString('en-US')}` : '';
             return sock.sendMessage(jid, { image: img, caption: `🏆 Pencapaian kau: ${dibuka}/${list.length}${teks}` }, { quoted: m });
         } catch (e) {
             console.error('[ACHIEVEMENT]', e.message);

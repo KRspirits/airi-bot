@@ -6,7 +6,8 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import qrcodeTerminal from 'qrcode-terminal';
 import QRCode from 'qrcode';
-import { config, isOwner } from './config.js';
+import { config, isOwner, isOwnerMsg } from './config.js';
+import { withUserLock } from './lib/money.js';
 import { db } from './lib/database.js';
 import { loadPlugins } from './lib/loader.js';
 import { initState, state, addGroup, activeEvent, purgeActive } from './lib/state.js';
@@ -152,12 +153,13 @@ async function onMessage(m) {
             return;
         }
 
-        if (state.maintenance && !isOwner(senderJid)) {
+        if (state.maintenance && !isOwnerMsg(m)) {
             if (allow('maint:' + jid, 60000)) await sock.sendMessage(jid, { text: '🛠️ Airi tengah dikemaskini sekejap. Cuba lagi nanti ya!' }, { quoted: m });
             return;
         }
         if (!isMe && !allow(senderJid, 1500)) return sock.sendMessage(jid, { react: { text: '⏳', key: m.key } }).catch(() => {});
 
+        return withUserLock(senderJid, async () => {
         const user = await db.getUser(senderJid, senderName), before = snapshot(user);
         try { 
             await action.execute({ sock, m, user, db, args: parsed.args || [] }); 
@@ -168,6 +170,7 @@ async function onMessage(m) {
             return;
         }
         await afterCommand({ m, jid, senderJid, senderName, cmd: parsed.cmd, action, before });
+        });
         return;
     }
 
