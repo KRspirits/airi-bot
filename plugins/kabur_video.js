@@ -78,7 +78,7 @@ export default {
         if (vid.seconds && vid.seconds > MAX_SECONDS) return reply(`❌ Video terlalu panjang. Maks ${MAX_SECONDS} saat.`);
         if (vid.fileLength && Number(vid.fileLength) > MAX_BYTES) return reply('❌ Video terlalu besar. Maks 16MB.');
         if (!allow(sender + ':kabur', 20000)) return reply('⏳ Sabar, video sebelum ni tengah diproses.');
-        if (busy.has(sender)) return reply('⏳ Video kau masih diproses.');
+        if (busy.has(sender)) return reply('⏳ Video awak masih diproses.');
 
         busy.add(sender);
         try {

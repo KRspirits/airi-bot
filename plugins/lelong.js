@@ -101,7 +101,7 @@ export default {
                 }
 
                 if (user.wallet < nilaiBidaan) {
-                    return sock.sendMessage(jid, { text: `💸 Duit tunai poket kau tidak cukup RM ${nilaiBidaan.toLocaleString()} untuk membida sebanyak ini!` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `💸 Duit tunai poket awak tidak cukup RM ${nilaiBidaan.toLocaleString()} untuk membida sebanyak ini!` }, { quoted: m });
                 }
 
                 // Kemaskini data bidaan dalam memori global secara langsung

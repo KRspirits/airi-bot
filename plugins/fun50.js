@@ -17,38 +17,38 @@ const DATA = {
         'Lebah boleh kenal muka manusia.'
     ],
     motivasi: [
-        'Hari ni tak perlu sempurna. Cukup kau mula.',
-        'Kau dah jauh lebih kuat daripada masa kau mula dulu.',
+        'Hari ni tak perlu sempurna. Cukup awak mula.',
+        'Awak dah jauh lebih kuat daripada masa awak mula dulu.',
         'Kerja kecil setiap hari lebih kuat daripada usaha besar sekali je.',
-        'Rehat itu bukan kalah. Kau tetap boleh teruskan selepas tu.'
+        'Rehat itu bukan kalah. Awak tetap boleh teruskan selepas tu.'
     ],
     horoskop: [
-        'Hari ni bintang kau cerah. Ada peluang kecil yang buat kau senyum.',
+        'Hari ni bintang awak cerah. Ada peluang kecil yang buat awak senyum.',
         'Elak bergaduh dalam group. Diam kadang-kadang lebih menang.',
         'Duit datang perlahan. Jangan belanja semua sekali.',
-        'Ada seseorang yang rindu kau. Cuba mesej dia.'
+        'Ada seseorang yang rindu awak. Cuba mesej dia.'
     ],
     ramalan: [
         'Esok ada kejutan kecil yang positif.',
         'Jangan terlalu percaya mesej "last minute" hari ni.',
         'Makan sedap hari ni, tapi jangan lupa bayar hutang.',
-        'Peluang besar akan sampai bila kau berhenti tunggu.'
+        'Peluang besar akan sampai bila awak berhenti tunggu.'
     ],
     jokes: [
         'Kenapa ikan tak pernah main tenis? Takut tersangkut di jaring.',
-        'Apa beza kopi dengan Airi? Kopi buat kau bangun, Airi buat kau lapar.',
+        'Apa beza kopi dengan Airi? Kopi buat awak bangun, Airi buat awak lapar.',
         'Doktor: awak perlu kurang makan. Pesakit: tapi saya tak makan pun. Doktor: itu sebab kurang tu.',
         'Kenapa komputer sejuk? Sebab ada banyak Windows terbuka.'
     ],
     quotes: [
         'Yang penting bukan laju, tapi konsisten.',
-        'Kawan sejati ialah yang tegur kau sebelum orang lain mengutuk.',
+        'Kawan sejati ialah yang tegur awak sebelum orang lain mengutuk.',
         'Jangan takut mula dari kecil.'
     ],
     teka: [
         ['Ada kota, tiada rumah. Ada gunung, tiada pokok. Ada air, tiada ikan. Apa tu?', 'peta'],
-        ['Makin banyak kau ambil, makin besar lubang. Apa tu?', 'lubang'],
-        ['Aku ada leher tapi tak ada kepala. Aku ada badan tapi tak ada tangan. Apa aku?', 'botol'],
+        ['Makin banyak awak ambil, makin besar lubang. Apa tu?', 'lubang'],
+        ['Saya ada leher tapi tak ada kepala. Saya ada badan tapi tak ada tangan. Apa saya?', 'botol'],
         ['Hijau di luar, merah di dalam, ramai suka tapi bukan semua. Apa tu?', 'tembikai']
     ],
     cerita: [
@@ -58,7 +58,7 @@ const DATA = {
     warna: ['Merah jambu', 'Biru laut', 'Hijau pucuk', 'Kuning kunyit', 'Ungu lavender', 'Oren senja', 'Putih susu', 'Hitam malam'],
     emoji: ['🌸', '🐟', '✨', '🎀', '🔥', '🌊', '🍜', '🦑', '💎', '🌙'],
     tips: [
-        'Tulis 3 benda yang kau nak siap hari ni, bukan 10.',
+        'Tulis 3 benda yang awak nak siap hari ni, bukan 10.',
         'Tutup notifikasi 25 minit sekali untuk fokus.',
         'Minum air dulu sebelum buka telefon pagi-pagi.',
         'Simpan duit dulu, belanja kemudian.'
@@ -98,8 +98,8 @@ const HANDLERS = {
         const pilihan = (a[0] || '').toLowerCase();
         if (!SUIT.includes(pilihan)) return '❌ Format: `.suit batu/gunting/kertas`';
         const bot = pick(SUIT);
-        const hasil = pilihan === bot ? 'Seri!' : SUIT_WIN[pilihan] === bot ? 'Kau menang! 🎉' : 'Airi menang! 😜';
-        return `✊ Kau: *${pilihan}* | Airi: *${bot}*\n${hasil}`;
+        const hasil = pilihan === bot ? 'Seri!' : SUIT_WIN[pilihan] === bot ? 'Awak menang! 🎉' : 'Airi menang! 😜';
+        return `✊ Awak: *${pilihan}* | Airi: *${bot}*\n${hasil}`;
     },
     pilihan: (a) => {
         const opts = a.join(' ').split('|').map(s => s.trim()).filter(Boolean);
@@ -112,25 +112,25 @@ const HANDLERS = {
         return `💞 ${a[0]} x ${a[1]}\nPeratus padanan: *${p}%*`;
     },
     rate: (a) => {
-        const subjek = a.join(' ') || 'kau';
+        const subjek = a.join(' ') || 'awak';
         const n = seedOf(subjek.toLowerCase()) % 11;
         return `⭐ Rating untuk *${subjek}*: ${n}/10 (${RATE_LABEL(n)})`;
     },
     mood: (a) => {
-        const subjek = a.join(' ') || 'kau';
+        const subjek = a.join(' ') || 'awak';
         const mood = ['ceria', 'mengantuk', 'bersemangat', 'lapar', 'serabut', 'tenang'];
         return `🌈 Mood *${subjek}* hari ni: ${seededPick(mood, seedOf(subjek + myt().day))}`;
     },
     horoskop: (a) => {
-        const z = a.join(' ') || 'kau';
+        const z = a.join(' ') || 'awak';
         return `🔮 Horoskop *${z}*: ${seededPick(DATA.horoskop, seedOf(z + myt().day))}`;
     },
     zodiak: (a) => {
         const z = ['Kambing', 'Lembu', 'Kembar', 'Ketam', 'Singa', 'Dara', 'Penimbang', 'Kala', 'Memanah', 'Tugu', 'Air', 'Ikan'];
-        const nama = a.join(' ') || 'kau';
+        const nama = a.join(' ') || 'awak';
         return `♈ Zodiak *${nama}*: ${seededPick(z, seedOf(nama))}`;
     },
-    ramal: (a) => `🔮 ${seededPick(DATA.ramalan, seedOf((a.join(' ') || 'kau') + myt().day))}`,
+    ramal: (a) => `🔮 ${seededPick(DATA.ramalan, seedOf((a.join(' ') || 'awak') + myt().day))}`,
     motivasi: () => `💪 ${pick(DATA.motivasi)}`,
     fakta: () => `🧠 ${pick(DATA.fakta)}`,
     joke: () => `😂 ${pick(DATA.jokes)}`,
@@ -140,7 +140,7 @@ const HANDLERS = {
         if (!kg || !cm) return '❌ Format: `.bmi 70 170` (kg, cm)';
         const bmi = kg / ((cm / 100) ** 2);
         const label = bmi < 18.5 ? 'Kurang berat' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Berlebihan' : 'Obes';
-        return `⚖️ BMI kau: *${bmi.toFixed(1)}* (${label})`;
+        return `⚖️ BMI awak: *${bmi.toFixed(1)}* (${label})`;
     },
     umur: (a) => {
         const d = new Date(a[0]);
@@ -178,7 +178,7 @@ const HANDLERS = {
     kad: () => {
         const nilai = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
         const sut = ['♠️', '♥️', '♦️', '♣️'];
-        return `🃏 Kad kau: *${pick(nilai)}${pick(sut)}*`;
+        return `🃏 Kad awak: *${pick(nilai)}${pick(sut)}*`;
     },
     teka: () => {
         const [soalan] = pick(DATA.teka);
@@ -187,7 +187,7 @@ const HANDLERS = {
     jawab_teka: (a) => {
         const jawapan = (a[0] || '').toLowerCase();
         const current = DATA.teka.find(([, j]) => j === jawapan);
-        return current ? '✅ Betul! Pandai kau.' : '❌ Belum tepat. Cuba lagi!';
+        return current ? '✅ Betul! Pandai awak.' : '❌ Belum tepat. Cuba lagi!';
     },
     ucapan: () => {
         const jam = myt().h;
@@ -223,7 +223,7 @@ const HANDLERS = {
         return `⭐ ${'⭐'.repeat(n - 1)}${'☆'.repeat(5 - n)} (${n}/5)`;
     },
     warna: () => `🎨 Warna hari ni: *${pick(DATA.warna)}*`,
-    gelar: (a) => `👑 Gelaran untuk *${a.join(' ') || 'kau'}*: ${seededPick(DATA.gelaran, seedOf(a.join(' ') || 'kau'))}`,
+    gelar: (a) => `👑 Gelaran untuk *${a.join(' ') || 'awak'}*: ${seededPick(DATA.gelaran, seedOf(a.join(' ') || 'awak'))}`,
     kira_hari: (a) => {
         const t = new Date(a[0]);
         if (isNaN(t)) return '❌ Format: `.kira_hari 2026-12-31`';

@@ -60,7 +60,7 @@ export function parseAppraisal(raw) {
     const clean = (t, n) => String(t || '').replace(/[\p{Extended_Pictographic}]/gu, '').replace(/\s+/g, ' ').trim().slice(0, n);
     return {
         nama: clean(obj.nama, 60) || 'Barang misteri',
-        penerangan: clean(obj.penerangan, 160) || 'Barang yang kau hantar.',
+        penerangan: clean(obj.penerangan, 160) || 'Barang yang awak hantar.',
         anggaran: Math.min(Math.round(harga), 10_000_000),
         yakin: String(obj.yakin || 'rendah').toLowerCase()
     };
@@ -100,7 +100,7 @@ export function resolveNego(raw, state, diminta) {
 const pending = new Map(); // sender -> state tawaran
 
 function buildNegoPrompt(state, diminta, sebab) {
-    return `Kau Airi, pembeli barang dalam permainan WhatsApp. Tugas: nilai hujah pemain untuk harga barang.
+    return `Awak Airi, pembeli barang dalam permainan WhatsApp. Tugas: nilai hujah pemain untuk harga barang.
 Barang: ${state.nama}. Penerangan: ${state.penerangan}. Harga pasaran: RM ${state.anggaran}.
 Tawaran semasa: RM ${state.bayar}. Pemain minta: RM ${diminta}. Julat yang dibenarkan: RM ${state.min} hingga RM ${state.max}.
 Pusingan ${state.rounds} dari ${MAX_ROUNDS}.
@@ -141,7 +141,7 @@ export default {
             if (!media || !String(media.mimetype || '').startsWith('image/')) {
                 return reply('📸 Hantar gambar barang dengan caption `.jual_gambar`, atau reply gambar dengan `.jual_gambar`.\nTip: hantar sebagai *dokumen* (Attach > Document) untuk kadar kamera yang lebih tinggi.');
             }
-            if (!allow(sender + ':jgambar', 60000)) return reply('⏳ Sabar, aku tengah belek barang sebelum ni.');
+            if (!allow(sender + ':jgambar', 60000)) return reply('⏳ Sabar, saya tengah belek barang sebelum ni.');
 
             const user = await db.getUser(sender);
             const today = myt().day;
@@ -151,7 +151,7 @@ export default {
             const cd = cooldownLeft(user.stats?.jual_last, JUAL_CD_MS);
             if (cd > 0) return reply(`⏳ Tunggu ${Math.ceil(cd / 60000)} minit lagi sebelum jual gambar seterusnya.`);
 
-            await reply('🔍 Tengah tengok gambar kau...');
+            await reply('🔍 Tengah tengok gambar awak...');
             const src = direct ? { message: m.message } : { message: quoted };
             const buffer = await downloadMediaMessage(src, 'buffer', {}, { logger: console, reuploadRequest: sock.updateMediaMessage });
 

@@ -60,7 +60,7 @@ export default {
             date,
             headline: items[0],
             items: items.slice(1),
-            quote: 'Kata-kata cyber hari ini: kemas kini telefon dan kata laluan kau, sebelum penjahat buat dulu.'
+            quote: 'Kata-kata cyber hari ini: kemas kini telefon dan kata laluan awak, sebelum penjahat buat dulu.'
         };
         return sendCard(sock, jid, m, 'newsCard', data, `📰 *THE AIRI TIMES* | ${items[0]}`);
     }

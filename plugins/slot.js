@@ -20,7 +20,7 @@ export default {
 
         if (user.wallet < taruhan) {
             return sock.sendMessage(jid, { 
-                text: `❌ Duit poket tak cukup nak main mesin! Kau cuma ada RM ${user.wallet.toLocaleString()}` 
+                text: `❌ Duit poket tak cukup nak main mesin! Awak cuma ada RM ${user.wallet.toLocaleString()}` 
             }, { quoted: m });
         }
 
@@ -46,7 +46,7 @@ export default {
 ├ 💵 𝗧𝗮𝗿𝘂𝗵𝗮𝗻 : RM ${taruhan.toLocaleString()}
 ├ 💰 𝗠𝗲𝗻𝗮𝗻𝗴  : +RM ${menang.toLocaleString()} (x10)
 └───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "GILA BABI JACKPOT 777! Rezeki terpijak ke kau pakai minyak dagu ni?!"`;
+💬 𝗔𝗶𝗿𝗶: "GILA BABI JACKPOT 777! Rezeki terpijak ke awak pakai minyak dagu ni?!"`;
             return sock.sendMessage(jid, { text: responJackpot }, { quoted: m });
         }
 
@@ -84,7 +84,7 @@ export default {
 ├ 💵 𝗧𝗮𝗿𝘂𝗵𝗮𝗻 : RM ${taruhan.toLocaleString()}
 ├ 💰 𝗣𝘂𝗹𝗮𝗻𝗴  : +RM ${menang.toLocaleString()}
 └───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Dua biji lekat. Ada la untung sikit buat topup kredit e-wallet kau tu."`;
+💬 𝗔𝗶𝗿𝗶: "Dua biji lekat. Ada la untung sikit buat topup kredit e-wallet awak tu."`;
             return sock.sendMessage(jid, { text: responDuaSama }, { quoted: m });
         }
 
@@ -92,10 +92,10 @@ export default {
         await db.saveUser(user);
 
         const roastsKalah = [
-            "Hahaha lebur! Kan aku dah kata mesin ni makan duit.",
-            "Tengok tu, licin! Baik kau guna duit tu sedekah kat tabung masjid.",
+            "Hahaha lebur! Kan saya dah kata mesin ni makan duit.",
+            "Tengok tu, licin! Baik awak guna duit tu sedekah kat tabung masjid.",
             "Seminit je duit RM " + taruhan.toLocaleString() + " jadi habuk. Padan muka!",
-            "Jangan koyak bro, mesin tu yang problem bukan kau (tapi kau yang rugi HAHA)."
+            "Jangan koyak bro, mesin tu yang problem bukan awak (tapi awak yang rugi HAHA)."
         ];
         const airiBahan = roastsKalah[Math.floor(Math.random() * roastsKalah.length)];
 

@@ -1,7 +1,7 @@
 import { sceneCard } from '../lib/scene.js';
 export default {
     name: 'underworld_pack',
-    alias: ['rompak', 'hackbank', 'santau', 'hutang_ahlong', 'bayar_ahlong'],
+    alias: ['rompak', 'rob', 'hackbank', 'santau', 'hutang_ahlong', 'bayar_ahlong'],
     execute: async ({ sock, m, user, db }) => {
         try {
             const jid = m.key.remoteJid;
@@ -9,7 +9,7 @@ export default {
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
             const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
 
-            if (cmd === 'rompak' || cmd === 'hackbank') {
+            if (cmd === 'rompak' || cmd === 'rob' || cmd === 'hackbank') {
                 if (!targetJid) return sock.sendMessage(jid, { text: `❌ Tag mangsa: \`.${cmd} @user\`` }, { quoted: m });
                 const targetUser = await db.getUser(targetJid);
                 
@@ -17,7 +17,7 @@ export default {
                 if (nasib > 0.6) {
                     const hasil = Math.floor(Math.random() * 5000) + 1000;
                     user.dirty_money = (user.dirty_money || 0) + hasil;
-                    if (cmd === 'rompak') targetUser.wallet = Math.max(0, (targetUser.wallet || 0) - hasil);
+                    if (cmd === 'rompak' || cmd === 'rob') targetUser.wallet = Math.max(0, (targetUser.wallet || 0) - hasil);
                     if (cmd === 'hackbank') targetUser.bank = Math.max(0, (targetUser.bank || 0) - hasil);
                     
                     await db.saveUser(user);
@@ -26,7 +26,7 @@ export default {
                 } else {
                     user.jail = { status: true, release_at: Date.now() + 60000, reason: "Gagal " + cmd };
                     await db.saveUser(user);
-                    return sock.sendMessage(jid, { image: sceneCard('tangkap'), caption: `🚨 *KANTOI!*\nPolis dah serbu! Kau disumbat ke lokap selama 60 saat!` }, { quoted: m });
+                    return sock.sendMessage(jid, { image: sceneCard('tangkap'), caption: `🚨 *KANTOI!*\nPolis dah serbu! Awak disumbat ke lokap selama 60 saat!` }, { quoted: m });
                 }
             }
 
@@ -44,13 +44,13 @@ export default {
 
             if (cmd === 'bayar_ahlong') {
                 const bayaran = 60000;
-                if (!user.hutang || user.hutang <= 0) return sock.sendMessage(jid, { text: `✅ Kau takde hutang dengan ahlong.` }, { quoted: m });
+                if (!user.hutang || user.hutang <= 0) return sock.sendMessage(jid, { text: `✅ Awak takde hutang dengan ahlong.` }, { quoted: m });
                 if (user.wallet < bayaran) return sock.sendMessage(jid, { text: `❌ Duit dalam poket tak cukup RM 60,000 untuk langsaikan ahlong!` }, { quoted: m });
                 
                 user.wallet -= bayaran;
                 user.hutang = 0;
                 await db.saveUser(user);
-                return sock.sendMessage(jid, { text: `🦈 *HUTANG SELESAI*\n\nBuku kau dengan ahlong dah bersih.` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `🦈 *HUTANG SELESAI*\n\nBuku awak dengan ahlong dah bersih.` }, { quoted: m });
             }
 
         } catch (err) {

@@ -15,7 +15,7 @@ export default {
 
         // 1. SISTEM PENGERAMAN TELUR PET (.beli_telur / .tetas_telur)
         if (commandUsed === 'beli_telur') {
-            if (user.inventory.pet_egg) return sock.sendMessage(jid, { text: '❌ Kau dah ada telur dalam inkubator!' }, { quoted: m });
+            if (user.inventory.pet_egg) return sock.sendMessage(jid, { text: '❌ Awak dah ada telur dalam inkubator!' }, { quoted: m });
             if (user.wallet < 30000) return sock.sendMessage(jid, { text: '❌ Telur Pet Siber berharga RM 30,000!' }, { quoted: m });
 
             user.wallet -= 30000;
@@ -27,7 +27,7 @@ export default {
         }
 
         if (commandUsed === 'tetas_telur') {
-            if (!user.inventory.pet_egg) return sock.sendMessage(jid, { text: '❌ Kau tiada telur untuk ditetaskan!' }, { quoted: m });
+            if (!user.inventory.pet_egg) return sock.sendMessage(jid, { text: '❌ Awak tiada telur untuk ditetaskan!' }, { quoted: m });
             if (Date.now() < user.inventory.pet_egg_time) {
                 const bakiMinit = Math.ceil((user.inventory.pet_egg_time - Date.now()) / 60000);
                 return sock.sendMessage(jid, { text: `⏳ Telur masih panas di inkubator! Tunggu ${bakiMinit} minit lagi.` }, { quoted: m });
@@ -45,7 +45,7 @@ export default {
             await db.saveUser(user);
 
             return sock.sendMessage(jid, {
-                text: `🐣 *TELUR TELAH MENETAS!*\nTahniah! Kau memperoleh penjaga siber: *${petDapat.name}* [Tier ${petDapat.tier}] (Perisai Bank: +${petDapat.shield}%)!`
+                text: `🐣 *TELUR TELAH MENETAS!*\nTahniah! Awak memperoleh penjaga siber: *${petDapat.name}* [Tier ${petDapat.tier}] (Perisai Bank: +${petDapat.shield}%)!`
             }, { quoted: m });
         }
 

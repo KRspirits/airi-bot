@@ -15,12 +15,12 @@ export default {
 
             const banduan = await db.getUser(targetJid);
             if (!banduan.jail?.status || Date.now() >= banduan.jail.release_at) {
-                return sock.sendMessage(jid, { text: '❌ Rakan kau dah bebas, tak payah nak buang duit jamin!' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '❌ Rakan awak dah bebas, tak payah nak buang duit jamin!' }, { quoted: m });
             }
 
             const yuranJamin = 1000;
             if (user.wallet < yuranJamin) {
-                return sock.sendMessage(jid, { text: `❌ Duit poket kau tak cukup RM ${yuranJamin.toLocaleString()} untuk bayar wang ikat jamin mahkamah!` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `❌ Duit poket awak tak cukup RM ${yuranJamin.toLocaleString()} untuk bayar wang ikat jamin mahkamah!` }, { quoted: m });
             }
 
             user.wallet -= yuranJamin;
@@ -59,7 +59,7 @@ Pintu sel dibuka serta-merta! Tanda setia kawan sejati.
 
             if (!banduan.jail.voters) banduan.jail.voters = [];
             if (banduan.jail.voters.includes(senderId)) {
-                return sock.sendMessage(jid, { text: '⚠️ Kau dah buang undi untuk perbicaraan banduan ini!' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '⚠️ Awak dah buang undi untuk perbicaraan banduan ini!' }, { quoted: m });
             }
 
             banduan.jail.voters.push(senderId);

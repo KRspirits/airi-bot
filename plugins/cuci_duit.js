@@ -20,7 +20,7 @@ export default {
 
             if (user.dirty_money < jumlahBeli) {
                 return sock.sendMessage(jid, { 
-                    text: `❌ Duit haram kau tak cukup untuk dicuci!\n💰 Baki duit haram: RM ${user.dirty_money.toLocaleString()}` 
+                    text: `❌ Duit haram awak tak cukup untuk dicuci!\n💰 Baki duit haram: RM ${user.dirty_money.toLocaleString()}` 
                 }, { quoted: m });
             }
 

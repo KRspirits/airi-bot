@@ -10,7 +10,7 @@ import { logEvent } from '../lib/log.js';
 // Koleksi: album, gabung ikan (hibrid), liga mingguan, tangkap makhluk mitos.
 const ORDER = ['sampah', 'biasa', 'rare', 'mitos'];
 // Hadiah lengkap set (sekali je per set). Besar sengaja, ikut arahan owner.
-const SET_REWARD = { biasa: 10000000, rare: 100000000, mitos: 1000000000 };
+const SET_REWARD = { biasa: 1000000, rare: 10000000, mitos: 100000000 }; // dikurangkan 10x supaya tetap bermakna
 // Nombor album: 1 = biasa, 2 = rare, 3 = mitos.
 const ALBUM_NO = { '1': 'biasa', '2': 'rare', '3': 'mitos' };
 const ALBUM_LABEL = { biasa: 'ALBUM 1 · BIASA', rare: 'ALBUM 2 · RARE', mitos: 'ALBUM 3 · MITOS' };

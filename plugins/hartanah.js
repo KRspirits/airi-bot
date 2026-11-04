@@ -17,7 +17,7 @@ export default {
         // 1. KUTIP HASIL SEWA (.kutip_sewa)
         if (commandUsed === 'kutip_sewa') {
             const props = user.properties || [];
-            if (props.length === 0) return sock.sendMessage(jid, { text: '❌ Kau tiada hartanah! Beli guna `.beli_rumah [no]`.' }, { quoted: m });
+            if (props.length === 0) return sock.sendMessage(jid, { text: '❌ Awak tiada hartanah! Beli guna `.beli_rumah [no]`.' }, { quoted: m });
 
             let totalKutipan = 0;
             const COOLDOWN_SEWA = 24 * 60 * 60 * 1000; // 24 Jam sekali

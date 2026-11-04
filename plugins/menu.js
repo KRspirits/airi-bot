@@ -1,5 +1,6 @@
 import { dashboardCard } from '../lib/cards.js';
 import { getAvatar } from '../lib/render.js';
+import { MENU_ZONES } from '../lib/menudata.js';
 
 // 📜 MENU: papan gambar yang terangkan setiap bahagian bot dan command untuk ditaip.
 // Bahagian owner (veto) tak ditunjuk. Latar Airi berbeza setiap kali dibuka.
@@ -38,10 +39,10 @@ const SEKSYEN = (ws) => [
         ['.tawar [rm] [sebab]', 'Tawar harga dengan hujah'],
         ['.setuju', 'Terima tawaran'] ] },
     { tajuk: '🏆 Profil & Pencapaian', warna: '#7dd3fc', baris: [
-        ['.myid', 'Kad pengenalan kau'],
+        ['.myid', 'Kad pengenalan awak'],
         ['.achievement', 'Senarai pencapaian'],
         ['.album 1 / 2 / 3', 'Album biasa, rare, mitos'],
-        ['.level', 'Level dan XP kau'],
+        ['.level', 'Level dan XP awak'],
         ['.top', 'Papan teratas'],
         ['.sejarah_musim', 'Juara musim lepas'] ] },
     { tajuk: '💬 Airi', warna: '#a78bfa', baris: [
@@ -55,8 +56,17 @@ export default {
     name: 'menu',
     alias: ['help', 'senarai', 'panel'],
     category: 'info',
-    execute: async ({ sock, m, user }) => {
+    execute: async ({ sock, m, user, args = [] }) => {
         const jid = m.key.remoteJid;
+        if ((args[0] || '').toLowerCase() === 'penuh') {
+            const OWNER = /veto|start_event|stop_event|bida_now|reset_|errlog|syscheck|give_|jail_user|free_user|set_income|mythic|purge|maintenance|siar|bulletin_now|testwelcome|spawn_boss|musim_owner/i;
+            const zonBersih = MENU_ZONES.map(z => ({ ...z, items: z.items.filter(it => !OWNER.test(it)) })).filter(z => z.items.length).sort((x, y) => x.num - y.num);
+            const PER = 3, halamanPenuh = Math.ceil(zonBersih.length / PER);
+            const n = Math.min(halamanPenuh, Math.max(1, parseInt(args[1]) || 1));
+            const zon = zonBersih.slice((n - 1) * PER, n * PER);
+            const teks = zon.map(z => `*${z.num}. ${z.title}*\n` + z.items.join('\n')).join('\n\n');
+            return sock.sendMessage(jid, { text: `📜 *MENU PENUH* halaman ${n}/${halamanPenuh}\n\n${teks}\n\nHalaman seterusnya: \`.menu penuh ${n < halamanPenuh ? n + 1 : 1}\`` }, { quoted: m });
+        }
         const sender = m.key.participant || jid;
         const nama = user?.name || sender.split('@')[0];
         const tunai = Number(user?.wallet || 0).toLocaleString('en-US');

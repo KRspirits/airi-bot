@@ -39,17 +39,17 @@ export default {
             const b = cari(id);
             if (!b) return reply('❌ Barang tu tak ada. Taip `.item` untuk tengok ID.');
             if (b.kind === 'vehicle') {
-                if (user.vehicle && user.vehicle.name) return reply(`❌ Kau dah ada kenderaan (${user.vehicle.name}). Jual dulu dengan \`.item jual\`.`);
+                if (user.vehicle && user.vehicle.name) return reply(`❌ Awak dah ada kenderaan (${user.vehicle.name}). Jual dulu dengan \`.item jual\`.`);
                 const v = VEHICLES.find(x => x.id === b.ref);
                 if (!v) return reply('❌ Data kenderaan ni tak wujud lagi.');
                 user.vehicle = { name: v.name, speed: v.speed, tier: v.type };
                 buang(id);
                 await db.saveUser(user);
-                return reply(`🚗 *${v.name}* dah masuk garaj kau. Kelajuan ${v.speed} km/h.`);
+                return reply(`🚗 *${v.name}* dah masuk garaj awak. Kelajuan ${v.speed} km/h.`);
             }
             if (b.kind === 'phone') {
                 user.inventory = user.inventory || {};
-                if (user.inventory.phone) return reply('❌ Kau dah ada telefon. Jual telefon lama dulu.');
+                if (user.inventory.phone) return reply('❌ Awak dah ada telefon. Jual telefon lama dulu.');
                 const p = PHONE_DEVICES.find(x => x.id === b.ref);
                 if (!p) return reply('❌ Data telefon ni tak wujud lagi.');
                 user.inventory.phone = p.id;
@@ -71,10 +71,10 @@ export default {
             const img = await kadBarang(b);
             return sock.sendMessage(jid, { image: img, caption: `Statistik ${b.nama}` }, { quoted: m });
         }
-        if (!user.items.length) return reply('🎁 Kau belum ada barang. Menang lelongan dulu!');
+        if (!user.items.length) return reply('🎁 Awak belum ada barang. Menang lelongan dulu!');
         const baris = user.items.map(b => {
             const bolehPakai = b.kind === 'vehicle' || b.kind === 'phone' ? ' · boleh pakai' : '';
-            return `━ ${b.id}  ${b.nama}\n   ${b.kategori} · ${b.nadir}${bolehPakai}\n   Nilai asas ${rp(b.nilai)} · Jual ${julat(b.nilai)}\n   Harga bida kau ${rp(b.bida)}`;
+            return `━ ${b.id}  ${b.nama}\n   ${b.kategori} · ${b.nadir}${bolehPakai}\n   Nilai asas ${rp(b.nilai)} · Jual ${julat(b.nilai)}\n   Harga bida awak ${rp(b.bida)}`;
         });
         return reply(`🎁 *BARANG KAU* (${user.items.length})\n\n${baris.join('\n\n')}\n\nKad: \`.item [id]\`\nPakai: \`.item guna [id]\`\nJual: \`.item jual [id]\``);
     }

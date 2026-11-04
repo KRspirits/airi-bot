@@ -28,7 +28,7 @@ export default {
             if (!phone) return sock.sendMessage(jid, { text: '❌ Kod peranti tidak wujud!' }, { quoted: m });
 
             if (user.wallet < phone.price) {
-                return sock.sendMessage(jid, { text: `❌ Duit poket kau tak cukup RM ${phone.price.toLocaleString()}!` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `❌ Duit poket awak tak cukup RM ${phone.price.toLocaleString()}!` }, { quoted: m });
             }
 
             user.wallet -= phone.price;

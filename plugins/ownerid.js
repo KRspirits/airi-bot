@@ -1,6 +1,6 @@
 // =========================================================================
-// 🪪 OWNERID - tunjuk pengenal WhatsApp akaun kau supaya boleh dimasukkan ke OWNER_NUMBERS.
-// Hanya tunjuk pengenal kau sendiri. Bila kau dah tahu, tambahkannya ke env OWNER_NUMBERS di Render.
+// 🪪 OWNERID - tunjuk pengenal WhatsApp akaun awak supaya boleh dimasukkan ke OWNER_NUMBERS.
+// Hanya tunjuk pengenal awak sendiri. Bila awak dah tahu, tambahkannya ke env OWNER_NUMBERS di Render.
 // =========================================================================
 
 const digits = s => String(s || '').replace(/@.*$/, '').replace(/:.*$/, '').replace(/\D/g, '');

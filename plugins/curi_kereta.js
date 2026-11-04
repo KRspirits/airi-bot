@@ -15,7 +15,7 @@ export default {
         // 1. KETUK NOMBOR CHASSIS (.ketuk_chassis)
         if (cmd === 'ketuk_chassis') {
             if (!user.vehicle || !user.vehicle.is_stolen) {
-                return sock.sendMessage(jid, { text: '❌ Jentera semasa kau bukan jentera curi/panas!' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '❌ Jentera semasa awak bukan jentera curi/panas!' }, { quoted: m });
             }
 
             const upahPomen = 4500;
@@ -34,7 +34,7 @@ export default {
 
         // 2. OPERASI CURI KERETA (.curi_kereta)
         if (user.jail?.status && now < user.jail.release_at) {
-            return sock.sendMessage(jid, { text: '⛓️ Kau dalam lokap balai, nak curi apa lagi!' }, { quoted: m });
+            return sock.sendMessage(jid, { text: '⛓️ Awak dalam lokap balai, nak curi apa lagi!' }, { quoted: m });
         }
 
         const cd = 3 * 60 * 1000; // Cooldown 3 minit

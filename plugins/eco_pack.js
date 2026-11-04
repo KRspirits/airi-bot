@@ -32,7 +32,7 @@ export default {
                 user.wallet = (user.wallet || 0) + gaji;
                 user.lastKerja = now;
                 await db.saveUser(user);
-                return sock.sendMessage(jid, { text: `💼 Kau kerja sebagai *${job}* dan dibayar RM ${gaji.toLocaleString()}!` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `💼 Awak kerja sebagai *${job}* dan dibayar RM ${gaji.toLocaleString()}!` }, { quoted: m });
             }
 
             if (cmd === 'transfer') {
@@ -75,12 +75,12 @@ export default {
                 const hargaJual = 4500;
                 const totalDapat = hargaJual * kuantiti;
 
-                if ((user.crypto.gold || 0) < kuantiti) return sock.sendMessage(jid, { text: `❌ Jongkong emas tak cukup! Kau cuma ada ${user.crypto.gold || 0} Emas.` }, { quoted: m });
+                if ((user.crypto.gold || 0) < kuantiti) return sock.sendMessage(jid, { text: `❌ Jongkong emas tak cukup! Awak cuma ada ${user.crypto.gold || 0} Emas.` }, { quoted: m });
 
                 user.crypto.gold -= kuantiti;
                 user.wallet += totalDapat;
                 await db.saveUser(user);
-                return sock.sendMessage(jid, { text: `💸 Berjaya jual ${kuantiti} Jongkong Emas! Kau terima RM ${totalDapat.toLocaleString()}.` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `💸 Berjaya jual ${kuantiti} Jongkong Emas! Awak terima RM ${totalDapat.toLocaleString()}.` }, { quoted: m });
             }
 
             // --- SISTEM JUAL BELI BITCOIN ---
@@ -100,7 +100,7 @@ export default {
             if (cmd === 'jual_btc') {
                 const kuantiti = parseInt(args[0]) || 1;
                 
-                if ((user.crypto.btc || 0) < kuantiti) return sock.sendMessage(jid, { text: `❌ BTC tak cukup! Kau cuma ada ${user.crypto.btc || 0} BTC.` }, { quoted: m });
+                if ((user.crypto.btc || 0) < kuantiti) return sock.sendMessage(jid, { text: `❌ BTC tak cukup! Awak cuma ada ${user.crypto.btc || 0} BTC.` }, { quoted: m });
 
                 // Harga BTC rawak antara RM 150,000 (Rugi Besar) hingga RM 350,000 (Untung Besar)
                 const hargaMarket = Math.floor(Math.random() * (350000 - 150000 + 1)) + 150000;

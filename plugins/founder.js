@@ -15,7 +15,7 @@ export default {
 
         if (!isOwner) {
             return sock.sendMessage(jid, { 
-                text: '⛔ *AKSES DITOLAK!* Kau bukan Founder bot ni. Jangan gatal tangan nak sentuh kuasa veto!' 
+                text: '⛔ *AKSES DITOLAK!* Awak bukan Founder bot ni. Jangan gatal tangan nak sentuh kuasa veto!' 
             }, { quoted: m });
         }
 
@@ -30,7 +30,7 @@ export default {
             await db.saveUser(user);
 
             return sock.sendMessage(jid, {
-                text: `👑 *KUASA VETO FOUNDER*\nTunai poket kau telah ditetapkan kepada: *RM ${jumlah.toLocaleString()}*`
+                text: `👑 *KUASA VETO FOUNDER*\nTunai poket awak telah ditetapkan kepada: *RM ${jumlah.toLocaleString()}*`
             }, { quoted: m });
         }
 

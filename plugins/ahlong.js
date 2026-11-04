@@ -12,7 +12,7 @@ export default {
         if (commandUsed === 'bayar_ahlong') {
             const bakiHutang = user.loan?.amount || 0;
             if (bakiHutang <= 0) {
-                return sock.sendMessage(jid, { text: '✅ Kau takde rekod hutang dengan Ah Long pun!' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '✅ Awak takde rekod hutang dengan Ah Long pun!' }, { quoted: m });
             }
 
             let bayar = args[0] === 'all' ? bakiHutang : parseInt(args[0]);
@@ -24,7 +24,7 @@ export default {
 
             if (user.wallet < bayar) {
                 return sock.sendMessage(jid, { 
-                    text: `❌ Duit poket kau tak cukup! Cuma ada RM ${user.wallet.toLocaleString()}` 
+                    text: `❌ Duit poket awak tak cukup! Cuma ada RM ${user.wallet.toLocaleString()}` 
                 }, { quoted: m });
             }
 
@@ -44,7 +44,7 @@ export default {
 ├ 💵 𝗕𝗮𝘆𝗮𝗿     : RM ${bayar.toLocaleString()}
 ├ 💳 𝗕𝗮𝗸𝗶 𝗛𝘂𝘁𝗮𝗻𝗴: RM ${(user.loan.amount).toLocaleString()}
 └───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Bagus, pandai pinjam pandai bayar! Selamat pintu rumah kau daripada cat merah harini."`;
+💬 𝗔𝗶𝗿𝗶: "Bagus, pandai pinjam pandai bayar! Selamat pintu rumah awak daripada cat merah harini."`;
 
             return sock.sendMessage(jid, { text: responBayar }, { quoted: m });
         }

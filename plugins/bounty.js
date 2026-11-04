@@ -60,7 +60,7 @@ export default {
 
         if (user.wallet < jumlahBounty) {
             return sock.sendMessage(jid, { 
-                text: `❌ Duit poket kau tak cukup bayar upah buruan RM ${jumlahBounty.toLocaleString()}!` 
+                text: `❌ Duit poket awak tak cukup bayar upah buruan RM ${jumlahBounty.toLocaleString()}!` 
             }, { quoted: m });
         }
 

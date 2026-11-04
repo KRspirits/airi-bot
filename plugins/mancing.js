@@ -300,7 +300,7 @@ const caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai:
                 }
 
                 if (!pData.jala || pData.jala.qty <= 0) {
-                    return sock.sendMessage(jid, { text: `❌ Jala kau tiada atau dah koyak! Pergi beli jala baharu di \`.kedai_pancing\`.` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `❌ Jala awak tiada atau dah koyak! Pergi beli jala baharu di \`.kedai_pancing\`.` }, { quoted: m });
                 }
 
                 cdMancing.set(senderId + '_jala', now);
@@ -382,7 +382,7 @@ const caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai:
                 pData.tong_ikan.splice(indeks, 1);
                 savePancingDB();
 
-                return sock.sendMessage(jid, { text: `🌊 Kau masukkan *${ikanPilihan.nama}* ke dalam ${ak.nama}.\n🔥 Buff diaktifkan!` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `🌊 Awak masukkan *${ikanPilihan.nama}* ke dalam ${ak.nama}.\n🔥 Buff diaktifkan!` }, { quoted: m });
             }
 
             if (cmd === 'jual_ikan') {
@@ -411,7 +411,7 @@ const caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai:
                 savePancingDB();
                 await db.saveUser(user);
 
-                return sock.sendMessage(jid, { text: `💸 Kau lepaskan *${ikanJual.nama}* dari akuarium ke pasaran gelap dengan harga *RM ${ikanJual.harga.toLocaleString()}*!` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `💸 Awak lepaskan *${ikanJual.nama}* dari akuarium ke pasaran gelap dengan harga *RM ${ikanJual.harga.toLocaleString()}*!` }, { quoted: m });
             }
 
         } catch (err) {

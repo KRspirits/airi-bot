@@ -70,7 +70,7 @@ export default {
             if (user.geng && !mine) { user.geng = null; await db.saveUser(user); }
             if (sub === 'buat') {
                 const name = cleanName(rest); if (name.length < 2) return reply('Nama geng 2-16 huruf. Contoh: `.geng buat Naga Laut`');
-                if (user.geng) return reply('Kau dah ada geng. Keluar dulu dengan `.geng keluar`.');
+                if (user.geng) return reply('Awak dah ada geng. Keluar dulu dengan `.geng keluar`.');
                 if (await store.get('geng', gkey(name))) return reply('Nama geng tu dah diambil orang!');
                 if (user.wallet < GANG_COST) return reply(`Duit tak cukup. Buat geng kos ${rm(GANG_COST)}.`);
                 user.wallet -= GANG_COST; user.geng = name; await db.saveUser(user);
@@ -78,23 +78,23 @@ export default {
                 return reply(`🏴 Geng *${name}* ditubuhkan! Ajak kawan: \`.geng sertai ${name}\``);
             }
             if (sub === 'sertai') {
-                if (user.geng) return reply('Kau dah ada geng.');
+                if (user.geng) return reply('Awak dah ada geng.');
                 const g = await store.get('geng', gkey(rest)); if (!g) return reply('Geng tu tak wujud. Semak ejaan ya.');
                 if (g.members.length >= GANG_MAX) return reply('Geng tu dah penuh!');
                 g.members.push(sender); user.geng = g.name; await db.saveUser(user); await store.set('geng', gkey(g.name), g);
-                return reply(`🎉 Kau sertai geng *${g.name}*! Selamat datang~`);
+                return reply(`🎉 Awak sertai geng *${g.name}*! Selamat datang~`);
             }
-            if (!mine) return reply('Kau belum ada geng. `.geng buat [nama]` atau `.geng sertai [nama]`');
+            if (!mine) return reply('Awak belum ada geng. `.geng buat [nama]` atau `.geng sertai [nama]`');
             if (sub === 'keluar') {
                 mine.members = mine.members.filter(x => x !== sender); user.geng = null; await db.saveUser(user);
                 if (!mine.members.length) await store.del('geng', gkey(mine.name));
                 else { if (mine.leader === sender) mine.leader = mine.members[0]; await store.set('geng', gkey(mine.name), mine); }
-                return reply('Kau dah keluar geng. Semoga berjumpa lagi~ 👋');
+                return reply('Awak dah keluar geng. Semoga berjumpa lagi~ 👋');
             }
             if (sub === 'derma') {
                 const n = Math.floor(Number(args[1])); if (!n || n <= 0 || n > user.wallet) return reply('Jumlah tak sah atau duit tak cukup. `.geng derma [jumlah]`');
                 user.wallet -= n; mine.bank += n; await db.saveUser(user); await store.set('geng', gkey(mine.name), mine);
-                return reply(`💝 Kau derma ${rm(n)} ke kas *${mine.name}*. Kas sekarang ${rm(mine.bank)}.`);
+                return reply(`💝 Awak derma ${rm(n)} ke kas *${mine.name}*. Kas sekarang ${rm(mine.bank)}.`);
             }
             if (sub === 'ambil') {
                 if (mine.leader !== sender) return reply('Ketua geng sahaja boleh ambil duit kas!');
@@ -112,8 +112,8 @@ export default {
             let L = lobbies.get(jid);
             if (cmd === 'heist' && L) return reply(`Lobi heist dah dibuka! Taip \`.sertai_heist\` (${Math.ceil((L.endsAt - Date.now()) / 1000)} saat lagi).`);
             if (cmd === 'sertai_heist' && !L) return reply('Tiada lobi heist. Buka dengan `.heist`!');
-            if (user.jail?.status && Date.now() < (user.jail.release_at || 0)) return reply('Kau dalam lokap, mana boleh join heist! 🔒');
-            if (L?.members.has(sender)) return reply('Kau dah ada dalam pasukan!');
+            if (user.jail?.status && Date.now() < (user.jail.release_at || 0)) return reply('Awak dalam lokap, mana boleh join heist! 🔒');
+            if (L?.members.has(sender)) return reply('Awak dah ada dalam pasukan!');
             if (user.wallet < HEIST_FEE) return reply(`Duit tak cukup. Yuran masuk ${rm(HEIST_FEE)}.`);
             user.wallet -= HEIST_FEE; await db.saveUser(user);
             if (!L) {
@@ -132,12 +132,12 @@ export default {
             const idx = parseInt(args[0]) - 1, pd = ensureP(sender);
             if (isNaN(idx) || !pd.tong_ikan[idx]) return reply('Pilih ikan dari tong: `.pameran [nombor]` (rujuk `.ikan`).');
             let E = expos.get(jid);
-            if (E?.entries.some(e => e.owner === sender)) return reply('Kau dah hantar ikan untuk pameran ni.');
+            if (E?.entries.some(e => e.owner === sender)) return reply('Awak dah hantar ikan untuk pameran ni.');
             const fish = pd.tong_ikan[idx];
             if (!E) {
                 E = { entries: [], votes: [], endsAt: Date.now() + EXPO_MS }; expos.set(jid, E);
                 const t = setTimeout(() => resolveExpo(sock, jid, db).catch(e => console.error('[EXPO]', e.message)), EXPO_MS); t.unref?.();
-                await sock.sendMessage(jid, { text: `🖼️ *PAMERAN IKAN DIBUKA!* (2 minit)\nHantar ikan kau: \`.pameran [nombor]\`\nUndi: \`.undi_pameran [nombor entri]\`` });
+                await sock.sendMessage(jid, { text: `🖼️ *PAMERAN IKAN DIBUKA!* (2 minit)\nHantar ikan awak: \`.pameran [nombor]\`\nUndi: \`.undi_pameran [nombor entri]\`` });
             }
             E.entries.push({ owner: sender, fish });
             const n = E.entries.length;
@@ -148,7 +148,7 @@ export default {
             const E = expos.get(jid); if (!E) return reply('Tiada pameran sekarang. Buka dengan `.pameran [nombor ikan]`.');
             const i = parseInt(args[0]) - 1; if (isNaN(i) || !E.entries[i]) return reply('Nombor entri tak sah.');
             if (E.entries[i].owner === sender) return reply('Tak boleh undi ikan sendiri! 😜');
-            if (E.votes.some(v => v.voter === sender)) return reply('Kau dah mengundi.');
+            if (E.votes.some(v => v.voter === sender)) return reply('Awak dah mengundi.');
             E.votes.push({ voter: sender, entry: i });
             return reply(`🗳️ Undi untuk entri #${i + 1} direkod. Terima kasih!`);
         }

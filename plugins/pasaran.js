@@ -57,6 +57,20 @@ async function updateMarket() {
     }
 }
 
+// Sejarah awal bila belum cukup candle: laluan rawak yang berakhir di harga semasa (bukan data sebenar).
+function isiSejarahAwal(aset) {
+    const arr = marketState.candles[aset];
+    if (arr.length >= 12) return;
+    let harga = aset === 'btc' ? marketState.btc : marketState.emas;
+    const baru = [];
+    for (let i = 0; i < 24; i++) {
+        const sebelum = Math.max(1, Math.round(harga / (1 + gauss() * (aset === 'btc' ? 0.006 : 0.002))));
+        baru.unshift({ o: sebelum, h: Math.round(Math.max(sebelum, harga) * 1.002), l: Math.round(Math.min(sebelum, harga) * 0.998), c: harga });
+        harga = sebelum;
+    }
+    marketState.candles[aset] = [...baru, ...arr].slice(-40);
+}
+
 /** Dipanggil oleh scheduler setiap minit. Hanya bertindak bila slot 5 minit baharu dah lepas. */
 export async function tickMarket() { return updateMarket(); }
 
@@ -86,6 +100,7 @@ export default {
                          `🛒 *Guna:* \`.beli_btc 1\` | \`.jual_emas 10\``;
                 
                 const aset = (args[0] || '').toLowerCase() === 'emas' ? 'emas' : 'btc';
+                isiSejarahAwal(aset);
                 let lilin = marketState.candles[aset];
                 const harga = aset === 'btc' ? marketState.btc : marketState.emas;
                 if (lilin.length < 2) lilin = [{ o: harga, h: harga, l: harga, c: harga }, { o: harga, h: harga, l: harga, c: harga }];
@@ -110,7 +125,7 @@ export default {
                 const totalHarga = Math.floor(unit * hargaSemasa);
 
                 if ((user.wallet || 0) < totalHarga) {
-                    return sock.sendMessage(jid, { text: `❌ Poket kau tak cukup! Modal diperlukan: *RM ${totalHarga.toLocaleString()}*` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `❌ Poket awak tak cukup! Modal diperlukan: *RM ${totalHarga.toLocaleString()}*` }, { quoted: m });
                 }
 
                 user.wallet -= totalHarga;
@@ -135,7 +150,7 @@ export default {
                 if (isNaN(unit) || unit <= 0) return sock.sendMessage(jid, { text: `❌ Sila letak kuantiti yang sah. Contoh: \`.${cmd} 1\`` }, { quoted: m });
 
                 if (bakiAset < unit) {
-                    return sock.sendMessage(jid, { text: `❌ Aset tak cukup. Kau cuma ada *${bakiAset} ${asetNama}*.` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `❌ Aset tak cukup. Awak cuma ada *${bakiAset} ${asetNama}*.` }, { quoted: m });
                 }
 
                 const totalUntung = Math.floor(unit * hargaSemasa);

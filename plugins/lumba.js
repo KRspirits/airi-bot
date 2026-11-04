@@ -10,13 +10,13 @@ export default {
 
         // Semak lokap
         if (user.jail?.status && now < user.jail.release_at) {
-            return sock.sendMessage(jid, { text: '⛓️ Kau kena kurung dalam lokap trafik, jangan buat hal!' }, { quoted: m });
+            return sock.sendMessage(jid, { text: '⛓️ Awak kena kurung dalam lokap trafik, jangan buat hal!' }, { quoted: m });
         }
 
         // Semak jentera
         if (!user.vehicle || user.vehicle.speed <= 10) {
             return sock.sendMessage(jid, { 
-                text: '❌ Kau nak lumba lari kaki ayam ke? Pergi beli jentera kat `.showroom` dulu!' 
+                text: '❌ Awak nak lumba lari kaki ayam ke? Pergi beli jentera kat `.showroom` dulu!' 
             }, { quoted: m });
         }
 
@@ -43,7 +43,7 @@ export default {
                 musuh: "Myvi Hitam Lampu Tinggi",
                 speedMusuh: 80,
                 ganjaran: 3000,
-                ceritaMenang: "Kau potong celah lori kontena tepat sebelum selekoh tajam!",
+                ceritaMenang: "Awak potong celah lori kontena tepat sebelum selekoh tajam!",
                 ceritaKalah: "Kena cucuk rapat dari belakang sampai terbabas tepi longkang."
             },
             {
@@ -51,7 +51,7 @@ export default {
                 musuh: "Satria GTI Ekzos Paip Perang",
                 speedMusuh: 65,
                 ganjaran: 2400,
-                ceritaMenang: "Teknik 'gutter run' kau menjadi, tinggal musuh berkepul asap!",
+                ceritaMenang: "Teknik 'gutter run' awak menjadi, tinggal musuh berkepul asap!",
                 ceritaKalah: "Tayar belakang hilang cengkaman, spin 360 darjah depan gerai jagung bakar."
             },
             {
@@ -106,7 +106,7 @@ export default {
 ├ 💵 𝗛𝗮𝘀𝗶𝗹   : +RM ${trek.ganjaran.toLocaleString()}
 ├ 📝 𝗖𝗮𝘁𝗮𝘁𝗮𝗻 : ${trek.ceritaMenang}
 └───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Fuh padu jentera kau harini! Dah boleh buka bengkel sendiri nampak gaya."`;
+💬 𝗔𝗶𝗿𝗶: "Fuh padu jentera awak harini! Dah boleh buka bengkel sendiri nampak gaya."`;
             return sock.sendMessage(jid, { text: responMenang }, { quoted: m });
         } else {
             user.stats.race_lose = (user.stats.race_lose || 0) + 1;

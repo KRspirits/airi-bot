@@ -24,7 +24,7 @@ export default {
         }
 
         if (user.wallet < taruhan) {
-            return sock.sendMessage(jid, { text: `❌ Duit poket kau tak cukup RM ${taruhan.toLocaleString()}!` }, { quoted: m });
+            return sock.sendMessage(jid, { text: `❌ Duit poket awak tak cukup RM ${taruhan.toLocaleString()}!` }, { quoted: m });
         }
 
         // Keputusan cabutan (0 hingga 99)

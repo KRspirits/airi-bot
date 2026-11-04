@@ -97,8 +97,8 @@ export function simulateRTP(name, args, n = 100000, rng = Math.random) {
 
 // ---------- komen AI dengan fallback ----------
 const FALLBACK = {
-    menang: ['Ehhh bertuah betul! Airi pun rasa cemburu~ 🎉', 'Wah, tangan kau panas hari ni! 🔥'],
-    kalah: ['Alamak, duit masuk poket rumah. Sabar ya~ 🥲', 'Jangan risau, Airi simpan kuih untuk kau. 🍪']
+    menang: ['Ehhh bertuah betul! Airi pun rasa cemburu~ 🎉', 'Wah, tangan awak panas hari ni! 🔥'],
+    kalah: ['Alamak, duit masuk poket rumah. Sabar ya~ 🥲', 'Jangan risau, Airi simpan kuih untuk awak. 🍪']
 };
 
 async function komen(nama, menang, label) {
@@ -141,7 +141,7 @@ export default {
             if (!game.valid(p)) return reply(`❌ ${game.desc}\nContoh: \`.${cmd} ...\``);
 
             const user = await db.getUser(sender);
-            if ((user.wallet || 0) < bet) return reply(`❌ Duit poket tak cukup. Kau ada RM ${num(user.wallet || 0)}.`);
+            if ((user.wallet || 0) < bet) return reply(`❌ Duit poket tak cukup. Awak ada RM ${num(user.wallet || 0)}.`);
 
             user.wallet -= bet;
             const { mult, label } = game.settle(p, Math.random);
@@ -177,11 +177,11 @@ async function tarung(sock, m, db, sender, jid, args) {
     const betRaw = args[args.length - 1];
     const bet = /^\d+$/.test(betRaw || '') ? Number(betRaw) : 0;
     const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-    if (!target || target === sender) return reply('❌ Format: `.tarung @nama [jumlah]`. Tag lawan kau.');
+    if (!target || target === sender) return reply('❌ Format: `.tarung @nama [jumlah]`. Tag lawan awak.');
     if (!bet || bet < MIN_BET || bet > MAX_BET) return reply(`❌ Taruhan antara RM ${MIN_BET.toLocaleString()} hingga RM ${MAX_BET.toLocaleString()}.`);
     const a = await db.getUser(sender), b = await db.getUser(target);
-    if ((a.wallet || 0) < bet) return reply('❌ Duit kau tak cukup untuk tarung.');
-    if ((b.wallet || 0) < bet) return reply('❌ Lawan kau tak cukup duit untuk tarung ni.');
+    if ((a.wallet || 0) < bet) return reply('❌ Duit awak tak cukup untuk tarung.');
+    if ((b.wallet || 0) < bet) return reply('❌ Lawan awak tak cukup duit untuk tarung ni.');
     a.wallet -= bet; b.wallet -= bet;
     const menangA = Math.random() < 0.5;
     const winner = menangA ? a : b, loser = menangA ? b : a;

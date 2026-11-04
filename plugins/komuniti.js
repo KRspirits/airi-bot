@@ -12,7 +12,7 @@ export default {
         if (commandUsed === 'pantun') {
             const pantunList = [
                 "Dua tiga kucing berlari, mana nak sama si kucing belang; Duit dalam bank dicuri, muka Airi tersenyum riang!",
-                "Kain pelekat corak berseri, singgah makan di Tanjung Kling; Bila poket dah tak berisi, muka kau mula rasa pening!",
+                "Kain pelekat corak berseri, singgah makan di Tanjung Kling; Bila poket dah tak berisi, muka awak mula rasa pening!",
                 "Pecah kaca pecah gelas, sudah baca harap balas; Kalau kena tangkap polis, jangan menangis minta dilepas!"
             ];
             const p = pantunList[Math.floor(Math.random() * pantunList.length)];
@@ -39,7 +39,7 @@ export default {
 
         // 3. SANTAU MAYA (.santau @user)
         if (commandUsed === 'santau') {
-            if (!targetJid) return sock.sendMessage(jid, { text: '❌ Tag mangsa yang kau nak santau! Contoh: `.santau @user`' }, { quoted: m });
+            if (!targetJid) return sock.sendMessage(jid, { text: '❌ Tag mangsa yang awak nak santau! Contoh: `.santau @user`' }, { quoted: m });
 
             const kosSantau = 2500;
             if (user.wallet < kosSantau) return sock.sendMessage(jid, { text: `❌ Kos upah dukun santau RM ${kosSantau.toLocaleString()}!` }, { quoted: m });

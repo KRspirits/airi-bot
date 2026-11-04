@@ -1,10 +1,6 @@
 export default {
     name: 'jenayah_pack',
-    alias: [
-        'jenayah', 'bm', 'beli_bm', 
-        'curi_kereta', 'scam', 'peras_ugut', 'seludup', 'jual_maklumat', 
-        'seludup_senjata', 'godam_kripto', 'rompak_bank', 'rompak_kasino', 'rompak_jongkong'
-    ],
+    alias: [],
     execute: async ({ sock, m, user, db }) => {
         try {
             const jid = m.key.remoteJid;
@@ -69,7 +65,7 @@ export default {
                 
                 if (!pilihan) return sock.sendMessage(jid, { text: `❌ Kod barang tak wujud! Tengok senarai di \`.bm\`` }, { quoted: m });
                 if (user.wallet < pilihan.harga) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup RM ${pilihan.harga.toLocaleString()}!` }, { quoted: m });
-                if (user.bm_items.includes(pilihan.nama)) return sock.sendMessage(jid, { text: `✅ Kau dah ada ${pilihan.nama} dalam stor.` }, { quoted: m });
+                if (user.bm_items.includes(pilihan.nama)) return sock.sendMessage(jid, { text: `✅ Awak dah ada ${pilihan.nama} dalam stor.` }, { quoted: m });
 
                 user.wallet -= pilihan.harga;
                 user.bm_items.push(pilihan.nama);

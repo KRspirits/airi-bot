@@ -22,7 +22,7 @@ export default {
                     const menang = modal * 10;
                     user.wallet += menang;
                     await db.saveUser(user);
-                    return sock.sendMessage(jid, { text: `🎰 [ ${a} | ${b} | ${c} ]\n\n🔥 *JACKPOT!* Kau menang RM ${menang.toLocaleString()}!` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `🎰 [ ${a} | ${b} | ${c} ]\n\n🔥 *JACKPOT!* Awak menang RM ${menang.toLocaleString()}!` }, { quoted: m });
                 } else {
                     user.wallet -= modal;
                     await db.saveUser(user);
@@ -52,7 +52,7 @@ export default {
                 if (tekaan === syiling) {
                     user.wallet += modal;
                     await db.saveUser(user);
-                    return sock.sendMessage(jid, { text: `🪙 Syiling jatuh pada: *${syiling.toUpperCase()}*\n\n✅ Tepat! Kau menang RM ${modal.toLocaleString()}` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `🪙 Syiling jatuh pada: *${syiling.toUpperCase()}*\n\n✅ Tepat! Awak menang RM ${modal.toLocaleString()}` }, { quoted: m });
                 } else {
                     user.wallet -= modal;
                     await db.saveUser(user);
@@ -68,7 +68,7 @@ export default {
                 if (pilihan === racun) {
                     user.wallet = Math.max(0, user.wallet - 5000);
                     await db.saveUser(user);
-                    return sock.sendMessage(jid, { text: `☠️ *KABOOM!*\n\nKotak ${pilihan} ada bom beracun! Duit kau hangus RM 5,000!` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `☠️ *KABOOM!*\n\nKotak ${pilihan} ada bom beracun! Duit awak hangus RM 5,000!` }, { quoted: m });
                 } else {
                     const hadiah = Math.floor(Math.random() * 3000) + 1000;
                     user.wallet += hadiah;
@@ -82,15 +82,15 @@ export default {
                 if (nasib > 0.4) {
                     user.wallet += 1500;
                     await db.saveUser(user);
-                    return sock.sendMessage(jid, { text: `🔫 *BANG! PRANGGG!*\n\nTembakan tepat kena botol! Kau menang RM 1,500.` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `🔫 *BANG! PRANGGG!*\n\nTembakan tepat kena botol! Awak menang RM 1,500.` }, { quoted: m });
                 } else {
-                    return sock.sendMessage(jid, { text: `🔫 *BANG!* ...tersasar.\n\nPeluru kau terkena dinding. Cuba lagi!` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `🔫 *BANG!* ...tersasar.\n\nPeluru awak terkena dinding. Cuba lagi!` }, { quoted: m });
                 }
             }
 
             if (cmd === 'lumba_kuda' || cmd === 'gacha_mlbb') {
                 const items = cmd === 'lumba_kuda' ? ['Kuda Hitam', 'Kuda Putih', 'Kuda Belang', 'Kuda Merah'] : ['Epic', 'Elite', 'Basic', 'Collector (Rare!)', 'Habuk (Gagal)'];
-                const msg = cmd === 'lumba_kuda' ? `🐎 Juara lumba kali ini ialah: *${items[Math.floor(Math.random() * items.length)]}*!` : `🔮 Gacha MLBB... Kau dapat: *${items[Math.floor(Math.random() * items.length)]}* ✨`;
+                const msg = cmd === 'lumba_kuda' ? `🐎 Juara lumba kali ini ialah: *${items[Math.floor(Math.random() * items.length)]}*!` : `🔮 Gacha MLBB... Awak dapat: *${items[Math.floor(Math.random() * items.length)]}* ✨`;
                 return sock.sendMessage(jid, { text: msg }, { quoted: m });
             }
 

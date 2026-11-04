@@ -14,6 +14,7 @@ import { clearSession } from './lib/session.js';
 import { LEVEL_REQUIRED, levelOf } from './lib/level.js';
 import { trackQuest } from './lib/quest.js';
 import { recordActivity, isActive } from './lib/activity.js';
+import { resolveAlias } from './lib/aliases.js';
 import { db } from './lib/database.js';
 import { loadPlugins } from './lib/loader.js';
 import { initState, state, addGroup, activeEvent, purgeActive } from './lib/state.js';
@@ -146,6 +147,7 @@ async function onMessage(m) {
     const parsed = parseCmd(teks, config.prefix);
     if (parsed) {
         console.log(`[CMD DETECTED] Mencari arahan: ".${parsed.cmd}"`);
+        parsed.cmd = resolveAlias(parsed.cmd);
         const action = commands.get(parsed.cmd); 
         if (!action) {
             console.log(`[CMD NOT FOUND] Arahan ".${parsed.cmd}" tiada dalam senarai ${commands.size} commands!`);
@@ -163,7 +165,7 @@ async function onMessage(m) {
         trackQuest(senderJid, parsed.cmd).catch(() => {});
         const perlu = LEVEL_REQUIRED[parsed.cmd];
         if (perlu && levelOf(user) < perlu) {
-            return sock.sendMessage(jid, { text: `🔒 *${parsed.cmd}* dibuka pada level ${perlu}.\nLevel kau sekarang: ${levelOf(user)}. Kumpul XP dengan \`.kerja\` dan \`.daily\`.` }, { quoted: m });
+            return sock.sendMessage(jid, { text: `🔒 *${parsed.cmd}* dibuka pada level ${perlu}.\nLevel awak sekarang: ${levelOf(user)}. Kumpul XP dengan \`.kerja\` dan \`.daily\`.` }, { quoted: m });
         }
         try { 
             await action.execute({ sock, m, user, db, args: parsed.args || [] }); 
@@ -188,7 +190,7 @@ async function onMessage(m) {
         const { askAiri } = await import('./lib/geminiAI.js');
         const { profileSummary } = await import('./lib/memory.js');
         const user = await db.getUser(senderJid, senderName);
-        const situasi = (hot ? `Pemain ${senderName} sembang isu sensitif: "${teks}". Sampuk comel, ceria dan menyakat mesra.` : `Pemain ${senderName} panggil kau: "${teks}". Jawab periang dan mesra.`)
+        const situasi = (hot ? `Pemain ${senderName} sembang isu sensitif: "${teks}". Sampuk comel, ceria dan menyakat mesra.` : `Pemain ${senderName} panggil awak: "${teks}". Jawab periang dan mesra.`)
             + `\nDATA PEMAIN (rujukan sahaja):\n${await profileSummary(senderJid, senderName, user)}`;
         await sock.sendMessage(jid, { text: `💬 𝗔𝗶𝗿𝗶: ${await askAiri(teks, situasi)}` }, { quoted: m });
     } catch (err) { console.error('[AI CHAT ERROR]', err.message); }

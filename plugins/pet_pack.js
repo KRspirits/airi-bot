@@ -40,11 +40,11 @@ export default {
                 user.wallet -= harga;
                 user.telur_pet = (user.telur_pet || 0) + 1;
                 await db.saveUser(user);
-                return sock.sendMessage(jid, { text: `🥚 Kau berjaya beli 1x Telur Misteri!\nTaip \`.tetas_telur\` untuk menetas.` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `🥚 Awak berjaya beli 1x Telur Misteri!\nTaip \`.tetas_telur\` untuk menetas.` }, { quoted: m });
             }
 
             if (cmd === 'tetas_telur') {
-                if (!user.telur_pet || user.telur_pet <= 0) return sock.sendMessage(jid, { text: `❌ Kau tak ada telur untuk ditetas!` }, { quoted: m });
+                if (!user.telur_pet || user.telur_pet <= 0) return sock.sendMessage(jid, { text: `❌ Awak tak ada telur untuk ditetas!` }, { quoted: m });
                 
                 const haiwan = ['Ayam Serama', 'Ular Sawa', 'Kura-kura Ninja', 'Musang Pandan'];
                 const dapat = haiwan[Math.floor(Math.random() * haiwan.length)];
@@ -53,7 +53,7 @@ export default {
                 user.pet_aktif = dapat;
                 await db.saveUser(user);
                 
-                return sock.sendMessage(jid, { text: `✨ *CRAAAKKK!*\n\nTelur misteri kau pecah dan *${dapat}* keluar! 🐾` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `✨ *CRAAAKKK!*\n\nTelur misteri awak pecah dan *${dapat}* keluar! 🐾` }, { quoted: m });
             }
         } catch (err) {
             console.error("Pet Error:", err);

@@ -18,7 +18,7 @@ export default {
             return sock.sendMessage(jid, {
                 text: `
 🎖️ *PAPAN REPUTASI & GELARAN*
-Kau belum layak menuntut sebarang lencana kehormat!
+Awak belum layak menuntut sebarang lencana kehormat!
 
 🎯 *Misi Terbuka:*
 • Menang 15x Lumba Drag ➔ \`🏎️ [RAJA HIGHWAY KARAK]\`

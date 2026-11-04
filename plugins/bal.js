@@ -29,12 +29,12 @@ export default {
 ₿  BTC       ${btc.toLocaleString()} unit
 📊  Jumlah    RM ${jumlahTunai.toLocaleString()}
 
-💬 Airi: "Banyak simpan kat bank, tak risau kena hack ke? Belanja aku la sikit."`.trim();
+💬 Airi: "Banyak simpan kat bank, tak risau kena hack ke? Belanja saya la sikit."`.trim();
 
             try {
                 const tier = bankTier(bank);
                 const img = await renderBankCard(user, nama);
-                return sock.sendMessage(jid, { image: img, caption: `💳 Kad ${tier.label} kau\n` + teksBal }, { quoted: m });
+                return sock.sendMessage(jid, { image: img, caption: `💳 Kad ${tier.label} awak\n` + teksBal }, { quoted: m });
             } catch (e) {
                 console.error('[KAD BANK]', e.message);
             }

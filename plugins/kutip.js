@@ -139,15 +139,15 @@ export default {
                             } 
                             else if (itemData.jenis === 'kereta') {
                                 winner.vehicle = { name: itemData.reward, speed: Math.floor(Math.random() * 80) + 150 }; // Masuk terus ke Garaj
-                                hadiahTeks = `🚗 *Tahniah!* Selepas kontena dibuka, kau menemui kunci *${itemData.reward}*!\nKenderaan telah pun dihantar ke dalam \`.garaj\` kau. Nilai pasaran kenderaan ini adalah RM ${itemData.nilaiPasaran.toLocaleString()}.`;
+                                hadiahTeks = `🚗 *Tahniah!* Selepas kontena dibuka, awak menemui kunci *${itemData.reward}*!\nKenderaan telah pun dihantar ke dalam \`.garaj\` awak. Nilai pasaran kenderaan ini adalah RM ${itemData.nilaiPasaran.toLocaleString()}.`;
                             }
                             else if (itemData.jenis === 'emas') {
                                 winner.emas = (winner.emas || 0) + itemData.reward;
-                                hadiahTeks = `🪙 *Jackpot!* Peti besi berjaya dipecahkan dan kau menemui *${itemData.reward} Gram Emas* padu!\nEmas tersebut telah disimpan selamat di dalam \`.balance\`.`;
+                                hadiahTeks = `🪙 *Jackpot!* Peti besi berjaya dipecahkan dan awak menemui *${itemData.reward} Gram Emas* padu!\nEmas tersebut telah disimpan selamat di dalam \`.balance\`.`;
                             }
                             else if (itemData.jenis === 'btc') {
                                 winner.btc = (winner.btc || 0) + itemData.reward;
-                                hadiahTeks = `🖥️ *Jackpot Kripto!* Pelayan berjaya dihidupkan dan kau memindahkan *${itemData.reward} Unit BTC* terus ke \`.balance\` kau!`;
+                                hadiahTeks = `🖥️ *Jackpot Kripto!* Pelayan berjaya dihidupkan dan awak memindahkan *${itemData.reward} Unit BTC* terus ke \`.balance\` awak!`;
                             }
 
                             if (typeof winner.markModified === 'function') winner.markModified('vehicle');

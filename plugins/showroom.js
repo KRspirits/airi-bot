@@ -33,7 +33,7 @@ export default {
             if (!car) return sock.sendMessage(jid, { text: '❌ Kod jentera tidak sah! Semak di `.showroom`.' }, { quoted: m });
 
             if (user.wallet < car.price) {
-                return sock.sendMessage(jid, { text: `❌ Duit poket kau tak cukup RM ${car.price.toLocaleString()}!` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `❌ Duit poket awak tak cukup RM ${car.price.toLocaleString()}!` }, { quoted: m });
             }
 
             user.wallet -= car.price;

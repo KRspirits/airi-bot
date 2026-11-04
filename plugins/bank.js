@@ -10,7 +10,7 @@ export default {
         // 1. DEPOSIT (Simpan duit poket ke bank)
         if (commandUsed === 'dep' || commandUsed === 'deposit') {
             if (user.wallet <= 0) {
-                return sock.sendMessage(jid, { text: '❌ Poket kau kosong, nak simpan apa?' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '❌ Poket awak kosong, nak simpan apa?' }, { quoted: m });
             }
 
             let amount = args[0] === 'all' ? user.wallet : parseInt(args[0]);
@@ -19,7 +19,7 @@ export default {
             }
 
             if (amount > user.wallet) {
-                return sock.sendMessage(jid, { text: '❌ Duit dalam poket kau tak cukup banyak tu!' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '❌ Duit dalam poket awak tak cukup banyak tu!' }, { quoted: m });
             }
 
             user.wallet -= amount;
@@ -34,7 +34,7 @@ export default {
         // 2. WITHDRAW (Tarik duit bank ke poket)
         if (commandUsed === 'wd' || commandUsed === 'withdraw') {
             if (user.bank <= 0) {
-                return sock.sendMessage(jid, { text: '❌ Akaun bank kau kosong!' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '❌ Akaun bank awak kosong!' }, { quoted: m });
             }
 
             let amount = args[0] === 'all' ? user.bank : parseInt(args[0]);
@@ -43,7 +43,7 @@ export default {
             }
 
             if (amount > user.bank) {
-                return sock.sendMessage(jid, { text: '❌ Duit simpanan bank kau tak mencukupi!' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '❌ Duit simpanan bank awak tak mencukupi!' }, { quoted: m });
             }
 
             user.bank -= amount;

@@ -22,11 +22,11 @@ const ART = path.join(__dirname, '..', 'assets', 'airi.png');
  */
 // Hadiah tunai sekali (dibayar bila pertama kali dibuka). Kecil supaya tak banjir duit.
 export const REWARDS = {
-    'Pemancing Pertama': 5000, 'Koleksi 10 Spesies': 15000, 'Galeri 30 Spesies': 40000,
-    'Pemburu Rare': 25000, 'Juara Rare': 80000, 'Pemilik Mitos': 50000, 'Kaki Mitos': 150000,
-    'Mitos Lengkap': 500000, 'Album Biasa Lengkap': 100000, 'Tukang Besi': 40000,
-    'Harta Karun': 20000, 'Penjual Gambar': 15000, 'Pemenang Lelong': 30000,
-    'Penjudi Berani': 60000, 'Jutawan Kecil': 250000
+    'Pemancing Pertama': 500, 'Koleksi 10 Spesies': 1500, 'Galeri 30 Spesies': 4000,
+    'Pemburu Rare': 2500, 'Juara Rare': 8000, 'Pemilik Mitos': 5000, 'Kaki Mitos': 15000,
+    'Mitos Lengkap': 50000, 'Album Biasa Lengkap': 10000, 'Tukang Besi': 4000,
+    'Harta Karun': 2000, 'Penjual Gambar': 1500, 'Pemenang Lelong': 3000,
+    'Penjudi Berani': 6000, 'Jutawan Kecil': 25000
 };
 
 export function computeAchievements(owned, stats = {}, catalog = CATALOG, wallet = 0) {
@@ -154,7 +154,7 @@ export default {
             const nav = semasa < jumlahHalaman ? `\nHalaman seterusnya: .buku ${semasa + 1}` : '';
             const dibuka = list.filter(x => x.unlocked).length;
             const teks = baru.length ? `\n🎉 Badge baharu: ${baru.join(', ')}\n💰 Hadiah: RM ${hadiah.toLocaleString('en-US')}` : '';
-            return sock.sendMessage(jid, { image: img, caption: `🏆 Pencapaian kau: ${dibuka}/${list.length} · halaman ${semasa}/${jumlahHalaman}${teks}${nav}` }, { quoted: m });
+            return sock.sendMessage(jid, { image: img, caption: `🏆 Pencapaian awak: ${dibuka}/${list.length} · halaman ${semasa}/${jumlahHalaman}${teks}${nav}` }, { quoted: m });
         } catch (e) {
             console.error('[ACHIEVEMENT]', e.message);
             return reply('⚠️ Ada ralat masa papar pencapaian. Cuba lagi.');

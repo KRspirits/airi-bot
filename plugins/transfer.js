@@ -20,7 +20,7 @@ export default {
 
         if (user.wallet < amount) {
             return sock.sendMessage(jid, { 
-                text: `❌ Duit poket kau tak cukup. Cuma ada RM ${user.wallet.toLocaleString()}` 
+                text: `❌ Duit poket awak tak cukup. Cuma ada RM ${user.wallet.toLocaleString()}` 
             }, { quoted: m });
         }
 

@@ -17,7 +17,7 @@ export default {
         // 1. TUAI HASIL TANAMAN (.tuai)
         if (cmd === 'tuai') {
             if (!user.farm || !user.farm.crop) {
-                return sock.sendMessage(jid, { text: '❌ Petak kebun kau kosong! Tanam benih guna `.tanam [cili/strawberi/ketum]`.' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '❌ Petak kebun awak kosong! Tanam benih guna `.tanam [cili/strawberi/ketum]`.' }, { quoted: m });
             }
 
             if (now < user.farm.harvest_at) {
@@ -36,7 +36,7 @@ export default {
                 await db.saveUser(user);
 
                 return sock.sendMessage(jid, {
-                    text: `🚨 *SERBUAN DRON PENGUATKUASA!*\nLadang daun hijau kau dikesan dari udara! Semua pokok ditebas dan kau disumbat ke lokap (4 Minit)!`
+                    text: `🚨 *SERBUAN DRON PENGUATKUASA!*\nLadang daun hijau awak dikesan dari udara! Semua pokok ditebas dan awak disumbat ke lokap (4 Minit)!`
                 }, { quoted: m });
             }
 
@@ -51,7 +51,7 @@ export default {
 ├ 📦 𝗧𝗮𝗻𝗮𝗺𝗮𝗻 : ${info.name}
 ├ 💵 𝗣𝘂𝗹𝗮𝗻𝗴𝗮𝗻 : +RM ${untung.toLocaleString()} Masuk Poket!
 └───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Subur betul tanaman kau! Dapat duit bersih hasil tanah."`
+💬 𝗔𝗶𝗿𝗶: "Subur betul tanaman awak! Dapat duit bersih hasil tanah."`
             }, { quoted: m });
         }
 
@@ -90,7 +90,7 @@ export default {
 
         // 3. SEMAK STATUS KEBUN (.kebun)
         if (!user.farm || !user.farm.crop) {
-            return sock.sendMessage(jid, { text: '🏡 Kebun kau sunyi sepi bertanah lapang. Taip `.tanam` untuk mula berkebun.' }, { quoted: m });
+            return sock.sendMessage(jid, { text: '🏡 Kebun awak sunyi sepi bertanah lapang. Taip `.tanam` untuk mula berkebun.' }, { quoted: m });
         }
 
         const info = TANAMAN[user.farm.crop];

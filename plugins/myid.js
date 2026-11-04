@@ -27,7 +27,7 @@ export default {
 
         try {
             const img = await renderIC(user, senderName, await getAvatar(sock, m.key.participant || jid).catch(() => null));
-            return sock.sendMessage(jid, { image: img, caption: `🪪 Kad pengenalan kau\nTunai: RM ${user.wallet.toLocaleString()} · Bank: RM ${user.bank.toLocaleString()}` }, { quoted: m });
+            return sock.sendMessage(jid, { image: img, caption: `🪪 Kad pengenalan awak\nTunai: RM ${user.wallet.toLocaleString()} · Bank: RM ${user.bank.toLocaleString()}` }, { quoted: m });
         } catch (e) {
             console.error('[KAD IC]', e.message);
         }

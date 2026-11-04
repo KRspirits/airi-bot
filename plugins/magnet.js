@@ -25,7 +25,7 @@ export default {
             const targetGear = MAGNET_TIERS[nextTier];
 
             if (!targetGear) {
-                return sock.sendMessage(jid, { text: '⚡ Magnet kau dah max level (Kren Elektromagnet Pelabuhan)!' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '⚡ Magnet awak dah max level (Kren Elektromagnet Pelabuhan)!' }, { quoted: m });
             }
 
             if (user.wallet < targetGear.price) {
@@ -40,7 +40,7 @@ export default {
             await db.saveUser(user);
 
             return sock.sendMessage(jid, {
-                text: `🧲 *UPGRADE BERJAYA!* Sekarang kau guna *${targetGear.name}* (Multiplier Khazanah: x${targetGear.mult})!`
+                text: `🧲 *UPGRADE BERJAYA!* Sekarang awak guna *${targetGear.name}* (Multiplier Khazanah: x${targetGear.mult})!`
             }, { quoted: m });
         }
 
@@ -63,7 +63,7 @@ export default {
         // 3. BUKA PETI MISTERI
         if (commandUsed === 'buka_peti') {
             if ((user.inventory.mystery_boxes || 0) <= 0) {
-                return sock.sendMessage(jid, { text: '❌ Kau tiada Peti Besi Misteri!' }, { quoted: m });
+                return sock.sendMessage(jid, { text: '❌ Awak tiada Peti Besi Misteri!' }, { quoted: m });
             }
             user.inventory.mystery_boxes -= 1;
 
@@ -85,7 +85,7 @@ export default {
 
         // 4. BALING MAGNET DASAR SUNGAI
         if (user.jail?.status && now < user.jail.release_at) {
-            return sock.sendMessage(jid, { text: '⛓️ Kau dalam lokap, tak boleh baling magnet!' }, { quoted: m });
+            return sock.sendMessage(jid, { text: '⛓️ Awak dalam lokap, tak boleh baling magnet!' }, { quoted: m });
         }
 
         const cd = 90 * 1000;
@@ -106,7 +106,7 @@ export default {
             user.stats.magnet_treasure = (user.stats.magnet_treasure || 0) + 1;
             await db.saveUser(user);
             return sock.sendMessage(jid, {
-                text: `💎 *HARTA KARUN!*\nMagnet kau tarik sesuatu berkilau dari dasar sungai!\nNilai: *+RM ${nilai.toLocaleString()}*`
+                text: `💎 *HARTA KARUN!*\nMagnet awak tarik sesuatu berkilau dari dasar sungai!\nNilai: *+RM ${nilai.toLocaleString()}*`
             }, { quoted: m });
         }
 
@@ -117,7 +117,7 @@ export default {
             user.inventory.mystery_boxes = (user.inventory.mystery_boxes || 0) + 1;
             await db.saveUser(user);
             return sock.sendMessage(jid, {
-                text: `🧲 *JACKPOT DASAR AIR!*\nMagnet kau melekat pada sebuah *Peti Besi Misteri*!\nTaip \`.buka_peti\` untuk membukanya!`
+                text: `🧲 *JACKPOT DASAR AIR!*\nMagnet awak melekat pada sebuah *Peti Besi Misteri*!\nTaip \`.buka_peti\` untuk membukanya!`
             }, { quoted: m });
         }
 

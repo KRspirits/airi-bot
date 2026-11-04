@@ -13,7 +13,7 @@ const JENAYAH_LIST = {
 };
 
 export default {
-    name: 'jenayah',
+    name: 'jenayah_lama',
     alias: Object.keys(JENAYAH_LIST),
     execute: async ({ sock, m, user, db }) => {
         try {
@@ -56,7 +56,7 @@ export default {
             if (JENAYAH_LIST[cmd]) {
                 if (user.jail.status && Date.now() < user.jail.release_at) {
                     const baki = Math.ceil((user.jail.release_at - Date.now()) / 60000);
-                    return sock.sendMessage(jid, { text: `⛓️ Kau masih dalam lokap. Tinggal ${baki} minit lagi.` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `⛓️ Awak masih dalam lokap. Tinggal ${baki} minit lagi.` }, { quoted: m });
                 } else if (user.jail.status) {
                     user.jail.status = false;
                 }

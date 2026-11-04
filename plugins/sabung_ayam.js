@@ -7,7 +7,7 @@ export default {
         const args = teks.trim().split(' ').slice(1);
 
         if (user.jail?.status && Date.now() < user.jail.release_at) {
-            return sock.sendMessage(jid, { text: '⛓️ Kau dalam lokap, jangan sibuk nak menyabung ayam!' }, { quoted: m });
+            return sock.sendMessage(jid, { text: '⛓️ Awak dalam lokap, jangan sibuk nak menyabung ayam!' }, { quoted: m });
         }
 
         let taruhan = parseInt(args[0]);
@@ -19,7 +19,7 @@ export default {
 
         if (user.wallet < taruhan) {
             return sock.sendMessage(jid, { 
-                text: `❌ Duit poket kau tak cukup taruhan RM ${taruhan.toLocaleString()}!` 
+                text: `❌ Duit poket awak tak cukup taruhan RM ${taruhan.toLocaleString()}!` 
             }, { quoted: m });
         }
 
@@ -62,7 +62,7 @@ export default {
 ├ 💸 𝗧𝗮𝗿𝘂𝗵𝗮𝗻 : -RM ${taruhan.toLocaleString()} (Hangus)
 ├ ⏳ 𝗟𝗼𝗸𝗮𝗽  : 3 Minit
 └───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Lari lintang pukang selipar tercabut! Balai tempat kau malam ni."`;
+💬 𝗔𝗶𝗿𝗶: "Lari lintang pukang selipar tercabut! Balai tempat awak malam ni."`;
             return sock.sendMessage(jid, { text: responSerbu }, { quoted: m });
         }
 
@@ -72,7 +72,7 @@ export default {
             await db.saveUser(user);
 
             const aksiMenang = [
-                "Ayam kau terbang libas taji tepat kena balung lawan!",
+                "Ayam awak terbang libas taji tepat kena balung lawan!",
                 "Sekali patuk, ayam musuh terus lari melompat keluar gelanggang!",
                 "Serangan taji berputar buat ayam musuh tersungkur tepi reban!"
             ];
@@ -85,16 +85,16 @@ export default {
 ├ 💥 𝗔𝗸𝘀𝗶      : ${aksi}
 ├ 💵 𝗧𝘂𝗻𝗮𝗶     : +RM ${menang.toLocaleString()} (Untung Berganda)
 └───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Garang ayam kau! Balik ni bagi makan beras wangi sikit tanda hargai jasa dia."`;
+💬 𝗔𝗶𝗿𝗶: "Garang ayam awak! Balik ni bagi makan beras wangi sikit tanda hargai jasa dia."`;
 
             return sock.sendMessage(jid, { text: responMenang }, { quoted: m });
         } else {
             await db.saveUser(user);
 
             const aksiKalah = [
-                "Ayam kau baru dengar kokok musuh dah lari menyusup celah kangkang penonton.",
+                "Ayam awak baru dengar kokok musuh dah lari menyusup celah kangkang penonton.",
                 "Kena sepakan taji bertubi-tubi sampai gugur separuh bulu ekor!",
-                "Ayam kau merajuk duduk tepi makan cacing, malas nak lawan."
+                "Ayam awak merajuk duduk tepi makan cacing, malas nak lawan."
             ];
             const aksi = aksiKalah[Math.floor(Math.random() * aksiKalah.length)];
 
@@ -105,7 +105,7 @@ export default {
 ├ 💥 𝗔𝗸𝘀𝗶      : ${aksi}
 ├ 💸 𝗟𝗲𝗯𝘂      : -RM ${taruhan.toLocaleString()}
 └───────────────────────────
-💬 𝗔𝗶𝗿𝗶: "Hahaha baka ayam pencen mana kau pungut ni? Baik buat sup ayam je esok!"`;
+💬 𝗔𝗶𝗿𝗶: "Hahaha baka ayam pencen mana awak pungut ni? Baik buat sup ayam je esok!"`;
 
             return sock.sendMessage(jid, { text: responKalah }, { quoted: m });
         }

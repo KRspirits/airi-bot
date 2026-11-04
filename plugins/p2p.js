@@ -63,7 +63,7 @@ export default {
             if (brg.penjualJid === senderJid) return sock.sendMessage(jid, { text: '❌ Takkan nak beli barang sendiri bos!' }, { quoted: m });
 
             if (user.wallet < brg.harga) {
-                return sock.sendMessage(jid, { text: `❌ Duit poket kau tak cukup RM ${brg.harga.toLocaleString()}!` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `❌ Duit poket awak tak cukup RM ${brg.harga.toLocaleString()}!` }, { quoted: m });
             }
 
             // Tolak duit pembeli, tambah ke penjual
@@ -85,7 +85,7 @@ export default {
             const bidaan = parseInt(args[0]);
             if (isNaN(bidaan) || bidaan <= 0) return sock.sendMessage(jid, { text: '❌ Masukkan jumlah bidaan!' }, { quoted: m });
 
-            if (user.wallet < bidaan) return sock.sendMessage(jid, { text: '❌ Duit poket kau tidak mencukupi untuk membida!' }, { quoted: m });
+            if (user.wallet < bidaan) return sock.sendMessage(jid, { text: '❌ Duit poket awak tidak mencukupi untuk membida!' }, { quoted: m });
 
             return sock.sendMessage(jid, {
                 text: `📢 *BIDAAN DITERIMA!*\n@${senderJid.split('@')[0]} meletakkan bidaan sebanyak *RM ${bidaan.toLocaleString()}*!`,

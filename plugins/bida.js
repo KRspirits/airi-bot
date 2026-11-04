@@ -232,7 +232,7 @@ export default {
         // Jika pembida sama bida semula, bidaan lamanya dipulangkan dulu dan boleh dikira sebagai baki
         const bidaSendiri = lelong.highestBidder === senderJid ? lelong.currentBid : 0;
         if ((fresh.wallet + bidaSendiri) < amaunBida) {
-            return sock.sendMessage(jid, { text: `❌ Duit poket kau tak cukup! Kau ada RM ${fresh.wallet.toLocaleString()}` }, { quoted: m });
+            return sock.sendMessage(jid, { text: `❌ Duit poket awak tak cukup! Awak ada RM ${fresh.wallet.toLocaleString()}` }, { quoted: m });
         }
         // Pulangkan bidaan pembida sebelumnya (berlaku juga jika pembida sama)
         if (lelong.highestBidder && lelong.highestBidder !== senderJid) {
