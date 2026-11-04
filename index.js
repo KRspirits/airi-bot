@@ -6,10 +6,14 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import qrcodeTerminal from 'qrcode-terminal';
 import QRCode from 'qrcode';
+import './lib/errlog.js';
 import { config, isOwner, isOwnerMsg } from './config.js';
 import { withUserLock } from './lib/money.js';
 import { patchSend } from './lib/textcards.js';
 import { clearSession } from './lib/session.js';
+import { LEVEL_REQUIRED, levelOf } from './lib/level.js';
+import { trackQuest } from './lib/quest.js';
+import { recordActivity, isActive } from './lib/activity.js';
 import { db } from './lib/database.js';
 import { loadPlugins } from './lib/loader.js';
 import { initState, state, addGroup, activeEvent, purgeActive } from './lib/state.js';
@@ -127,6 +131,7 @@ async function onMessage(m) {
     
     m.message = unwrap(m.message);
     const jid = m.key.remoteJid;
+    recordActivity(jid, m.key.participant || jid);
     const isMe = Boolean(m.key.fromMe);
     const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : (m.key.participant || jid);
     const senderName = isMe ? 'Owner' : (m.pushName || 'Warga Gelap');
@@ -155,6 +160,11 @@ async function onMessage(m) {
 
         return withUserLock(senderJid, async () => {
         const user = await db.getUser(senderJid, senderName), before = snapshot(user);
+        trackQuest(senderJid, parsed.cmd).catch(() => {});
+        const perlu = LEVEL_REQUIRED[parsed.cmd];
+        if (perlu && levelOf(user) < perlu) {
+            return sock.sendMessage(jid, { text: `🔒 *${parsed.cmd}* dibuka pada level ${perlu}.\nLevel kau sekarang: ${levelOf(user)}. Kumpul XP dengan \`.kerja\` dan \`.daily\`.` }, { quoted: m });
+        }
         try { 
             await action.execute({ sock, m, user, db, args: parsed.args || [] }); 
         }
@@ -172,7 +182,7 @@ async function onMessage(m) {
 
     const low = teks.toLowerCase();
     const hot = ['kalah', 'sengkek', 'scam', 'koyak', 'pinjam seratus', 'sedih', 'takde duit', 'barai'].some(k => low.includes(k));
-    if (!(low.includes('airi') || (hot && Math.random() < 0.06 && teks.length > 5))) return;
+    if (!(low.includes('airi') || (hot && isActive(jid, 3) && Math.random() < 0.06 && teks.length > 5))) return;
     if (!allow('chat:' + senderJid, 15000)) return;
     try {
         const { askAiri } = await import('./lib/geminiAI.js');
