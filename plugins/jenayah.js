@@ -1,3 +1,4 @@
+import { sceneCard } from '../lib/scene.js';
 const JENAYAH_LIST = {
     'curi_kereta': { nama: 'Curi Kereta', risiko: 0.40, min: 2000, max: 5000, penalti: 5 },
     'scam': { nama: 'Scam Macau', risiko: 0.45, min: 4000, max: 8000, penalti: 10 },
@@ -74,7 +75,7 @@ export default {
                     
                     let alasanBuff = buffNilai > 0 ? `🛡️ Buff BM: ${buffNama} (Gagal menyorok)\n` : '';
                     
-                    return sock.sendMessage(jid, { text: `🚨 **KANTOI BASAH!**\nKau ditangkap polis semasa melakukan operasi *${crime.nama}*.\n\n${alasanBuff}⏳ Hukuman Lokap: ${crime.penalti} Minit.` }, { quoted: m });
+                    return sock.sendMessage(jid, { image: sceneCard('tangkap'), caption: `🚨 **KANTOI BASAH!**\nKau ditangkap polis semasa melakukan operasi *${crime.nama}*.\n\n${alasanBuff}⏳ Hukuman Lokap: ${crime.penalti} Minit.` }, { quoted: m });
                 } else {
                     const untung = Math.floor(Math.random() * (crime.max - crime.min + 1)) + crime.min;
                     user.duit_gelap = (user.duit_gelap || user.black_money || 0) + untung;
@@ -83,7 +84,7 @@ export default {
                     
                     let efekBuff = buffNilai > 0 ? `🛡️ Buff BM: ${buffNama} (-${buffNilai * 100}% Risiko)\n` : '';
 
-                    return sock.sendMessage(jid, { text: `🏴‍☠️ **MISI SUKSES!**\nOperasi *${crime.nama}* berjaya tanpa dikesan radar polis.\n\n${efekBuff}💵 Hasil Kotor: RM ${untung.toLocaleString()}` }, { quoted: m });
+                    return sock.sendMessage(jid, { image: sceneCard('rompak'), caption: `🏴‍☠️ **MISI SUKSES!**\nOperasi *${crime.nama}* berjaya tanpa dikesan radar polis.\n\n${efekBuff}💵 Hasil Kotor: RM ${untung.toLocaleString()}` }, { quoted: m });
                 }
             }
         } catch (err) {

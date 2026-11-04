@@ -58,6 +58,7 @@ export default {
         const gaji = Math.floor(Math.random() * (job.maxGaji - job.minGaji + 1)) + job.minGaji;
 
         user.wallet += gaji;
+        user.xp = (user.xp || 0) + 15;
         await db.saveUser(user);
         cooldownKerja.set(senderId, now);
 

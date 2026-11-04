@@ -1,3 +1,4 @@
+import { sceneCard } from '../lib/scene.js';
 export default {
     name: 'underworld_pack',
     alias: ['rompak', 'hackbank', 'santau', 'hutang_ahlong', 'bayar_ahlong'],
@@ -21,11 +22,11 @@ export default {
                     
                     await db.saveUser(user);
                     await db.saveUser(targetUser);
-                    return sock.sendMessage(jid, { text: `🏴‍☠️ *BERJAYA!*\nKau berjaya sakau RM ${hasil.toLocaleString()} dari @${targetJid.split('@')[0]}!`, mentions: [targetJid] }, { quoted: m });
+                    return sock.sendMessage(jid, { image: sceneCard('rompak'), caption: `🏴‍☠️ *BERJAYA!*\nKau berjaya sakau RM ${hasil.toLocaleString()} dari @${targetJid.split('@')[0]}!`, mentions: [targetJid] }, { quoted: m });
                 } else {
                     user.jail = { status: true, release_at: Date.now() + 60000, reason: "Gagal " + cmd };
                     await db.saveUser(user);
-                    return sock.sendMessage(jid, { text: `🚨 *KANTOI!*\nPolis dah serbu! Kau disumbat ke lokap selama 60 saat!` }, { quoted: m });
+                    return sock.sendMessage(jid, { image: sceneCard('tangkap'), caption: `🚨 *KANTOI!*\nPolis dah serbu! Kau disumbat ke lokap selama 60 saat!` }, { quoted: m });
                 }
             }
 

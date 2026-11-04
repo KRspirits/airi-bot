@@ -32,6 +32,8 @@ export default {
             }
 
             user.wallet -= phone.price;
+            user.inventory.phone = pId;
+            user.inventory.phone_name = phone.name;
             user.inventory.phone_iqoo = (pId === 'iqoo12');
             await db.saveUser(user);
 

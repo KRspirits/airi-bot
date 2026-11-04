@@ -1,3 +1,4 @@
+import { sceneCard } from '../lib/scene.js';
 import { panelCard } from '../lib/cards.js';
 import { sendCard } from '../lib/render.js';
 import { allow } from '../lib/cooldown.js';
@@ -78,7 +79,7 @@ export const GAMES = {
         settle: (_, rng) => {
             const sym = ['🍒', '🐟', '💎', '🎀', '⭐', '🔥'];
             const s = [0, 0, 0].map(() => sym[Math.floor(rng() * sym.length)]);
-            const same = (s[0] === s[1]) + (s[1] === s[2]) + (s[0] === s[2]);
+            const same = Number(s[0] === s[1]) + Number(s[1] === s[2]) + Number(s[0] === s[2]);
             const mult = same === 3 ? 10 : same >= 1 ? 1.5 : 0;
             return { mult, label: s.join(' ') };
         }
@@ -162,7 +163,8 @@ export default {
                 bigLabel: menang ? 'MENANG' : 'KALAH',
                 footerText: `💬 Airi: ${cerita}`
             });
-            return sock.sendMessage(jid, { image: card, caption: `🎰 ${cmd} | ${menang ? 'Menang' : 'Kalah'}` }, { quoted: m });
+            const gambarKeputusan = mult >= 8 ? sceneCard('jackpot') : card;
+            return sock.sendMessage(jid, { image: gambarKeputusan, caption: `🎰 ${cmd} | ${menang ? 'Menang' : 'Kalah'}` }, { quoted: m });
         } catch (e) {
             console.error('[JUDI AI]', e.message);
             return reply('⚠️ Meja kasino tersekat sekejap. Cuba lagi.');

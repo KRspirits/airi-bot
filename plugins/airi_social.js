@@ -1,3 +1,4 @@
+import { levelOf } from '../lib/level.js';
 import { config } from '../config.js';
 import { extractText, parseCmd, mentions, num, rm, pick, rand, networth, tierOf, fmtDur, isJailed, myt } from '../lib/util.js';
 import { sendCard, getAvatar } from '../lib/render.js';
@@ -37,8 +38,8 @@ export default {
             const all = (await inGroup(sock, jid, await db.getAllUsers())).sort((a, b) => networth(b) - networth(a));
             const mem = await getMem(who), net = networth(u), idx = all.findIndex(x => x.id === who);
             return sendCard(sock, jid, m, 'profileCard', {
-                name: u.name, nick: mem.nick, tier: tierOf(net), net, wallet: u.wallet, bank: u.bank, black: u.black_money || 0,
-                vehicle: u.vehicle?.name, pet: u.pet?.name, stats: u.stats, geng: u.geng, badges: (u.badges || []).map(b => b?.name || b),
+                name: u.name, nick: `${mem.nick ? mem.nick + ' · ' : ''}Level ${levelOf(u)} · XP ${(Number(u.xp) || 0).toLocaleString('en-US')}`, tier: tierOf(net), net, wallet: u.wallet, bank: u.bank, black: u.black_money || 0,
+                vehicle: [u.vehicle?.name, u.inventory?.phone_name].filter(Boolean).join(' · ') || 'Tiada', pet: u.pet?.name, stats: u.stats, geng: u.geng, badges: (u.badges || []).map(b => b?.name || b),
                 avatar: await getAvatar(sock, who), rank: idx >= 0 ? idx + 1 : null
             }, `🪪 *Kad profil ${u.name}* | ${tierOf(net).name} | ${rm(net)}`);
         }
@@ -116,37 +117,37 @@ export default {
         }
 
         // ---------- INGATAN ----------
-        if (cmd === 'panggil') { const n = await setNick(sender, args.join(' ')); return reply(n ? `Okay! Mulai sekarang Airi panggil kau *${n}* ya! 🎀` : 'Nak Airi panggil apa? `.panggil [nama]`'); }
+        if (cmd === 'panggil') { const n = await setNick(sender, args.join(' ')); return reply(n ? `Okay! Mulai sekarang Airi panggil awak *${n}* ya! 🎀` : 'Nak Airi panggil apa? `.panggil [nama]`'); }
         if (cmd === 'ingat') {
-            if (!args.length) { const mm = await getMem(sender); return reply(`🧠 *Ingatan Airi tentang kau*\nTimangan: ${mm.nick || '-'}\n${mm.fakta.map((f, i) => `${i + 1}. ${f}`).join('\n') || 'Belum ada fakta. Cuba `.ingat aku suka mee goreng`'}`); }
+            if (!args.length) { const mm = await getMem(sender); return reply(`🧠 *Ingatan Airi tentang awak*\nTimangan: ${mm.nick || '-'}\n${mm.fakta.map((f, i) => `${i + 1}. ${f}`).join('\n') || 'Belum ada fakta. Cuba `.ingat saya suka mee goreng`'}`); }
             const t = await addFact(sender, args.join(' ')); return reply(t ? `Okay, Airi ingat: _${t}_ 🧠✨` : 'Tak dapat simpan fakta tu.');
         }
-        if (cmd === 'lupa') { await forget(sender); return reply('Sudah! Airi dah lupakan semua tentang kau... (tipu, sikit je 🤭)'); }
+        if (cmd === 'lupa') { await forget(sender); return reply('Sudah! Airi dah lupakan semua tentang awak... (tipu, sikit je 🤭)'); }
 
         // ---------- DENDAM & BALAS ----------
         if (cmd === 'dendam') {
             const wrong = await recent({ since: 864e5, target: sender, type: 'crime' });
-            if (!wrong.length) return reply('Tiada siapa kacau kau hari ni. Hati tenang, dunia indah~ 🌈');
+            if (!wrong.length) return reply('Tiada siapa kacau awak hari ni. Hati tenang, dunia indah~ 🌈');
             const by = new Map(); for (const e of wrong) by.set(e.actor, (by.get(e.actor) || 0) + 1);
             const list = [...by.entries()].sort((a, b) => b[1] - a[1]);
             return reply(`😤 *SENARAI DENDAM KAU (24 jam)*\n\n${list.map(([a, n], i) => `${i + 1}. ${tag(a)} (${n} kali)`).join('\n')}\n\nBalas dengan \`.balas @user\`!`, { mentions: list.map(x => x[0]) });
         }
         if (cmd === 'balas') {
-            if (!target) return reply('Tag orang yang kacau kau: `.balas @user`');
+            if (!target) return reply('Tag orang yang kacau awak: `.balas @user`');
             const wrong = await recent({ since: 864e5, actor: target, target: sender, type: 'crime' });
-            if (!wrong.length) return reply('Dia tak kacau kau dalam 24 jam ni. Tak boleh balas sesuka hati ya! 🙅‍♀️');
+            if (!wrong.length) return reply('Dia tak kacau awak dalam 24 jam ni. Tak boleh balas sesuka hati ya! 🙅‍♀️');
             const day = myt().day; user.balas = user.balas?.day === day ? user.balas : { day, done: [] };
-            if (user.balas.done.includes(target)) return reply('Kau dah balas dia hari ni. Sekali sehari je ya!');
+            if (user.balas.done.includes(target)) return reply('Awak dah balas dia hari ni. Sekali sehari je ya!');
             const t = await db.getUser(target); user.balas.done.push(target);
             if (Math.random() < 0.55) {
                 const amt = Math.min(25000, Math.floor((t.wallet || 0) * 0.08)); t.wallet -= amt; user.wallet += amt;
                 await db.saveUser(t); await db.saveUser(user);
                 await logEvent({ type: 'crime', actor: sender, target, cmd: 'balas', amount: amt, ok: true, group: jid });
-                return reply(`😈 *BALAS DENDAM BERJAYA!* Kau ambil balik ${rm(amt)} daripada ${tag(target)}!`, { mentions: [target] });
+                return reply(`😈 *BALAS DENDAM BERJAYA!* Awak ambil balik ${rm(amt)} daripada ${tag(target)}!`, { mentions: [target] });
             }
             const loss = Math.min(1500, user.wallet || 0); user.wallet -= loss; await db.saveUser(user);
             await logEvent({ type: 'crime', actor: sender, target, cmd: 'balas', amount: -loss, ok: false, group: jid });
-            return reply(`😵 Rancangan balas dendam tersangkut! Kau rugi ${rm(loss)}. Cuba lagi esok!`);
+            return reply(`😵 Rancangan balas dendam tersangkut! Awak rugi ${rm(loss)}. Cuba lagi esok!`);
         }
 
         // ---------- MISI HARIAN ----------

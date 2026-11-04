@@ -33,7 +33,7 @@ export default {
             const isAmar = ownersList.some(ownerNum => cleanSender.includes(String(ownerNum).replace(/[^0-9]/g, '')));
 
             // Persona Dinamik Airi
-            const personaAiri = `Nama kau Airi. Kau bot WhatsApp perempuan yang masih muda, periang, comel dan suka menyakat. Kau wholesome: jangan menggoda, romantik atau seksual. Pencipta dan Tuan Mutlak kau ialah Bos Amar. Sekarang kau sedang berbual dengan ${isAmar ? 'Bos Amar (pencipta kau. Layan dengan hormat dan ceria, panggil dia Bos Amar)' : 'pemain biasa bernama ' + (m.pushName || 'Warga') + ' (Layan mesra dan ceria, sesekali menyakat manja, guna bahasa Melayu santai WhatsApp. Jangan kasar, jangan hina fizikal/kaum/agama)'}.`;
+            const personaAiri = `Nama awak Airi. Awak bot WhatsApp perempuan yang masih muda, periang, comel dan suka menyakat. Awak wholesome: jangan menggoda, romantik atau seksual. Pencipta dan Tuan Mutlak awak ialah Bos Amar. Sekarang awak sedang berbual dengan ${isAmar ? 'Bos Amar (pencipta awak. Layan dengan hormat dan ceria, panggil dia Bos Amar)' : 'pemain biasa bernama ' + (m.pushName || 'Warga') + ' (Layan mesra dan ceria, sesekali menyakat manja, guna bahasa Melayu santai WhatsApp. Jangan kasar, jangan hina fizikal/kaum/agama)'}.`;
 
             // 1. CHAT NORMAL (.airi)
             if (cmd === 'airi') {
@@ -54,14 +54,14 @@ export default {
                 const isTargetAmar = ownersList.some(ownerNum => cleanTarget.includes(String(ownerNum).replace(/[^0-9]/g, '')));
 
                 if (targetJid.includes(botJid.replace(/[^0-9]/g, ''))) return sock.sendMessage(jid, { text: cmd === 'roast' ? `Ehh berani nak suruh Airi bahan diri sendiri ya? 😋🌸` : `Aww terima kasih puji Airi! ✨🤍` }, { quoted: m });
-                if (cmd === 'roast' && isTargetAmar && !isAmar) return sock.sendMessage(jid, { text: `😡 Berani kau suruh Airi kutuk Bos Amar?! Kau tu dah la miskin, pergi main jauh-jauh! Hormat sikit Tuan aku!` }, { quoted: m });
+                if (cmd === 'roast' && isTargetAmar && !isAmar) return sock.sendMessage(jid, { text: `😡 Berani awak suruh Airi kutuk Bos Amar?! Awak tu dah la miskin, pergi main jauh-jauh! Hormat sikit Tuan saya!` }, { quoted: m });
                 if (targetJid === senderJid) return sock.sendMessage(jid, { text: cmd === 'roast' ? `Kenapa nak suruh Airi bahan awak sendiri? Kesiannya... 🥺💨` : `Syok sendiri nampak! Hehe~ 🌸` }, { quoted: m });
 
                 const targetUser = await db.getUser(targetJid);
                 const profilMangsa = `Nama: ${targetUser.name || 'Warga'}\nDuit Poket: RM ${targetUser.wallet || 0}\nJentera: ${targetUser.vehicle?.name || 'Jalan Kaki'}\nKerap Masuk Lokap: ${targetUser.stats?.times_jailed || 0} kali`;
                 
-                let promptKhusus = cmd === 'roast' ? `${personaAiri}\nTugas kau membahan pemain ini dalam 2 baris ayat padu berdasarkan profilnya: ${profilMangsa}. Usik dengan mesra, jangan terlalu kasar.` : `${personaAiri}\nPuji pemain ini melambung tinggi dengan gaya manja dalam 2 baris ayat berdasarkan profilnya: ${profilMangsa}.`;
-                if (cmd === 'roast' && isTargetAmar && isAmar) promptKhusus = `Kau terpaksa 'roast' Bos Amar (tuan kau) sebab dia sendiri yang minta. Buat secara manja-manja dan tak berani sangat.`;
+                let promptKhusus = cmd === 'roast' ? `${personaAiri}\nTugas awak membahan pemain ini dalam 2 baris ayat padu berdasarkan profilnya: ${profilMangsa}. Usik dengan mesra, jangan terlalu kasar.` : `${personaAiri}\nPuji pemain ini melambung tinggi dengan gaya manja dalam 2 baris ayat berdasarkan profilnya: ${profilMangsa}.`;
+                if (cmd === 'roast' && isTargetAmar && isAmar) promptKhusus = `Awak terpaksa 'roast' Bos Amar (tuan awak) sebab dia sendiri yang minta. Buat secara manja-manja dan tak berani sangat.`;
 
                 const responAI = await askAiri(promptKhusus);
                 return sock.sendMessage(jid, { text: `✨ *AIRI ${cmd.toUpperCase()} CORNER* ✨\n\n${responAI}\n\n👉 Sasaran: @${targetJid.split('@')[0]}`, mentions: [targetJid] }, { quoted: m });
@@ -70,7 +70,7 @@ export default {
             // 3. DUNGEON MASTER - RPG INTERAKTIF (.misi)
             if (cmd === 'misi') {
                 const tindakan = args.join(' ');
-                if (!tindakan) return sock.sendMessage(jid, { text: `🎲 *MISI BERMULA*\nKau terperangkap dalam bank dengan PDRM dah kepung luar. Bawa lari jongkong emas atau cari tebusan? Taip: \`.misi [tindakan kau]\`` }, { quoted: m });
+                if (!tindakan) return sock.sendMessage(jid, { text: `🎲 *MISI BERMULA*\nKau terperangkap dalam bank dengan PDRM dah kepung luar. Bawa lari jongkong emas atau cari tebusan? Taip: \`.misi [tindakan awak]\`` }, { quoted: m });
                 
                 const dmPrompt = `Pemain membuat tindakan RPG: "${tindakan}". Sebagai Dungeon Master (dengan gaya bahasa Airi yang comel/sarkastik), jana keputusan rawak sama ada dia berjaya atau gagal. Balas 2 ayat dramatik. Di hujung teks, TULIS SAMA ADA [MENANG] atau [KALAH]. Wajib ada salah satu tag ini.`;
                 const keputusan = await askAiri(dmPrompt);
@@ -79,11 +79,11 @@ export default {
                     const untung = Math.floor(Math.random() * 40000) + 10000;
                     user.wallet = (user.wallet || 0) + untung;
                     await db.saveUser(user);
-                    return sock.sendMessage(jid, { text: `🎭 ${keputusan.replace('[MENANG]', '').trim()}\n\n💰 Tahniah! Kau dapat duit rompakan RM ${untung.toLocaleString()}!` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `🎭 ${keputusan.replace('[MENANG]', '').trim()}\n\n💰 Tahniah! Awak dapat duit rompakan RM ${untung.toLocaleString()}!` }, { quoted: m });
                 } else {
                     user.jail = { status: true, release_at: Date.now() + 120000, reason: "Tumpas Misi RPG" };
                     await db.saveUser(user);
-                    return sock.sendMessage(jid, { text: `🎭 ${keputusan.replace('[KALAH]', '').trim()}\n\n🚨 KANTOI! Kau diseret ke lokap selama 120 saat!` }, { quoted: m });
+                    return sock.sendMessage(jid, { text: `🎭 ${keputusan.replace('[KALAH]', '').trim()}\n\n🚨 KANTOI! Awak diseret ke lokap selama 120 saat!` }, { quoted: m });
                 }
             }
 
@@ -128,7 +128,7 @@ export default {
                     const base64Image = buffer.toString('base64');
                     const mimeType = isImage ? m.message.imageMessage.mimetype : m.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage.mimetype;
 
-                    const promptVisual = `Kau adalah Airi, penilai kedai pajak gadai yang sarkastik, cerdik, dan cerewet. Tengok gambar ini dengan teliti. Nilai barang tersebut berdasarkan kualiti fizikal, rupa paras, kebersihan, atau kecacatannya. Konteks tambahan daripada pemain: "${barangText || 'Tiada info tambahan'}".\nTentukan harga belian munasabah antara RM 50 hingga RM 50000.\nWajib balas dalam format ini sahaja:\nNama: [Nama spesifik barang]\nKondisi: [Satu ulasan kelakar/sarkastik]\nHarga: [Hanya angka integer harga tawaran beli]`;
+                    const promptVisual = `Awak adalah Airi, penilai kedai pajak gadai yang sarkastik, cerdik, dan cerewet. Tengok gambar ini dengan teliti. Nilai barang tersebut berdasarkan kualiti fizikal, rupa paras, kebersihan, atau kecacatannya. Konteks tambahan daripada pemain: "${barangText || 'Tiada info tambahan'}".\nTentukan harga belian munasabah antara RM 50 hingga RM 50000.\nWajib balas dalam format ini sahaja:\nNama: [Nama spesifik barang]\nKondisi: [Satu ulasan kelakar/sarkastik]\nHarga: [Hanya angka integer harga tawaran beli]`;
 
                     const imageParts = [{ inlineData: { data: base64Image, mimeType: mimeType } }];
                     const result = await model.generateContent([promptVisual, ...imageParts]);
@@ -142,7 +142,7 @@ export default {
                     ceritaUlasan = mKondisi ? mKondisi[1].trim() : "Boleh tahan rupa dia, Airi tolong ambil je la.";
                     hargaTaksiran = mHarga ? parseInt(mHarga[1].replace(/[^0-9]/g, '')) : (Math.floor(Math.random() * 1500) + 100);
                 } else {
-                    const promptTeks = `Kau adalah Airi, penilai pajak gadai sarkastik. Pemain mahu gadai barang ini: "${barangText}". Nilaikan harga beli logik (RM 50 - RM 30,000).\nWajib balas dalam format ini sahaja:\nNama: [Nama barang kemas]\nKondisi: [Ulasan sarkastik 1 ayat]\nHarga: [Hanya angka integer harga]`;
+                    const promptTeks = `Awak adalah Airi, penilai pajak gadai sarkastik. Pemain mahu gadai barang ini: "${barangText}". Nilaikan harga beli logik (RM 50 - RM 30,000).\nWajib balas dalam format ini sahaja:\nNama: [Nama barang kemas]\nKondisi: [Ulasan sarkastik 1 ayat]\nHarga: [Hanya angka integer harga]`;
                     const result = await model.generateContent(promptTeks);
                     const resTeks = result.response.text();
 
@@ -151,7 +151,7 @@ export default {
                     const mHarga = resTeks.match(/Harga:\s*(\d+)/i);
 
                     namaBarang = mNama ? mNama[1].trim() : barangText;
-                    ceritaUlasan = mKondisi ? mKondisi[1].trim() : "Sebab kau minta elok-elok, Airi beli.";
+                    ceritaUlasan = mKondisi ? mKondisi[1].trim() : "Sebab awak minta elok-elok, Airi beli.";
                     hargaTaksiran = mHarga ? parseInt(mHarga[1].replace(/[^0-9]/g, '')) : (Math.floor(Math.random() * 2000) + 200);
                 }
 

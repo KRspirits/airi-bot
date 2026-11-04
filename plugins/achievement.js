@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { CATALOG, ensureP, ownedNames } from '../lib/fish.js';
 import { rr } from '../lib/card.js';
 import { paintLogo } from '../lib/brand.js';
+import { getAvatar } from '../lib/render.js';
 
 // =========================================================================
 // 🏆 PENCAPAIAN v17 - 15 pencapaian dari aktiviti sebenar pemain.
@@ -48,13 +49,20 @@ export function computeAchievements(owned, stats = {}, catalog = CATALOG, wallet
         { id: 'Penjual Gambar', desc: 'Jual 20 barang guna gambar', cur: s('jual_total'), target: 20 },
         { id: 'Pemenang Lelong', desc: 'Menang 5 lelongan kontena', cur: s('lelong_menang'), target: 5 },
         { id: 'Penjudi Berani', desc: 'Main 100 permainan judi AI', cur: s('judi_ai'), target: 100 },
-        { id: 'Jutawan Kecil', desc: 'Kumpul RM 10,000,000 (poket + bank)', cur: Math.floor(Number(wallet) || 0), target: 10000000 }
+        { id: 'Jutawan Kecil', desc: 'Kumpul RM 10,000,000 (poket + bank)', cur: Math.floor(Number(wallet) || 0), target: 10000000 },
+        { id: 'Ahli Baru', desc: 'Sertai Airi\'s Corner', cur: s('ahli'), target: 1 },
+        { id: 'Level 5', desc: 'Capai 800 XP (level 5)', cur: s('xp'), target: 800 },
+        { id: 'Streak 7 Hari', desc: 'Tuntut daily 7 hari berturut-turut', cur: s('streak'), target: 7 },
+        { id: 'Penjudi Pertama', desc: 'Main 1 permainan judi AI', cur: s('judi_ai'), target: 1 },
+        { id: 'Kaki Bank', desc: 'Simpan RM 100,000 dalam bank', cur: s('bank'), target: 100000 },
+        { id: 'Pemilik Telefon', desc: 'Beli telefon di .device', cur: s('phone'), target: 1 },
     ];
     return defs.map(d => ({ ...d, cur: Math.min(d.cur, d.target), unlocked: d.cur >= d.target }));
 }
 
-async function drawCard(list, nama) {
-    const W = 720, H = 1280;
+async function drawCard(list, nama, av = null) {
+    const rows = Math.ceil(list.length / 2);
+    const W = 720, H = Math.max(1000, 300 + rows * 122 + 100);
     const c = createCanvas(W, H), ctx = c.getContext('2d');
     let bg = null;
     try { bg = await loadImage(ART); } catch { bg = null; }
@@ -78,12 +86,21 @@ async function drawCard(list, nama) {
     ctx.fillStyle = '#ffffff'; ctx.font = 'bold 50px sans-serif';
     ctx.fillText('PENCAPAIAN', 40, 116);
     ctx.fillStyle = '#94a3b8'; ctx.font = '24px sans-serif';
-    ctx.fillText(String(nama).slice(0, 34), 40, 154);
+    ctx.fillText(String(nama).slice(0, 34), 150, 214);
+    if (av) {
+        try {
+            const gambar = await loadImage(av);
+            ctx.save(); ctx.beginPath(); ctx.arc(94, 196, 44, 0, Math.PI * 2); ctx.clip();
+            ctx.drawImage(gambar, 50, 152, 88, 88);
+            ctx.restore();
+            ctx.strokeStyle = '#7dd3fc'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(94, 196, 44, 0, Math.PI * 2); ctx.stroke();
+        } catch { /* gambar profil rosak: teruskan tanpa */ }
+    }
     const dibuka = list.filter(x => x.unlocked).length;
     ctx.textAlign = 'right'; ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 26px sans-serif';
     ctx.fillText(`${dibuka}/${list.length} dibuka`, W - 40, 116);
 
-    const colW = 320, gap = 20, rowH = 122, top = 200;
+    const colW = 320, gap = 20, rowH = 122, top = 300;
     list.forEach((a, i) => {
         const col = i % 2, row = Math.floor(i / 2);
         const x = 40 + col * (colW + gap), y = top + row * rowH;
@@ -106,9 +123,9 @@ async function drawCard(list, nama) {
 
 export default {
     name: 'achievement',
-    alias: ['achievements', 'pencapaian'],
+    alias: ['achievements', 'pencapaian', 'buku', 'buku_pencapaian'],
     category: 'pencapaian',
-    execute: async ({ sock, m, db }) => {
+    execute: async ({ sock, m, db, args = [] }) => {
         const jid = m.key.remoteJid;
         const sender = m.key.participant || jid;
         const reply = text => sock.sendMessage(jid, { text }, { quoted: m });
@@ -117,7 +134,7 @@ export default {
             const pd = ensureP(sender);
             const owned = ownedNames(pd);
             const wallet = (user.wallet || 0) + (user.bank || 0);
-            const list = computeAchievements(owned, user.stats || {}, CATALOG, wallet);
+            const list = computeAchievements(owned, { ...(user.stats || {}), xp: user.xp || 0, streak: user.streak || 0, ahli: user.createdAt ? 1 : 0, bank: user.bank || 0, phone: user.inventory?.phone ? 1 : 0 }, CATALOG, wallet);
 
             const baru = [];
             user.badges = Array.isArray(user.badges) ? user.badges : [];
@@ -128,13 +145,28 @@ export default {
             if (hadiah) user.wallet = (user.wallet || 0) + hadiah;
             if (baru.length) await db.saveUser(user);
 
-            const img = await drawCard(list, user.name || 'Warga Gelap');
+            const av = await getAvatar(sock, sender).catch(() => null);
+            const PER = 12;
+            const halaman = Math.max(1, parseInt(args?.[0]) || 1);
+            const jumlahHalaman = Math.max(1, Math.ceil(list.length / PER));
+            const semasa = Math.min(halaman, jumlahHalaman);
+            const img = await drawCard(list.slice((semasa - 1) * PER, semasa * PER), user.name || 'Warga Gelap', av);
+            const nav = semasa < jumlahHalaman ? `\nHalaman seterusnya: .buku ${semasa + 1}` : '';
             const dibuka = list.filter(x => x.unlocked).length;
             const teks = baru.length ? `\n🎉 Badge baharu: ${baru.join(', ')}\n💰 Hadiah: RM ${hadiah.toLocaleString('en-US')}` : '';
-            return sock.sendMessage(jid, { image: img, caption: `🏆 Pencapaian kau: ${dibuka}/${list.length}${teks}` }, { quoted: m });
+            return sock.sendMessage(jid, { image: img, caption: `🏆 Pencapaian kau: ${dibuka}/${list.length} · halaman ${semasa}/${jumlahHalaman}${teks}${nav}` }, { quoted: m });
         } catch (e) {
             console.error('[ACHIEVEMENT]', e.message);
             return reply('⚠️ Ada ralat masa papar pencapaian. Cuba lagi.');
         }
     }
 };
+
+// Kad pencapaian untuk pemain tertentu (dipanggil bila join group, tanpa perlu taip command).
+export async function kadUntuk(sock, jid, user) {
+    const owned = ownedNames(ensureP(jid));
+    const wallet = (user.wallet || 0) + (user.bank || 0);
+    const list = computeAchievements(owned, { ...(user.stats || {}), xp: user.xp || 0, streak: user.streak || 0, ahli: user.createdAt ? 1 : 0, bank: user.bank || 0, phone: user.inventory?.phone ? 1 : 0 }, CATALOG, wallet);
+    const av = await getAvatar(sock, jid).catch(() => null);
+    return drawCard(list, user.name || 'Warga Gelap', av);
+}

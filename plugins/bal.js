@@ -1,3 +1,4 @@
+import { getAvatar } from '../lib/render.js';
 import { renderBankCard, bankTier } from '../lib/idcards.js';
 
 export default {
@@ -32,7 +33,7 @@ export default {
 
             try {
                 const tier = bankTier(bank);
-                const img = renderBankCard(user, nama);
+                const img = await renderBankCard(user, nama);
                 return sock.sendMessage(jid, { image: img, caption: `💳 Kad ${tier.label} kau\n` + teksBal }, { quoted: m });
             } catch (e) {
                 console.error('[KAD BANK]', e.message);

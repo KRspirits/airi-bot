@@ -1,6 +1,7 @@
 import { isOwner, isOwnerMsg, config } from '../config.js';
 import { standings, wipeSeason } from '../lib/season.js';
 import { clearSession } from '../lib/session.js';
+import { ralatTerakhir } from '../lib/errlog.js';
 import { line } from '../lib/airi_lines.js';
 import { state, saveState, activeEvent, purgeActive } from '../lib/state.js';
 import { supported } from '../lib/effects.js';
@@ -60,6 +61,8 @@ const MENU = `╭━━━━━━━━━━━━━━━━━━━━━
    .jail_user @u [saat]   ·   .free_user @u   ·   .syscheck
 ━━ LELONG ━━
    .bida_now   (buka lelongan kontena sekarang)
+━━ LOG ━━
+   .errlog   (10 ralat terakhir)
 ━━ SESI ━━
    .reset_session   (kosong sesi WhatsApp, bot restart, scan QR baru)
 ━━ MUSIM ━━
@@ -147,6 +150,11 @@ export default {
                 const t = args.join(' ').trim(); if (!t) return reply('Guna: `.siar [mesej]`');
                 for (const g of state.groups) await sock.sendMessage(g, { text: `📢 *PENGUMUMAN DARIPADA BOS AMAR*\n\n${t}` }).catch(() => {});
                 return reply(`✅ Disiarkan ke ${state.groups.length} grup.`);
+            }
+            case 'errlog': {
+                const senarai = ralatTerakhir(10);
+                if (!senarai.length) return reply('✅ Tiada ralat dalam memori.');
+                return reply('🧾 *RALAT TERAKHIR*\n\n' + senarai.map(x => `${x.t.slice(11, 19)}  ${x.teks}`).join('\n'));
             }
             case 'reset_session': {
                 await clearSession(db.isMongo());

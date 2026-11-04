@@ -1,7 +1,56 @@
-import { MENU_ZONES } from '../lib/menudata.js';
+import { dashboardCard } from '../lib/cards.js';
+import { getAvatar } from '../lib/render.js';
 
-// 📜 MENU - teks sahaja, ikut format yang dipilih owner.
-// Nama, tunai, bank dan kenderaan diambil dari profil pemain.
+// 📜 MENU: papan gambar yang terangkan setiap bahagian bot dan command untuk ditaip.
+// Bahagian owner (veto) tak ditunjuk. Latar Airi berbeza setiap kali dibuka.
+const SEKSYEN = (ws) => [
+    { tajuk: '📱 Telefon & Rider', warna: '#38e8ff', baris: [
+        ['.device', 'Katalog telefon. Wajib beli telefon dulu'],
+        ['.rider', 'Online atau offline sebagai rider'],
+        ['.order', 'Senarai order penghantaran sekarang'],
+        ['.terima [id]', 'Ambil satu order'],
+        ['.siap', 'Siapkan order dan terima bayaran'] ] },
+    { tajuk: '📲 Media Sosial', warna: '#f472b6', baris: [
+        ['.upload tiktok [caption]', 'Upload ke TikTok (atau ig)'],
+        ['.feed', 'Lihat post terkini'],
+        ['.like [id] / .share [id]', 'Like atau share post orang'],
+        ['.follow @user', 'Ikut pemain lain'],
+        ['.claim', 'Tuntut pendapatan like dan follow'] ] },
+    { tajuk: '💰 Ekonomi & Pasaran', warna: '#fbbf24', baris: [
+        ['.kerja', 'Gaji setiap 3 minit (dapat XP)'],
+        ['.daily', 'Bonus harian'],
+        ['.bal', 'Kad bank dan portfolio'],
+        ['.pasaran', 'Carta candle BTC (.pasaran emas untuk emas)'],
+        ['.beli_btc / .jual_btc', 'Beli atau jual Bitcoin'] ] },
+    { tajuk: '🎣 Memancing', warna: '#4ade80', baris: [
+        ['.kedai_pancing', 'Beli joran dan jala'],
+        ['.mancing', 'Memancing (level 3)'],
+        ['.jala', 'Jala pukal (level 8)'],
+        ['.ikan', 'Lihat tong ikan'],
+        ['.jual_ikan', 'Jual ikan dalam tong'] ] },
+    { tajuk: '🎰 Judi', warna: '#c084fc', baris: [
+        ['.kupon [rm]', 'Kupon gosok'],
+        ['.roda [rm]', 'Roda nasib'],
+        ['.tekaan [1-10] [rm]', 'Teka nombor'],
+        ['.tarung @user [rm]', 'Tarung dengan pemain lain'] ] },
+    { tajuk: '🖼️ Jual Gambar', warna: '#fb7185', baris: [
+        ['.jual_gambar', 'Hantar gambar barang (sebagai dokumen untuk kadar kamera)'],
+        ['.tawar [rm] [sebab]', 'Tawar harga dengan hujah'],
+        ['.setuju', 'Terima tawaran'] ] },
+    { tajuk: '🏆 Profil & Pencapaian', warna: '#7dd3fc', baris: [
+        ['.myid', 'Kad pengenalan kau'],
+        ['.achievement', 'Senarai pencapaian'],
+        ['.album 1 / 2 / 3', 'Album biasa, rare, mitos'],
+        ['.level', 'Level dan XP kau'],
+        ['.top', 'Papan teratas'],
+        ['.sejarah_musim', 'Juara musim lepas'] ] },
+    { tajuk: '💬 Airi', warna: '#a78bfa', baris: [
+        ['.airi [soalan]', 'Tanya Airi (balas teks)'],
+        ['.tanya [soalan]', 'Tanya AI'],
+        ['.roast @user', 'Roast seseorang'],
+        ['.berita_cyber', 'Berita keselamatan siber'] ] },
+];
+
 export default {
     name: 'menu',
     alias: ['help', 'senarai', 'panel'],
@@ -12,90 +61,15 @@ export default {
         const nama = user?.name || sender.split('@')[0];
         const tunai = Number(user?.wallet || 0).toLocaleString('en-US');
         const bank = Number(user?.bank || 0).toLocaleString('en-US');
-        const kenderaan = user?.vehicle?.name ? String(user.vehicle.name).split(' ')[0] : 'Kaki';
-        const teks = `╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-   ✨  AIRI'S CORNER  ·  MENU
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-👤  @${nama}
-💵  Tunai   RM ${tunai}
-🏦  Bank    RM ${bank}
-🚗  Kenderaan  ${kenderaan}
-
-━━ 1. AI, MUZIK & RPG ━━
-   .airi [teks]   ·   .misi (RPG)   ·   .roast @user
-   .puji @user   ·   .pantun_ai   ·   .teka_lagu
-   .jawab [lirik]   ·   .buletin_cyber   ·   .taksir [gambar/teks]
-
-━━ 2. EKONOMI, PASARAN & EVENT ━━
-   .kerja   ·   .daily   ·   .bal
-   .transfer @user   ·   .pasaran   ·   .beli_emas
-   .beli_btc   ·   .pasar_pemain   ·   .jual_emas
-   .jual_btc   ·   .lelong_kontena   ·   .bida [rm]
-   .kutip [kod]
-
-━━ 3. JENTERA, PLAT & HARTA ━━
-   .showroom [1-5]   ·   .beli_kenderaan [id]   ·   .lelong_plat
-   .beli_plat [no]   ·   .lumba [id]   ·   .bengkel
-   .pasang   ·   .list_hartanah   ·   .beli_rumah [id]
-   .kutip_sewa
-
-━━ 4. PERTANIAN & JETI MEGA ━━
-   .kebun   ·   .tanam [cili/strawberi]   ·   .tuai
-   .kedai_pancing   ·   .beli_pancing [kategori] [id]   ·   .mancing (Joran)
-   .jala (Tebaran Pukal)   ·   .ikan   ·   .jual_ikan
-   .akuarium   ·   .bela_ikan [no]   ·   .baling_magnet
-   .kedai_magnet   ·   .jual_besi
-
-━━ 5. UNDERWORLD & MAHKAMAH ━━
-   .jenayah (Senarai)   ·   .bm (Pasar Gelap)   ·   .beli_bm [nama]
-   .cuci_duit [jumlah]   ·   .rompak @user   ·   .santau @user
-   .hackbank   ·   .rayu [alasan]   ·   .ikat_jamin @user
-   .hutang_ahlong   ·   .bayar_ahlong   ·   .bounty
-
-━━ 6. GADGET, PET & WARUNG ━━
-   .device   ·   .beli_phone [id]   ·   .shop (Warung)
-   .makan [id]   ·   .kedai_pet   ·   .beli_pet [nama]
-   .beli_telur   ·   .tetas_telur
-
-━━ 7. KASINO & MINI-GAMES ━━
-   .serang_boss   ·   .bgk   ·   .coinflip
-   .slot   ·   .tarik_tali   ·   .teka_nombor
-   .kotak_beracun   ·   .tembak_botol   ·   .lumba_kuda
-   .tikam_nombor   ·   .gacha_mlbb   ·   .tiktok_affiliate
-   .split_bil
-
-━━ 8. INFO & GELARAN ━━
-   .myid   ·   .profile   ·   .badge
-   .top   ·   .musim
-
-━━ 9. GENG, DRAMA & KOLEKSI ━━
-   .geng   ·   .heist   ·   .sertai_heist
-   .dendam   ·   .balas @user   ·   .profil
-   .wanted   ·   .siasat @user   ·   .album
-   .gabung [no] [no]   ·   .pameran [no]   ·   .tangkap [kod]
-   .liga   ·   .panggil [nama]   ·   .ingat [fakta]
-
-━━ 11. HIBURAN & RAWAK ━━
-   .dadu   ·   .koin   ·   .suit [batu/gunting/kertas]
-   .bola8 [soalan]   ·   .ship [nama1] [nama2]   ·   .rate
-   .mood   ·   .horoskop   ·   .ramal
-   .teka   ·   .jawab_teka [jawapan]   ·   .joke
-   .fakta   ·   .motivasi   ·   .bmi [kg] [cm]
-   .kira [a] [+-*/] [b]   ·   .passgen   ·   .lotot
-   ada 50 fun; taip .dadu untuk mula
-
-━━ 12. JUDI AI (TARASAN MAX RM5,000) ━━
-   .tekaan [1-10] [rm]   ·   .roda [rm]   ·   .kad_besar h/r [rm]
-   .dadu7 atas/bawah/tujuh [rm]   ·   .peti [1-5] [rm]   ·   .kupon [rm]
-   .tarung @user [rm]
-
-━━ 13. BERITA & JUAL GAMBAR ━━
-   .berita_cyber   ·   
-
-━━ 14. PENCAPAIAN & ALBUM ━━
-   .achievement   ·   .pencapaian (kad pencapaian)   ·   .album
-
-Taip nama command untuk guna. Contoh: .mancing`;
-        return sock.sendMessage(jid, { text: teks }, { quoted: m });
+        const seksyen = SEKSYEN();
+        try {
+            const av = await getAvatar(sock, sender).catch(() => null);
+            const img = await dashboardCard({ nama, tunai, bank, seksyen, avatar: av });
+            return sock.sendMessage(jid, { image: img, caption: '📜 Menu Airi · taip nama command untuk guna' }, { quoted: m });
+        } catch (e) {
+            console.error('[MENU KAD]', e.message);
+        }
+        const teks = seksyen.map(s => `*${s.tajuk}*\n` + s.baris.map(([c, k]) => `${c} — ${k}`).join('\n')).join('\n\n');
+        return sock.sendMessage(jid, { text: `📜 *MENU AIRI'S CORNER*\n\n${teks}` }, { quoted: m });
     }
 };

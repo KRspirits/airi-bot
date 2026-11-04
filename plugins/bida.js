@@ -1,3 +1,6 @@
+import { beritaPasaran } from './pasaran.js';
+import { VEHICLES, PHONE_DEVICES } from '../lib/gamedata.js';
+import { toItem, kadBarang } from '../lib/items.js';
 import { withUserLock } from '../lib/money.js';
 import { speak } from '../lib/voice.js';
 import { config } from '../config.js';
@@ -6,6 +9,22 @@ import { line } from '../lib/airi_lines.js';
 export const auctionState = {};
 
 // Senarai Hadiah Kontena Misteri (50 Barang: Hanya Barang Fizikal Bernilai & Tunai Murni)
+export const GARAJ_LOOT = [
+    { name: 'Mesin Basuh Terpakai', value: 2500, type: 'untung', desc: 'Masih boleh pakai, tapi bunyi sikit masa spin' },
+    { name: 'Set Pinggan Kaca', value: 800, type: 'untung', desc: 'Lengkap 6 keping, ada yang retak sikit' },
+    { name: 'Basikal Lipat', value: 4500, type: 'untung', desc: 'Tayar sedikit kempis, rantai okay' },
+    { name: 'Televisyen CRT', value: 3000, type: 'untung', desc: 'Berat macam batu, gambar berkabus' },
+    { name: 'Kotak Kabel Tak Dikenali', value: 50, type: 'rugi', desc: 'Penuh kabel yang tak tahu guna untuk apa' },
+    { name: 'Peti Ikan Kosong', value: 10, type: 'rugi', desc: 'Bau pun tak sedap' },
+];
+
+export const PREMIUM_LOOT = [
+    { name: 'Jam Tangan Mewah', value: 250000, type: 'untung', desc: 'Jenama terkenal, masih ada kotak asal' },
+    { name: 'Kereta Antik Rosak', value: 800000, type: 'untung', desc: 'Enjin perlu baik pulih, tapi koleksi tetap berharga' },
+    { name: 'Kad Ahli Eksklusif', value: 1200000, type: 'untung', desc: 'Kad ahli kelab peribadi, pemilik lama tak pernah guna' },
+    { name: 'Kotak Penuh Pasir', value: 0, type: 'rugi', desc: 'Berat, tapi isinya pasir bangunan sahaja' },
+];
+
 export const AUCTION_LOOT_POOL = [
     // --- 35 BARANG FIZIKAL & TUNAI TINGGI (UNTUNG) ---
     { name: "Peti Jongkong Emas 999 Padu (10KG) 🪙", value: 3500000, type: "untung", desc: "Emas tulen berkilau yang sangat berat!" },
@@ -63,15 +82,54 @@ export const AUCTION_LOOT_POOL = [
 ];
 
 // Fungsi Memulakan Lelongan (Dipanggil oleh Loop Random Event)
+// Jenis lelongan: harga tapak rendah untuk semua orang, kenaikan minimum, dan pool barang sendiri.
+export const LELONGAN = {
+    garaj: { nama: 'LELONGAN GARAJ', tapak: [1000, 2000, 3000, 5000], step: 500, pool: 'garaj', berat: 50,
+        cerita: 'Garaj lama di Kepong dikosongkan. Barang-barang tu dilelong untuk sesiapa yang berani.' },
+    kontena: { nama: 'LELONGAN KONTENA MISTERI', tapak: [20000, 50000, 100000, 250000], step: 1000, pool: 'kontena', berat: 35,
+        cerita: 'Kontena tersadai dari Pelabuhan Klang dibuka untuk bidaan!' },
+    premium: { nama: 'LELONGAN PREMIUM', tapak: [100000, 250000], step: 5000, pool: 'premium', berat: 15,
+        cerita: 'Koleksi barang mewah dari rumah banglo dibuka untuk bidaan eksklusif.' },
+};
+const POOL = { kontena: () => AUCTION_LOOT_POOL, garaj: () => GARAJ_LOOT, premium: () => PREMIUM_LOOT };
+
+const pilihRawak = arr => arr[Math.floor(Math.random() * arr.length)];
+const lootKenderaan = v => ({ name: v.name, value: v.price, type: 'untung', desc: `Kelajuan ${v.speed} km/h · kelas ${v.type}`, kind: 'vehicle', ref: v.id });
+
+// Barang lelongan: kadang-kadang kenderaan atau telefon sebenar (boleh dipakai atau dijual).
+function pickLoot(jenis) {
+    const r = Math.random();
+    if (jenis === 'garaj' && r < 0.35) {
+        if (Math.random() < 0.6) { const p = pilihRawak(PHONE_DEVICES); return { name: p.name, value: p.price, type: 'untung', desc: p.bonus, kind: 'phone', ref: p.id }; }
+        const murah = VEHICLES.filter(v => v.price <= 50000);
+        if (murah.length) return lootKenderaan(pilihRawak(murah));
+    }
+    if (jenis === 'premium' && r < 0.5) {
+        const mahal = VEHICLES.filter(v => v.price > 50000);
+        if (mahal.length) return lootKenderaan(pilihRawak(mahal));
+    }
+    const pool = (POOL[jenis] || POOL.kontena)();
+    return pilihRawak(pool);
+}
+
+function pilihJenis() {
+    const jumlah = Object.values(LELONGAN).reduce((a, j) => a + j.berat, 0);
+    let r = Math.random() * jumlah;
+    for (const [kunci, j] of Object.entries(LELONGAN)) { r -= j.berat; if (r < 0) return kunci; }
+    return 'garaj';
+}
+
 export async function triggerRandomAuction(sock, chatId) {
     if (auctionState[chatId] && auctionState[chatId].active) return;
 
-    // Harga tapak permulaan rawak
-    const basePrices = [20000, 50000, 100000, 250000];
-    const tapak = basePrices[Math.floor(Math.random() * basePrices.length)];
+    const jenis = pilihJenis();
+    const cfg = LELONGAN[jenis];
+    const tapak = cfg.tapak[Math.floor(Math.random() * cfg.tapak.length)];
 
     auctionState[chatId] = {
         active: true,
+        jenis,
+        step: cfg.step,
         startPrice: tapak,
         currentBid: tapak,
         highestBidder: null,
@@ -80,16 +138,16 @@ export async function triggerRandomAuction(sock, chatId) {
     };
 
     const notis = `
-┌───「 📦 𝗟𝗘𝗟𝗢𝗡𝗚𝗔𝗡 𝗞𝗢𝗡𝗧𝗘𝗡𝗔 𝗠𝗜𝗦𝗧𝗘𝗥𝗜! 」
-│ _Kontena tersadai dari Pelabuhan Klang dibuka untuk bidaan!_
+┌───「 📦 ${cfg.nama} 」
+│ _${cfg.cerita}_
 ├───────────────────────────
-├ 💵 𝗛𝗮𝗿𝗴𝗮 𝗧𝗮𝗽𝗮𝗸   : RM ${tapak.toLocaleString()}
-├ 📈 𝗕𝗶𝗱𝗮𝗮𝗻 𝗦𝗲𝗺𝗮𝘀𝗮 : RM ${tapak.toLocaleString()}
-├ 👤 𝗣𝗲𝗺𝗯𝗶𝗱𝗮 𝗧𝗲𝗿𝗮𝘁𝗮𝘀: Tiada
-├ ⏳ 𝗧𝗲𝗺𝗽𝗼𝗵 𝗠𝗮𝘀𝗮   : 60 Saat Sahaja!
+├ 💵 Harga Tapak   : RM ${tapak.toLocaleString()}
+├ 📈 Kenaikan min  : RM ${cfg.step.toLocaleString()}
+├ 👤 Pembida Teratas: Tiada
+├ ⏳ Tempoh        : 60 Saat Sahaja!
 └───────────────────────────
-⚠️ *Peringatan:* Isi kontena boleh jadi *BARANG FIZIKAL BERHARGA*, *TUNAI TINGGI*, atau *SAMPAH KOSONG*!
-👉 Taip: \`.bida [jumlah_rm]\` untuk membida!`;
+⚠️ Isi boleh jadi barang berharga, tunai, atau sampah. Nasib-nasib!
+👉 Taip: \`.bida [jumlah_rm]\` untuk membida. Pemula pun boleh join!`;
 
     await sock.sendMessage(chatId, { text: notis });
     if (config.voice) speak(sock, chatId, 'auction').catch(() => {});
@@ -106,11 +164,14 @@ export async function triggerRandomAuction(sock, chatId) {
         }
 
         const { db } = await import('../lib/database.js');
+        const hasilLoot = pickLoot(lelong.jenis);
+        const itemBaru = toItem(hasilLoot, lelong.currentBid);
         await withUserLock(lelong.highestBidder, async () => {
         const pemenang = await db.getUser(lelong.highestBidder);
-        const hasilLoot = AUCTION_LOOT_POOL[Math.floor(Math.random() * AUCTION_LOOT_POOL.length)];
 
-        pemenang.wallet += hasilLoot.value;
+        pemenang.items = Array.isArray(pemenang.items) ? pemenang.items : [];
+        pemenang.items.push(itemBaru);
+        if (lelong.jenis === 'premium') beritaPasaran('emas', 0.015);
         pemenang.stats = pemenang.stats || {};
         pemenang.stats.lelong_menang = (pemenang.stats.lelong_menang || 0) + 1;
         await db.saveUser(pemenang);
@@ -133,6 +194,7 @@ export async function triggerRandomAuction(sock, chatId) {
 💬 𝗔𝗶𝗿𝗶: "${roaster}"`;
 
         await sock.sendMessage(chatId, { text: teksMenang, mentions: [lelong.highestBidder] });
+        try { const kad = await kadBarang(itemBaru); await sock.sendMessage(chatId, { image: kad, caption: `🎁 ${lelong.highestBidderName || 'Pemenang'} dapat *${itemBaru.nama}* (ID ${itemBaru.id})` }); } catch (e) { console.error('[KAD BARANG]', e.message); }
         delete auctionState[chatId];
     }, 60000);
 }
@@ -158,9 +220,10 @@ export default {
             }, { quoted: m });
         }
 
-        if (amaunBida < lelong.currentBid + 1000) {
+        const minBida = lelong.highestBidder ? lelong.currentBid + (lelong.step || 1000) : lelong.currentBid;
+        if (amaunBida < minBida) {
             return sock.sendMessage(jid, {
-                text: `❌ Bidaan minimum RM 1,000 lebih tinggi daripada bidaan semasa (RM ${lelong.currentBid.toLocaleString()})!`
+                text: `❌ Bidaan minimum RM ${minBida.toLocaleString()} (semasa RM ${lelong.currentBid.toLocaleString()}, kenaikan RM ${(lelong.step || 1000).toLocaleString()}).`
             }, { quoted: m });
         }
 

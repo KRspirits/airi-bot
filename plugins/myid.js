@@ -1,3 +1,4 @@
+import { getAvatar } from '../lib/render.js';
 import { renderIC } from '../lib/idcards.js';
 export default {
     name: 'myid',
@@ -25,7 +26,7 @@ export default {
 💬 𝗔𝗶𝗿𝗶: "Simpan rekod ni elok-elok, jangan sampai terpadam waktu reset nanti!"`;
 
         try {
-            const img = renderIC(user, senderName);
+            const img = await renderIC(user, senderName, await getAvatar(sock, m.key.participant || jid).catch(() => null));
             return sock.sendMessage(jid, { image: img, caption: `🪪 Kad pengenalan kau\nTunai: RM ${user.wallet.toLocaleString()} · Bank: RM ${user.bank.toLocaleString()}` }, { quoted: m });
         } catch (e) {
             console.error('[KAD IC]', e.message);

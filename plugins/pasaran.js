@@ -1,29 +1,64 @@
-// Memori pasaran global (Reset bila bot direstart, terapung setiap 5 minit)
-const marketState = {
-    btc: 250000,
-    emas: 350,
-    trendBtc: '📈',
-    trendEmas: '📈',
-    lastUpdate: 0
-};
+import * as store from '../lib/store.js';
+import { renderCandles } from '../lib/chart.js';
 
-function updateMarket() {
-    const now = Date.now();
-    // Harga bergoyang setiap 5 minit (300000ms)
-    if (now - marketState.lastUpdate > 300000) {
-        const oldBtc = marketState.btc;
-        const oldEmas = marketState.emas;
+// Memori pasaran: harga bergerak perlahan (random walk) setiap 5 minit, dan sejarah disimpan.
+const marketState = { btc: 250000, emas: 350, trendBtc: '📈', trendEmas: '📈', lastUpdate: 0, candles: { btc: [], emas: [] }, loaded: false };
+const klamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) * 2;
 
-        // BTC: RM 150,000 - RM 400,000
-        marketState.btc = Math.floor(Math.random() * (400000 - 150000 + 1)) + 150000;
-        // Emas: RM 300 - RM 450 per gram
-        marketState.emas = Math.floor(Math.random() * (450 - 300 + 1)) + 300;
+// Berita kecil (hanya untuk satu kemas kini harga seterusnya). Had ±5%.
+const berita = { btc: 0, emas: 0 };
+export function beritaPasaran(aset, peratus) {
+    if (!(aset in berita)) return;
+    berita[aset] = Math.max(-0.05, Math.min(0.05, peratus));
+}
 
+async function loadMarket() {
+    if (marketState.loaded) return;
+    const s = await store.get('market', 'state', null);
+    if (s && typeof s === 'object') Object.assign(marketState, s);
+    marketState.loaded = true;
+}
+
+function pushCandle(k, o, c) {
+    const hi = Math.max(o, c) * (1 + Math.random() * 0.01);
+    const lo = Math.min(o, c) * (1 - Math.random() * 0.01);
+    const arr = marketState.candles[k];
+    arr.push({ o, h: Math.round(hi), l: Math.round(lo), c });
+    if (arr.length > 40) arr.shift();
+}
+
+const SLOT_MS = 5 * 60 * 1000;
+const ASAS = { btc: 250000, emas: 350 };
+
+// Harga bergerak setiap slot 5 minit, walaupun tiada siapa guna pasaran.
+// Kalau bot terlepas beberapa slot, setiap slot diisi satu-satu (tiada jurang carta).
+async function updateMarket() {
+    await loadMarket();
+    const kini = Date.now();
+    if (!marketState.lastUpdate) marketState.lastUpdate = kini - (kini % SLOT_MS);
+    let langkah = 0;
+    while (kini - marketState.lastUpdate >= SLOT_MS && langkah < 48) {
+        const oldBtc = marketState.btc, oldEmas = marketState.emas;
+        const tarikBtc = (ASAS.btc - oldBtc) / ASAS.btc * 0.02;
+        const tarikEmas = (ASAS.emas - oldEmas) / ASAS.emas * 0.02;
+        marketState.btc = klamp(Math.round(oldBtc * (1 + gauss() * 0.006 + tarikBtc + berita.btc)), 150000, 400000);
+        marketState.emas = klamp(Math.round(oldEmas * (1 + gauss() * 0.002 + tarikEmas + berita.emas)), 300, 450);
+        berita.btc = 0; berita.emas = 0;
         marketState.trendBtc = marketState.btc >= oldBtc ? '📈 Naik' : '📉 Turun';
         marketState.trendEmas = marketState.emas >= oldEmas ? '📈 Naik' : '📉 Turun';
-        marketState.lastUpdate = now;
+        marketState.lastUpdate += SLOT_MS;
+        pushCandle('btc', oldBtc, marketState.btc);
+        pushCandle('emas', oldEmas, marketState.emas);
+        langkah++;
+    }
+    if (langkah > 0) {
+        await store.set('market', 'state', { btc: marketState.btc, emas: marketState.emas, trendBtc: marketState.trendBtc, trendEmas: marketState.trendEmas, lastUpdate: marketState.lastUpdate, candles: marketState.candles });
     }
 }
+
+/** Dipanggil oleh scheduler setiap minit. Hanya bertindak bila slot 5 minit baharu dah lepas. */
+export async function tickMarket() { return updateMarket(); }
 
 export default {
     name: 'pasaran',
@@ -35,7 +70,7 @@ export default {
             const args = teks.trim().split(' ').slice(1);
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
 
-            updateMarket(); // Trigger update harga terkini
+            await updateMarket(); // kemas kini harga & sejarah
 
             if (cmd === 'pasaran') {
                 let ui = `╔═════════════════════════════╗\n` +
@@ -50,7 +85,17 @@ export default {
                          `💡 *Info:* Harga berubah setiap 5 minit.\n` +
                          `🛒 *Guna:* \`.beli_btc 1\` | \`.jual_emas 10\``;
                 
-                return sock.sendMessage(jid, { text: ui }, { quoted: m });
+                const aset = (args[0] || '').toLowerCase() === 'emas' ? 'emas' : 'btc';
+                let lilin = marketState.candles[aset];
+                const harga = aset === 'btc' ? marketState.btc : marketState.emas;
+                if (lilin.length < 2) lilin = [{ o: harga, h: harga, l: harga, c: harga }, { o: harga, h: harga, l: harga, c: harga }];
+                try {
+                    const img = renderCandles(lilin, { title: "PASARAN AIRI'S CORNER", subtitle: aset === 'btc' ? 'Bitcoin · candle 5 minit' : 'Emas · candle 5 minit', harga });
+                    return sock.sendMessage(jid, { image: img, caption: ui }, { quoted: m });
+                } catch (e) {
+                    console.error('[CARTA]', e.message);
+                    return sock.sendMessage(jid, { text: ui }, { quoted: m });
+                }
             }
 
             // --- SISTEM BELI ---

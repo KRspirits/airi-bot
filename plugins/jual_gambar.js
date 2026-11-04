@@ -3,6 +3,11 @@ import { appraiseImage, askPlain } from '../lib/geminiAI.js';
 import { allow } from '../lib/cooldown.js';
 import { myt, rm } from '../lib/util.js';
 import { cooldownLeft } from '../lib/money.js';
+import * as store from '../lib/store.js';
+import crypto from 'crypto';
+
+const VISION_HARIAN_PEMAIN = 10;   // percubaan vision (panggilan AI) setiap pemain sehari
+const VISION_HARIAN_GLOBAL = 300;  // jumlah panggilan vision sehari untuk semua pemain
 
 // =========================================================================
 // 📸 JUAL GAMBAR v29 - semua gambar boleh dijual, kadar ikut sumber:
@@ -48,8 +53,9 @@ export function parseAppraisal(raw) {
     if (!match) return null;
     let obj;
     try { obj = JSON.parse(match[0]); } catch { return null; }
-    if (obj.ok !== true) return null;
-    const harga = Number(obj.harga_rm);
+    const okVal = obj.ok === true || String(obj.ok).toLowerCase() === 'true' || (obj.ok === undefined && obj.harga_rm !== undefined);
+    if (!okVal) return null;
+    const harga = Number(String(obj.harga_rm ?? '').replace(/[^\d.]/g, ''));
     if (!Number.isFinite(harga) || harga <= 0) return null;
     const clean = (t, n) => String(t || '').replace(/[\p{Extended_Pictographic}]/gu, '').replace(/\s+/g, ' ').trim().slice(0, n);
     return {
@@ -151,9 +157,26 @@ export default {
 
             const pembuat = cameraMaker(buffer);
             const rate = pembuat ? PAYOUT_RATE : RATE_BIASA;
-            const raw = await appraiseImage(buffer.toString('base64'), media.mimetype || 'image/jpeg');
+            const cincang = crypto.createHash('sha256').update(buffer).digest('hex');
+            let raw = await store.get('visioncache', cincang, null);
+            if (!raw) {
+                const cubaan = user.stats?.vision_try?.day === today ? user.stats.vision_try.n : 0;
+                if (cubaan >= VISION_HARIAN_PEMAIN) return reply(`📵 Dah ${VISION_HARIAN_PEMAIN} kali cubaan nilai gambar hari ni. Esok boleh cuba lagi.`);
+                const global = await store.get('vision', 'count', { day: '', n: 0 });
+                const nGlobal = global.day === today ? global.n : 0;
+                if (nGlobal >= VISION_HARIAN_GLOBAL) return reply('📵 Sistem nilai gambar penuh untuk hari ni. Cuba esok.');
+                user.stats = user.stats || {};
+                user.stats.vision_try = { day: today, n: cubaan + 1 };
+                await db.saveUser(user);
+                await store.set('vision', 'count', { day: today, n: nGlobal + 1 });
+                raw = await appraiseImage(buffer.toString('base64'), media.mimetype || 'image/jpeg');
+                if (raw && !String(raw).startsWith('ERROR')) await store.set('visioncache', cincang, raw);
+            }
             const hasil = parseAppraisal(raw);
-            if (!hasil) return reply('❌ Tak dapat nilai gambar ni. Mungkin bukan barang, ada orang atau haiwan, atau AI sibuk. Cuba gambar lain.');
+            if (!hasil) {
+                const sebab = raw?.startsWith('ERROR') ? `AI tak dapat dihubungi (${raw.slice(7, 120)})` : (raw ? `AI jawab tak sah: ${raw.replace(/\s+/g, ' ').slice(0, 120)}` : 'AI tak jawab');
+                return reply(`❌ Tak dapat nilai gambar ni.\nSebab: ${sebab}\nCuba gambar lain, atau beritahu admin kalau berterusan.`);
+            }
 
             const bayar = payoutFor(hasil.anggaran, rate);
             if (bayar < MIN_PAYOUT) return reply(`❌ ${hasil.nama} ni nilai dia terlalu rendah untuk dibeli.`);

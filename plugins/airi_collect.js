@@ -1,3 +1,4 @@
+import { getAvatar } from '../lib/render.js';
 import { extractText, parseCmd, mentions, num, rm, pick, rand } from '../lib/util.js';
 import { sendCard } from '../lib/render.js';
 import { renderCatchCard } from '../lib/card.js';
@@ -55,7 +56,8 @@ export default {
             const species = semua.slice((page - 1) * PER, page * PER);
             const dimiliki = semua.filter(x => x.owned);
             const senaraiNama = dimiliki.map(x => x.nama).join(', ') || 'belum ada';
-            return sendCard(sock, jid, m, 'albumCard', { title: ALBUM_LABEL[sub] || `ALBUM ${sub.toUpperCase()}`, species, owned: dimiliki.length, total: semua.length, page, pages,
+            const av = await getAvatar(sock, sender).catch(() => null);
+            return sendCard(sock, jid, m, 'albumCard', { avatar: av, title: ALBUM_LABEL[sub] || `ALBUM ${sub.toUpperCase()}`, species, owned: dimiliki.length, total: semua.length, page, pages,
                 accent: { biasa: '#38bdf8', rare: '#c084fc', mitos: '#fbbf24' }[sub] }, `📖 Album ${sub} (halaman ${page}/${pages})\nDah dapat: ${senaraiNama}\n${page < pages ? `Halaman seterusnya: .album ${sub} ${page + 1}` : ''}Lengkapkan set untuk hadiah: \`.album klaim\``);
         }
 
