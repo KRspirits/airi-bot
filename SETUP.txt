@@ -1,0 +1,29 @@
+AIRI'S CORNER - SETUP RINGKAS
+==============================
+
+1. Extract ZIP, kemudian push ke GitHub (ganti fail lama).
+   Jangan commit: .env, session_airi/, auth_session/, database*.json, store.json
+
+2. Render > Environment, set SEKALI:
+   MONGO_URI        = connection string MongoDB Atlas (WAJIB, data tak hilang bila restart)
+   GEMINI_API_KEY   = kunci Google AI Studio (AI, jual gambar, tawar-menawar, gambar mitos)
+   OWNER_NUMBERS    = nombor owner, pisah koma (pilihan)
+
+3. Render > Build & Deploy:
+   Build Command : npm install
+   Start Command : node index.js
+   Node version  : 20 atau lebih baru
+
+4. PENTING: guna SATU instance sahaja. Kunci duit dan lelongan hanya berfungsi dalam satu proses.
+   Kalau scale kepada beberapa instance, pemain boleh dapat hasil serentak.
+
+5. Ujian asap (sebelum deploy, atau dalam build):
+   npm test
+   Ujian ni panggil command dengan soket palsu dan tangkap crash. Kalau ada GAGAL, jangan deploy.
+
+6. Selepas deploy, buka Logs dan pastikan TIADA "[STORE] MongoDB TAK AKTIF".
+
+7. Suara: hanya bunyi untuk ahli baru (welcome). Perkara lain senyap.
+
+8. Test dari akaun owner dalam group:
+   .menu  .myid  .balance  .veto  .album 1  .level  .pasaran

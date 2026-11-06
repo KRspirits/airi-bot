@@ -1,6 +1,8 @@
 const TANAMAN = {
     cili: { name: 'Cili Bara Fertigasi 🌶️', price: 1000, growTime: 60 * 1000, returnMin: 2200, returnMax: 3500, illegal: false },
     strawberi: { name: 'Strawberi Cameron Highlands 🍓', price: 3000, growTime: 2 * 60 * 1000, returnMin: 6500, returnMax: 9500, illegal: false },
+    kangkung: { name: 'Kangkung Sawah 🥬', price: 300, growTime: 40 * 1000, returnMin: 800, returnMax: 1400, illegal: false },
+    durian: { name: 'Durian Musang King 🍈', price: 15000, growTime: 5 * 60 * 1000, returnMin: 30000, returnMax: 48000, illegal: false },
     ketum: { name: 'Daun Ubat Tradisional Hijau 🍃', price: 5000, growTime: 90 * 1000, returnMin: 15000, returnMax: 28000, illegal: true }
 };
 

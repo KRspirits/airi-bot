@@ -44,7 +44,7 @@ export async function triggerSpeedDrop(sock, targetGroup) {
 
 export default {
     name: 'kutip',
-    alias: ['grab', 'ambil', 'mula_bida', 'lelong'],
+    alias: ['ambil', 'mula_bida', 'lelong'],
     execute: async ({ sock, m, user, db }) => {
         try {
             const jid = m.key.remoteJid;

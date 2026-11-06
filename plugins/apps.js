@@ -9,7 +9,7 @@ const nafiBrand = {
 
 export default {
     name: 'app',
-    alias: ['app', 'grabapp', 'grabfood', 'foodpanda', 'panda'],
+    alias: ['app'],
     category: 'kerja',
     execute: async ({ sock, m, user }) => {
         const jid = m.key.remoteJid;

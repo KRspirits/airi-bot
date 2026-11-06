@@ -1,0 +1,47 @@
+AUDIT STATIK - AIRI'S CORNER (dijalankan dalam sandbox, tanpa dependency dan tanpa Mongo)
+=======================================================================================
+
+CARA SEMAKAN
+- node --check ke semua fail .js: lulus.
+- Semakan import/export (import bernama dan default): lulus, tiada fail hilang.
+- TypeScript (checkJs, tanpa tipe Node): 185 ralat, kebanyakannya palsu (tiada tipe
+  Node/dependency, 'unref' pada timer, tipe objek). Ralat undefined name tinggal 1 (Buffer,
+  palsu kerana tiada tipe Node).
+
+BUG SEBENAR YANG DIBETULKAN
+1. lib/scheduler.js: import store, hariKhas, weeklyTick, backupMingguan tak wujud.
+   Akibat: tick kalendar dan papan mingguan gagal setiap kali scheduler jalan.
+2. plugins/bida.js: hasilLoot diisytihar dalam kunci pemain tapi digunakan di luar.
+   Akibat: pemenang dibayar, tetapi announcement crash. Sekarang diisytihar di luar kunci.
+3. lib/cards.js: senarai command dalam kad diandaikan array. Sekarang terima string juga.
+4. plugins/judi_ai.js: penambahan boolean ditulis eksplisit (Number). Kelakuan sama.
+5. plugins/bal.js: argumen berlebihan dibuang.
+
+YANG TAK BOLEH DISAHKAN DALAM SANDBOX (perlu ujian di Render)
+- Kad (menu, IC, bank, album, achievement, pasaran, kad ikan): render canvas belum dilihat.
+- Gemini: panggilan teks, vision dan gambar belum diuji dengan kunci sebenar.
+- Mongo: penyimpanan, backup, papan mingguan belum diuji dengan sambungan sebenar.
+- Level, quest, streak, pasaran random walk: logik belum dijalankan.
+- Smoke test (npm test) belum dijalankan: perlu npm install dulu.
+
+RISIKO STABILITI YANG DIKETAHUI
+- Satu instance sahaja. Kunci duit dan lelongan hanya dalam satu proses.
+- Modul papan mingguan mengimport plugins/mancing.js. Jika berlaku ralat "undefined" masa
+  start, periksa kitaran import ini dulu.
+- Command bertindih (32 nama): rujuk CONFLICTS.txt. Loader pilih satu ikut priority.
+- Data tempatan (database_pancing.json, store.json) hilang jika Mongo tak aktif.
+
+LANGKAH SEBELUM DEPLOY
+1. npm install
+2. npm test   (kalau ada GAGAL, jangan deploy)
+3. Set MONGO_URI, GEMINI_API_KEY, OWNER_NUMBERS di Render.
+4. Pastikan satu instance sahaja.
+
+SEMAKAN SUSULAN (v60)
+- BUG SEBENAR DIBETULKAN: plugins/bida.js tak ada fungsi pickLoot dan import gamedata.
+  Akibat: lelongan garaj/premium crash bila dibuka. Punca: penyuntingan tak disimpan.
+- Semak semua import silang modul (activity, items, quest, leaderboard, backup): lulus.
+- Compiler TypeScript: 186 ralat, semuanya bunyi palsu atau jenis sahaja (unref,
+  Buffer tanpa tipe Node, jenis objek literal). Tiada nama tak wujud tinggal.
+- Ujian logik (tanpa dependency): aktiviti group, ambang level, nilai ekonomi: lulus.
+- Belum diuji: kad, Gemini, Mongo, lelongan end-to-end, inventory barang.

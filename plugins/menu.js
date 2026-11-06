@@ -7,10 +7,11 @@ import { MENU_ZONES } from '../lib/menudata.js';
 const SEKSYEN = (ws) => [
     { tajuk: '📱 Telefon & Rider', warna: '#38e8ff', baris: [
         ['.device', 'Katalog telefon. Wajib beli telefon dulu'],
-        ['.rider', 'Online atau offline sebagai rider'],
-        ['.order', 'Senarai order penghantaran sekarang'],
-        ['.terima [id]', 'Ambil satu order'],
-        ['.siap', 'Siapkan order dan terima bayaran'] ] },
+        ['.job apply grab', 'Mohon kerja GRAB (hantar penumpang dengan kereta)'],
+        ['.job apply food', 'Mohon kerja FOODPANDA (hantar makanan)'],
+        ['.grab', 'Senarai order GRAB'],
+        ['.foodpanda', 'Senarai order FOODPANDA'],
+        ['.terima [id]', 'Terima order, bayaran terus masuk'] ] },
     { tajuk: '📲 Media Sosial', warna: '#f472b6', baris: [
         ['.upload tiktok [caption]', 'Upload ke TikTok (atau ig)'],
         ['.feed', 'Lihat post terkini'],

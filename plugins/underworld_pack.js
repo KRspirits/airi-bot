@@ -11,12 +11,17 @@ export default {
 
             if (cmd === 'rompak' || cmd === 'rob' || cmd === 'hackbank') {
                 if (!targetJid) return sock.sendMessage(jid, { text: `❌ Tag mangsa: \`.${cmd} @user\`` }, { quoted: m });
+                if (targetJid === m.key.participant || targetJid === jid) return sock.sendMessage(jid, { text: '😅 Tak boleh rompak diri sendiri.' }, { quoted: m });
                 const targetUser = await db.getUser(targetJid);
-                
+                targetUser.stats = targetUser.stats || {};
+                const lindungi = (targetUser.stats.dirompak_last || 0) + 10 * 60e3 - Date.now();
+                if (lindungi > 0) return sock.sendMessage(jid, { text: `🛡️ Mangsa tu baru je dirompak. Tunggu ${Math.ceil(lindungi / 60e3)} minit lagi.` }, { quoted: m });
+                if ((targetUser.wallet || 0) < 1000) return sock.sendMessage(jid, { text: '💸 Mangsa tak ada cukup tunai untuk dirompak.' }, { quoted: m });
                 const nasib = Math.random();
                 if (nasib > 0.6) {
-                    const hasil = Math.floor(Math.random() * 5000) + 1000;
-                    user.dirty_money = (user.dirty_money || 0) + hasil;
+                    const hasil = Math.min(Math.floor(Math.random() * 5000) + 1000, Math.floor((targetUser.wallet || 0) * 0.5));
+                    user.wallet = (user.wallet || 0) + hasil;
+                    targetUser.stats.dirompak_last = Date.now();
                     if (cmd === 'rompak' || cmd === 'rob') targetUser.wallet = Math.max(0, (targetUser.wallet || 0) - hasil);
                     if (cmd === 'hackbank') targetUser.bank = Math.max(0, (targetUser.bank || 0) - hasil);
                     

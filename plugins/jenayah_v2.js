@@ -1,4 +1,4 @@
-import { sceneCard } from '../lib/scene.js';
+import { sceneGambar } from '../lib/sceneai.js';
 
 // =========================================================================
 // 🕶️ JENAYAH V2. Jenayah boleh dibuat bila-bila masa. Blackmarket (.gelap) jual peralatan
@@ -36,7 +36,9 @@ const PEGUAM = {
     2: { fi: 20000, kurang: 0.50, peluang: 0.75 },
     3: { fi: 60000, kurang: 0.75, peluang: 0.90 },
 };
-const RASUAH = { kos: 20000, peluang: 0.35, denda: 10000, lanjut: 30 };
+const RASUAH = { kos: 20000, min: 5000, max: 200000, peluang: 0.35, denda: 10000, lanjut: 30 };
+// Peluang naik ikut jumlah rasuah: lebih besar, lebih yakin pegawai terima.
+const peluangRasuah = jumlah => jumlah >= 100000 ? 0.65 : jumlah >= 50000 ? 0.5 : 0.35;
 const rp = n => `RM ${Math.round(Number(n) || 0).toLocaleString('en-US')}`;
 const minit = ms => Math.ceil(ms / 60e3);
 const rawak = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -98,10 +100,12 @@ export default {
             if (!dalamLokap) return reply('✅ Awak tak dalam lokap.');
             const cdTinggal = (user.stats.rasuah_last || 0) + 60 * 60e3 - now;
             if (cdTinggal > 0) return reply(`⏳ Pegawai tu belum boleh dihubungi, tunggu ${minit(cdTinggal)} minit lagi.`);
-            if ((user.wallet || 0) < RASUAH.kos) return reply(`❌ Duit tak cukup untuk rasuah (${rp(RASUAH.kos)}).`);
-            user.wallet -= RASUAH.kos;
+            const jumlahRasuah = args[0] ? parseInt(args[0], 10) : RASUAH.kos;
+            if (!Number.isInteger(jumlahRasuah) || jumlahRasuah < RASUAH.min || jumlahRasuah > RASUAH.max) return reply(`❌ Jumlah rasuah mesti antara ${rp(RASUAH.min)} dan ${rp(RASUAH.max)}. Contoh: \`.rasuah 50000\``);
+            if ((user.wallet || 0) < jumlahRasuah) return reply(`❌ Duit tak cukup untuk rasuah ${rp(jumlahRasuah)}.`);
+            user.wallet -= jumlahRasuah;
             user.stats.rasuah_last = now;
-            if (Math.random() < RASUAH.peluang) {
+            if (Math.random() < peluangRasuah(jumlahRasuah)) {
                 user.jail = { ...user.jail, status: false, release_at: 0 };
                 await db.saveUser(user);
                 return reply(`🤝 *BERJAYA!* Pegawai tu terima duit, awak keluar sekarang. Ingat, jangan kantoi lagi.`);
@@ -142,14 +146,14 @@ export default {
             const hasil = Math.round(rawak(j.min, j.max) * hasilMul);
             user.wallet = (user.wallet || 0) + hasil;
             await db.saveUser(user);
-            const gambar = sceneCard('rompak');
+            const gambar = await sceneGambar('rompak');
             return sock.sendMessage(jid, { image: gambar, caption: `🏴‍☠️ *${j.nama.toUpperCase()} BERJAYA!*\nHasil: ${rp(hasil)}${guna.length ? `\n🕶️ Peralatan: ${namaGuna}` : ''}\nBaki: ${rp(user.wallet)}` }, { quoted: m });
         }
         const denda = Math.min(user.wallet || 0, Math.round(rawak(j.min, j.max) * 0.1));
         user.wallet -= denda;
         user.jail = { status: true, release_at: now + Math.round(j.penjara * pjMul * 60e3), reason: j.nama, peguam_guna: false };
         await db.saveUser(user);
-        const gambarTangkap = sceneCard('tangkap');
+        const gambarTangkap = await sceneGambar('tangkap');
         return sock.sendMessage(jid, { image: gambarTangkap, caption: `🚨 *KANTOI! ${j.nama.toUpperCase()}*\nDenda ${rp(denda)}. Kena tahan ${j.penjara} minit.\n\nOpsyen: \`.peguam 1-3\`, \`.rasuah\`, atau \`.lokap\` untuk tengok sisa masa.` }, { quoted: m });
     }
 };

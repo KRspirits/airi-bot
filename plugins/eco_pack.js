@@ -1,7 +1,6 @@
 export default {
     name: 'eco_pack',
     alias: [
-        'bal', 'kerja', 'transfer', 'pasaran', 
         'beli_emas', 'jual_emas', 'beli_btc', 'jual_btc'
     ],
     execute: async ({ sock, m, user, db }) => {
@@ -35,7 +34,7 @@ export default {
                 return sock.sendMessage(jid, { text: `💼 Awak kerja sebagai *${job}* dan dibayar RM ${gaji.toLocaleString()}!` }, { quoted: m });
             }
 
-            if (cmd === 'transfer') {
+            if (cmd === 'transfer_lama') { // digantikan oleh plugins/transfer.js
                 const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
                 const jumlah = parseInt(args[1]);
                 if (!targetJid || !jumlah || isNaN(jumlah)) return sock.sendMessage(jid, { text: `❌ Format: \`.transfer @user [jumlah]\`` }, { quoted: m });

@@ -58,7 +58,7 @@ function growPost(p) {
 
 export default {
     name: 'mod_malaysia',
-    alias: ['rider', 'order', 'terima', 'siap', 'upload', 'feed', 'like', 'share', 'follow', 'claim'],
+    alias: ['upload', 'feed', 'like', 'share', 'follow', 'claim'],
     category: 'mod',
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid;

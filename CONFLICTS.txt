@@ -1,0 +1,36 @@
+LAPORAN COMMAND BERTINDIH (dijana automatik)
+
+Loader pilih satu plugin ikut priority. Semak setiap baris, dan buang alias yang tak diingini dari plugin lain.
+
+bal: bal.js, eco_pack.js
+bayar_ahlong: ahlong.js, underworld_pack.js
+beli_bm: bm.js, jenayah_pack.js
+beli_btc: eco_pack.js, pasaran.js
+beli_emas: eco_pack.js, pasaran.js
+beli_telur: pasar_gelap.js, pet_pack.js
+bgk: games_pack.js, minigames.js
+bm: bm.js, jenayah_pack.js, pasar_gelap.js
+buletin_cyber: ai_features.js, airi_social.js
+coinflip: games_pack.js, minigames.js
+curi_kereta: curi_kereta.js, jenayah_pack.js
+gacha_mlbb: games_pack.js, minigames.js
+hutang_ahlong: ahlong.js, underworld_pack.js
+jenayah: jenayah.js, jenayah_pack.js
+jual_btc: eco_pack.js, pasaran.js
+jual_emas: eco_pack.js, pasaran.js
+kerja: eco_pack.js, kerja.js
+kotak_beracun: games_pack.js, minigames.js
+lumba_kuda: games_pack.js, minigames.js
+misi: ai_features.js, airi_social.js
+pasar_gelap: bm.js, pasar_gelap.js
+pasaran: eco_pack.js, pasaran.js
+profile: airi_social.js, myid.js
+roast: ai_features.js, airi_social.js
+santau: komuniti.js, underworld_pack.js
+slot: games_pack.js, minigames.js, slot.js
+teka_nombor: minigames.js, teka_nombor.js
+tembak_botol: games_pack.js, minigames.js
+tetas_telur: pasar_gelap.js, pet_pack.js
+tikam_nombor: minigames.js, teka_nombor.js
+transfer: eco_pack.js, transfer.js
+wanted: airi_social.js, bounty.js

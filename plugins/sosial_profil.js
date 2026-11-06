@@ -1,5 +1,7 @@
 import * as store from '../lib/store.js';
 import { myt } from '../lib/util.js';
+import { getAvatar } from '../lib/render.js';
+import { renderSocialProfile } from '../lib/socialcard.js';
 
 // 🎵 PROFIL TIKTOK & INSTAGRAM. Pengikut, like dan post terkini. Post dengan gambar beri tuntutan.
 // .tiktok | .instagram                 -> profil
@@ -52,6 +54,13 @@ export default {
         const tuntutan = Math.floor(tertunggak[sender] || 0);
         const terkini = milik.slice(0, 3).map(p => `• #${p.id} ${p.gambar ? '📷 ' : ''}"${p.caption || '(gambar sahaja)'}" · ❤️ ${p.likes}`);
         const nama = user.name || sender.split('@')[0];
+        const avatar = await getAvatar(sock, sender).catch(() => null);
+        try {
+            const img = await renderSocialProfile({ platform, nama, avatar, pengikut, likes: jumlahLike, posts: milik, tuntutan });
+            return sock.sendMessage(jid, { image: img, caption: `👤 Profil ${TAJUK[platform]} · ${nama}` }, { quoted: m });
+        } catch (e) {
+            console.error('[KAD SOSIAL]', e.message);
+        }
         const tarikh = myt().day;
         return reply(`👤 *PROFIL ${TAJUK[platform].toUpperCase()}*\n\n${nama}\n📅 ${tarikh}\n\n👥 Pengikut: ${pengikut}\n❤️ Jumlah like: ${jumlahLike}\n📝 Post: ${milik.length}\n💸 Tuntutan tertunggak: RM ${tuntutan.toLocaleString('en-US')} (\`.claim\`)\n\n🎁 Benefit: setiap pengikut baru RM 20 · post dengan gambar RM ${POS_GAMBAR_RM}\n\n*Post terkini:*\n${terkini.length ? terkini.join('\n') : 'Belum ada post. Taip `.' + cmd + ' post [caption]`'}`);
     }
