@@ -1,3 +1,6 @@
+import { beriXp } from '../lib/xp.js';
+import { BANDAR } from '../lib/peta.js';
+import { hantarKlip } from '../lib/klipkongsi.js';
 import * as store from '../lib/store.js';
 import { KERJA, suasana, kiraGaji, cdMinit, syaratGagal } from '../lib/jobs.js';
 import { mulUntuk } from '../lib/musimkerja.js';
@@ -96,12 +99,18 @@ export default {
         const { gaji: asas, tip } = kiraGaji(k, sua);
         const gaji = Math.round(asas * mulUntuk(k.id));
         user.wallet = (user.wallet || 0) + gaji + tip;
-        user.xp = (user.xp || 0) + 5;
+        beriXp(user, k.app ? 30 : 10, 'job');
         user.stats[kunciCd] = Date.now();
         const kadBaharu = await keKad(sock, jid, m, user, k.id, k.nama, sender);
         await db.saveUser(user);
-        if (kadBaharu) await sock.sendMessage(jid, { image: kadBaharu, caption: `🪪 Kad pekerja baharu: ${k.nama}` }, { quoted: m }).catch(() => {});
         const kad = await panelCard({ kicker: 'KERJA SIAP', title: k.nama, lines: [`Gaji: ${rp(gaji)}`, tip ? `Tip: ${rp(tip)}` : 'Tiada tip kali ni', sua.label.length ? sua.label.join(' · ') : 'Suasana biasa', `Baki: ${rp(user.wallet)}`], accent: '#38bdf8', big: rp(gaji), bigLabel: 'GAJI', footerText: pilih(KERJA_SIAP) });
-        return sock.sendMessage(jid, { image: kad, caption: pilih(KERJA_SIAP) }, { quoted: m });
+        if (k.id === 'kurier') {
+            const sen = Object.keys(BANDAR);
+            const dari = sen[Math.floor(Math.random() * sen.length)];
+            let ke = sen[Math.floor(Math.random() * sen.length)]; while (ke === dari) ke = sen[Math.floor(Math.random() * sen.length)];
+            hantarKlip(sock, jid, m, 'rider', { dari, ke, bayar: gaji, brand: 'poslaju' }, '📦 Pos Laju · penghantaran selesai').catch(() => {});
+        }
+        // satu gambar sahaja: kad pekerja untuk kali pertama, kalau tidak kad hasil kerja
+        return sock.sendMessage(jid, { image: kadBaharu || kad, caption: kadBaharu ? `🪪 Kad pekerja baharu · gaji ${rp(gaji)}` : pilih(KERJA_SIAP) }, { quoted: m });
     }
 };

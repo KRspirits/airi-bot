@@ -122,7 +122,7 @@ function pilihJenis() {
 }
 
 export async function triggerRandomAuction(sock, chatId) {
-    if (auctionState[chatId] && auctionState[chatId].active) return;
+    if (auctionState[chatId] && auctionState[chatId].active) return false; // lelongan lain masih berjalan
 
     const jenis = pilihJenis();
     const cfg = LELONGAN[jenis];
@@ -156,7 +156,7 @@ export async function triggerRandomAuction(sock, chatId) {
     if (fs.existsSync(posterFail)) {
         await sock.sendMessage(chatId, { image: fs.readFileSync(posterFail), caption: notis }).catch(() => sock.sendMessage(chatId, { text: notis }));
     } else {
-        await sock.sendMessage(chatId, { text: notis });
+        await sock.sendMessage(chatId, { text: notis }).catch(() => {});
     }
     klipScene('lelong', { tapak }).then(buf => buf && sock.sendMessage(chatId, { video: buf, mimetype: 'video/mp4', caption: '🔨 Lelongan dibuka!' })).catch(() => {});
     if (config.voice) speak(sock, chatId, 'auction').catch(() => {});
@@ -206,6 +206,7 @@ export async function triggerRandomAuction(sock, chatId) {
         try { const kad = await kadBarang(itemBaru); await sock.sendMessage(chatId, { image: kad, caption: `🎁 ${lelong.highestBidderName || 'Pemenang'} dapat *${itemBaru.nama}* (ID ${itemBaru.id})` }); } catch (e) { console.error('[KAD BARANG]', e.message); }
         delete auctionState[chatId];
     }, 60000);
+    return true;
 }
 
 export default {

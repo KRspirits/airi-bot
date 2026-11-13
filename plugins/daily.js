@@ -1,3 +1,4 @@
+import { beriXp } from '../lib/xp.js';
 import { sceneCard } from '../lib/scene.js';
 export default {
     name: 'daily',
@@ -23,7 +24,7 @@ export default {
             if (user.streak === 7) sock.sendMessage(jid, { image: sceneCard('streak', 7), caption: '🔥 Streak 7 hari berturut-turut! Awak memang setia.' }, { quoted: m }).catch(() => {});
             const bonusTunai = 5000 + Math.min(user.streak - 1, 6) * 1000;
             user.wallet = (user.wallet || 0) + bonusTunai;
-            user.xp = (user.xp || 0) + 50;
+            beriXp(user, 50, 'daily');
             user.lastDaily = now;
             await db.saveUser(user);
 

@@ -1,3 +1,4 @@
+import { beriXp } from '../lib/xp.js';
 // Simpan rekod waktu kerja sementara dalam memori
 const cooldownKerja = new Map();
 
@@ -58,7 +59,7 @@ export default {
         const gaji = Math.floor(Math.random() * (job.maxGaji - job.minGaji + 1)) + job.minGaji;
 
         user.wallet += gaji;
-        user.xp = (user.xp || 0) + 15;
+        beriXp(user, 10, 'kerja');
         await db.saveUser(user);
         cooldownKerja.set(senderId, now);
 

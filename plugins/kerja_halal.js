@@ -1,3 +1,4 @@
+import { beriXp } from '../lib/xp.js';
 import * as store from '../lib/store.js';
 import { myt } from '../lib/util.js';
 import { jarakKm, BANDAR } from '../lib/peta.js';
@@ -84,11 +85,11 @@ function ambilOrder(id, sender) {
 
 // Klip penghantaran: satu setiap 2 minit setiap group (elak banjir video).
 const klipLepas = new Map();
-async function kirimKlip(sock, jid, m, { dari, ke, bayar }) {
+async function kirimKlip(sock, jid, m, { dari, ke, bayar, brand }) {
     const kini = Date.now();
     if (kini - (klipLepas.get(jid) || 0) < 2 * 60e3) return;
     klipLepas.set(jid, kini);
-    const buf = await klipRider({ dari, ke, bayar });
+    const buf = await klipRider({ dari, ke, bayar, brand });
     if (!buf) return;
     await sock.sendMessage(jid, { video: buf, mimetype: 'video/mp4', caption: `🎬 Penghantaran ${dari} → ${ke} selesai` }, { quoted: m }).catch(() => {});
 }
@@ -123,7 +124,7 @@ export default {
                 const { gaji: gajiAsas, tip } = kiraGaji(kerjaPilih, sua);
                 const gaji = Math.round(gajiAsas * mulUntuk(kerjaPilih.id));
                 user.wallet = (user.wallet || 0) + gaji + tip;
-                user.xp = (user.xp || 0) + 5;
+                beriXp(user, 5, 'job');
                 user.stats[kunci] = Date.now();
                 await db.saveUser(user);
                 const suasanaTxt = sua.label.length ? `\nSuasana: ${sua.label.join(' · ')}` : '';
@@ -193,11 +194,12 @@ export default {
             const bayar = Math.round((o.bayar + Math.round(rnd(0, 4))) * mulUntuk(o.jenis === 'grab' ? 'teksi' : 'kafe'));
             user.wallet = (user.wallet || 0) + bayar;
             diri.harian.n += 1;
+            beriXp(user, 30, 'rider');
             kerja[sender] = diri;
             await store.set('kerja', 'pekerja', kerja);
             await db.saveUser(user);
             const kad = await panelCard({ kicker: o.jenis === 'grab' ? 'GRAB · PENUMPANG' : 'FOODPANDA · MAKANAN', title: o.kedai, lines: [`${o.dari} → ${o.ke}`, `${o.jarak} km`, `Bayaran: RM ${bayar.toLocaleString('en-US')}`], accent: o.jenis === 'grab' ? '#22c55e' : '#f43f5e', big: `RM ${bayar.toLocaleString('en-US')}`, bigLabel: 'BAYARAN', footerText: `Order ${o.id} · ${pilih(ORDER_DITERIMA)}` });
-            kirimKlip(sock, jid, m, { dari: o.dari, ke: o.ke, bayar }).catch(() => {});
+            kirimKlip(sock, jid, m, { dari: o.dari, ke: o.ke, bayar, brand: o.brand }).catch(() => {});
             return sock.sendMessage(jid, { image: kad, caption: pilih(ORDER_DITERIMA) }, { quoted: m });
         }
         return reply('❌ Arahan tak dikenali. Taip `.job` untuk mula.');

@@ -178,7 +178,7 @@ export default {
                 }
                 return reply(`✅ Musim ${res.musim} bermula. ${res.users} pemain direset. Pemenang dapat badge kekal.`);
             }
-            case 'bida_now': await triggerRandomAuction(sock, jid); return;
+            case 'bida_now': { const mula = await triggerRandomAuction(sock, jid); return mula === false ? reply('⏳ Lelongan lain masih berjalan di sini. Tunggu 60 saat, kemudian cuba lagi.') : undefined; }
             case 'mythic': return (await mythic.trigger(sock, jid)) ? undefined : reply('Makhluk mitos masih aktif di sini.');
             case 'spawn_boss': return reply('Gunakan `.serang_boss` untuk bos dunia (pemunculan automatik oleh enjin lama).');
             case 'purge': {
