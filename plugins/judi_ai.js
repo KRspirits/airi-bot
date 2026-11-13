@@ -1,3 +1,4 @@
+import { hantarKlip } from '../lib/klipkongsi.js';
 import { sceneCard } from '../lib/scene.js';
 import { panelCard } from '../lib/cards.js';
 import { sendCard } from '../lib/render.js';
@@ -164,6 +165,7 @@ export default {
                 footerText: `💬 Airi: ${cerita}`
             });
             const gambarKeputusan = mult >= 8 ? sceneCard('jackpot') : card;
+            if (mult >= 8) hantarKlip(sock, jid, m, 'jackpot', { pengganda: mult }, '🎰 JACKPOT!').catch(() => {});
             return sock.sendMessage(jid, { image: gambarKeputusan, caption: `🎰 ${cmd} | ${menang ? 'Menang' : 'Kalah'}` }, { quoted: m });
         } catch (e) {
             console.error('[JUDI AI]', e.message);

@@ -22,7 +22,7 @@ export default {
         const now = Date.now();
         if (user.jail?.status && (user.jail.release_at || 0) > now) {
             const minit = Math.ceil((user.jail.release_at - now) / 60e3);
-            return reply(`⛓️ Kau masih dalam tahanan. Tinggal ${minit} minit lagi.`);
+            return reply(`⛓️ Awak masih dalam tahanan. Tinggal ${minit} minit lagi.`);
         }
         const pilih = (args[0] || '').toLowerCase();
         if (!pilih) {
@@ -36,7 +36,7 @@ export default {
         const kunciCd = `seludup_${b.id}`;
         const cdTinggal = (user.stats[kunciCd] || 0) + b.cd - now;
         if (cdTinggal > 0) return reply(`⏳ ${b.nama} belum boleh, tunggu ${Math.ceil(cdTinggal / 60e3)} minit lagi.`);
-        if ((user.wallet || 0) < b.modal) return reply(`❌ Modal ${rp(b.modal)} tak cukup. Kau ada ${rp(user.wallet || 0)}.`);
+        if ((user.wallet || 0) < b.modal) return reply(`❌ Modal ${rp(b.modal)} tak cukup. Awak ada ${rp(user.wallet || 0)}.`);
 
         user.wallet -= b.modal;
         user.stats[kunciCd] = now;
@@ -47,6 +47,6 @@ export default {
         }
         user.jail = { ...(user.jail || {}), status: true, release_at: now + 30 * 60e3, reason: 'Seludup' };
         await db.saveUser(user);
-        return reply(`🚨 *GAGAL!* ${b.nama} kena tangkap.\nModal ${rp(b.modal)} hilang dan kau ditahan 30 minit.`);
+        return reply(`🚨 *GAGAL!* ${b.nama} kena tangkap.\nModal ${rp(b.modal)} hilang dan awak ditahan 30 minit.`);
     }
 };

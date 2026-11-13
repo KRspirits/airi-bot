@@ -1,16 +1,18 @@
 import { dashboardCard } from '../lib/cards.js';
 import { getAvatar } from '../lib/render.js';
 import { MENU_ZONES } from '../lib/menudata.js';
+import { levelOf, LEVEL_REQUIRED } from '../lib/level.js';
 
 // 📜 MENU: papan gambar yang terangkan setiap bahagian bot dan command untuk ditaip.
 // Bahagian owner (veto) tak ditunjuk. Latar Airi berbeza setiap kali dibuka.
 const SEKSYEN = (ws) => [
     { tajuk: '📱 Telefon & Rider', warna: '#38e8ff', baris: [
         ['.device', 'Katalog telefon. Wajib beli telefon dulu'],
-        ['.job apply grab', 'Mohon kerja GRAB (hantar penumpang dengan kereta)'],
-        ['.job apply food', 'Mohon kerja FOODPANDA (hantar makanan)'],
+        ['.job grab', 'Kerja GRAB (penumpang, perlu GrabApp & kereta)'],
+        ['.job foodpanda', 'Kerja FOODPANDA (makanan, perlu app & kereta)'],
         ['.grab', 'Senarai order GRAB'],
         ['.foodpanda', 'Senarai order FOODPANDA'],
+        ['.app pasang grab', 'Pasang GrabApp dalam telefon (RM500)'],
         ['.terima [id]', 'Terima order, bayaran terus masuk'] ] },
     { tajuk: '📲 Media Sosial', warna: '#f472b6', baris: [
         ['.upload tiktok [caption]', 'Upload ke TikTok (atau ig)'],
@@ -65,7 +67,8 @@ export default {
             const PER = 3, halamanPenuh = Math.ceil(zonBersih.length / PER);
             const n = Math.min(halamanPenuh, Math.max(1, parseInt(args[1]) || 1));
             const zon = zonBersih.slice((n - 1) * PER, n * PER);
-            const teks = zon.map(z => `*${z.num}. ${z.title}*\n` + z.items.join('\n')).join('\n\n');
+            const level = levelOf(user);
+            const teks = zon.map(z => `*${z.num}. ${z.title}*\n` + z.items.map(it => { const nama = it.split(' ')[0].replace('.', ''); const perlu = LEVEL_REQUIRED[nama]; return perlu && level < perlu ? `${it} 🔒 (level ${perlu})` : it; }).join('\n')).join('\n\n');
             return sock.sendMessage(jid, { text: `📜 *MENU PENUH* halaman ${n}/${halamanPenuh}\n\n${teks}\n\nHalaman seterusnya: \`.menu penuh ${n < halamanPenuh ? n + 1 : 1}\`` }, { quoted: m });
         }
         const sender = m.key.participant || jid;

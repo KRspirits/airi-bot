@@ -14,6 +14,6 @@ export default {
         if (!targetJid || !Number.isFinite(jumlah)) return reply('❌ Format: `.transfer @user [jumlah]`');
         const hasil = await pindahDuit(db, user, targetJid, jumlah);
         if (!hasil.ok) return reply(`❌ ${hasil.mesej}`);
-        return sock.sendMessage(jid, { text: `✅ Berjaya pindah RM ${jumlah.toLocaleString('en-US')} kepada @${targetJid.split('@')[0]}\nBaki kau: RM ${(user.wallet || 0).toLocaleString('en-US')}`, mentions: [targetJid] }, { quoted: m });
+        return sock.sendMessage(jid, { text: `✅ Berjaya pindah RM ${jumlah.toLocaleString('en-US')} kepada @${targetJid.split('@')[0]}\nBaki awak: RM ${(user.wallet || 0).toLocaleString('en-US')}`, mentions: [targetJid] }, { quoted: m });
     }
 };

@@ -23,7 +23,7 @@ export default {
         const bahagian = teks.trim().split(/\s+/);
         const cmd = bahagian[0].slice(1).toLowerCase();
         const platform = PLATFORM[cmd] || 'tiktok';
-        if (!user.inventory?.phone) return reply('📱 Kau perlukan telefon dulu. Beli di `.device`.');
+        if (!user.inventory?.phone) return reply('📱 Awak perlukan telefon dulu. Beli di `.device`.');
 
         const posts = await store.get('mod', 'posts', []);
         const follows = await store.get('mod', 'follows', {});
@@ -45,7 +45,7 @@ export default {
                 tertunggak[sender] = (tertunggak[sender] || 0) + POS_GAMBAR_RM;
                 await store.set('mod', 'tertunggak', tertunggak);
             }
-            return reply(`📤 Dah post ke ${TAJUK[platform]}! ID *${id}*${adaGambar ? `\n📷 Post dengan gambar: +${POS_GAMBAR_RM} tuntutan (taip \`.claim\`)` : ''}\nProfil kau kemas kini sekarang.`);
+            return reply(`📤 Dah post ke ${TAJUK[platform]}! ID *${id}*${adaGambar ? `\n📷 Post dengan gambar: +${POS_GAMBAR_RM} tuntutan (taip \`.claim\`)` : ''}\nProfil awak kemas kini sekarang.`);
         }
 
         const milik = posts.filter(p => p.owner === sender && p.platform === platform);

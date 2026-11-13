@@ -1,3 +1,7 @@
+import { hantarKlip } from '../lib/klipkongsi.js';
+import { panelCard } from '../lib/cards.js';
+import { TIER, darabGabungan, perluKad, kadVarieti } from '../lib/nadir.js';
+import { pilih, TANAM_OK } from '../lib/suara.js';
 import { drawBuah } from '../lib/buahcard.js';
 const TANAMAN = {
     cili: { name: 'Cili Bara Fertigasi 🌶️', price: 1000, growTime: 60 * 1000, returnMin: 2200, returnMax: 3500, illegal: false },
@@ -43,7 +47,7 @@ function pilihGred() {
 }
 
 // 🌿 Varieti setiap tanaman. Peluang dalam peratus (jumlah 100). Nadir: Biasa, Langka, Epik, Legenda.
-const NADIR_DARAB = { Biasa: 1.0, Langka: 1.3, Epik: 2.0, Legenda: 3.5 };
+const NADIR_DARAB = Object.fromEntries(Object.entries(TIER).map(([k, v]) => [k, v.darab]));
 const VARIETI = {
     cili: [['Cili Padi Kampung', 60, 'Biasa'], ['Cili Bara Fertigasi', 30, 'Langka'], ['Cili Hantu', 9, 'Epik'], ['Cili Jepun Sakti', 1, 'Legenda']],
     strawberi: [['Sweet Charlie', 60, 'Biasa'], ['Festival', 30, 'Langka'], ['Cameron Gold', 10, 'Epik']],
@@ -108,16 +112,17 @@ export default {
             const asas = Math.floor(Math.random() * (info.returnMax - info.returnMin + 1)) + info.returnMin;
             const gred = pilihGred();
             const varietiPilih = pilihVarieti(cropTuai);
-            const untung = Math.round(asas * gred.darab * NADIR_DARAB[varietiPilih.nadir]);
-            const nadirTinggi = varietiPilih.nadir === 'Epik' || varietiPilih.nadir === 'Legenda';
+            const untung = Math.round(asas * darabGabungan(varietiPilih.nadir, gred.darab));
+            const nadirTinggi = perluKad(varietiPilih.nadir);
             const patutGambar = nadirTinggi || gred.darab >= 1.6;
             user.wallet += untung;
             user.farm.crop = null;
             await db.saveUser(user);
 
+            if (nadirTinggi) hantarKlip(sock, jid, m, 'buah', { crop: cropTuai, nadir: varietiPilih.nadir }, `🍉 ${varietiPilih.nama} (${varietiPilih.nadir})`).catch(() => {});
             if (patutGambar) {
                 try {
-                    const gambar = drawBuah({ crop: cropTuai, nama: info.name, varieti: varietiPilih.nama, nadir: varietiPilih.nadir, gred: gred.nama, nilai: untung });
+                    const gambar = await drawBuah({ crop: cropTuai, nama: info.name, varieti: varietiPilih.nama, nadir: varietiPilih.nadir, gred: gred.nama, nilai: untung });
                     await sock.sendMessage(jid, { image: gambar, caption: `🍉 Hasil istimewa: ${varietiPilih.nama} (${varietiPilih.nadir})` }, { quoted: m });
                 } catch (e) { console.error('[KAD BUAH]', e.message); }
             }
@@ -135,26 +140,40 @@ export default {
 
         // 2. PILIH BENIH TANAMAN (.tanam [jenis])
         if (cmd === 'tanam') {
-            if ((args[0] || '').toLowerCase() === 'odds') {
+            const pilih = (args[0] || '').toLowerCase();
+            if (pilih === 'odds') {
                 const jumlah = Object.values(BERAT).reduce((x, y) => x + y, 0);
                 const baris = Object.entries(BERAT).sort((x, y) => y[1] - x[1])
                     .map(([k, w]) => `• ${TANAMAN[k].name} — ${((w / jumlah) * 100).toFixed(1)}%`).join('\n');
-                return sock.sendMessage(jid, { text: `🎲 *KEBARANGKALIAN BENIH* (tiket RM ${TIKET_BENIH.toLocaleString('en-US')})\n\n${baris}` }, { quoted: m });
+                return sock.sendMessage(jid, { text: `🎲 *KEBARANGKALIAN TIKET RAWAK* (RM ${TIKET_BENIH.toLocaleString('en-US')})\n\n${baris}` }, { quoted: m });
             }
             if (user.farm && user.farm.crop) {
                 return sock.sendMessage(jid, { text: `❌ Kebun masih ada tanaman *${TANAMAN[user.farm.crop].name}*! Taip \`.tuai\` dahulu.` }, { quoted: m });
             }
-            if (user.wallet < TIKET_BENIH) {
-                return sock.sendMessage(jid, { text: `❌ Tiket benih RM ${TIKET_BENIH.toLocaleString('en-US')} tak cukup.` }, { quoted: m });
+            // Senarai: setiap buah ada baris sendiri
+            if (!pilih) {
+                const senarai = Object.entries(TANAMAN).filter(([, t]) => !t.illegal)
+                    .map(([k, t]) => `${t.name}\n   \`.tanam ${k}\` · RM ${t.price.toLocaleString('en-US')} · ${Math.round(t.growTime / 1000)} saat · ${(VARIETI[k] || []).length} varieti`);
+                return sock.sendMessage(jid, { text: `🌱 *PILIH BENIH*\n\n${senarai.join('\n\n')}\n\n🎟️ Mahu nasib? \`.tanam rawak\` (RM ${TIKET_BENIH.toLocaleString('en-US')}, benih rawak)\n🎲 Kebarangkalian: \`.tanam odds\`` }, { quoted: m });
             }
-            const benih = pilihBenih();
-            const target = TANAMAN[benih];
-            user.wallet -= TIKET_BENIH;
-            user.farm = { crop: benih, planted_at: now, harvest_at: now + target.growTime, is_illegal: target.illegal };
+            // Tanam buah pilihan
+            if (pilih === 'rawak') {
+                if (user.wallet < TIKET_BENIH) return sock.sendMessage(jid, { text: `❌ Tiket benih RM ${TIKET_BENIH.toLocaleString('en-US')} tak cukup.` }, { quoted: m });
+                const benihRawak = pilihBenih();
+                const tRawak = TANAMAN[benihRawak];
+                user.wallet -= TIKET_BENIH;
+                user.farm = { crop: benihRawak, planted_at: Date.now(), harvest_at: Date.now() + tRawak.growTime, is_illegal: tRawak.illegal };
+                await db.saveUser(user);
+                return sock.sendMessage(jid, { text: `🎟️ Tiket RM ${TIKET_BENIH.toLocaleString('en-US')} dibeli.\n🌱 Benih keluar: *${tRawak.name}*\nMasa matang: *${Math.round(tRawak.growTime / 1000)} saat*\nTaip \`.tuai\` bila dah masak.` }, { quoted: m });
+            }
+            const target = TANAMAN[pilih];
+            if (!target || target.illegal) return sock.sendMessage(jid, { text: '❌ Benih tu tak ada. Taip `.tanam` untuk senarai.' }, { quoted: m });
+            if (user.wallet < target.price) return sock.sendMessage(jid, { text: `😅 Duit awak belum cukup untuk ${target.name} (RM ${target.price.toLocaleString('en-US')}). Cari duit dulu ya.` }, { quoted: m });
+            user.wallet -= target.price;
+            user.farm = { crop: pilih, planted_at: Date.now(), harvest_at: Date.now() + target.growTime, is_illegal: false };
             await db.saveUser(user);
-            return sock.sendMessage(jid, {
-                text: `🎟️ Tiket benih RM ${TIKET_BENIH.toLocaleString('en-US')} dibeli.\n🌱 Benih yang keluar: *${target.name}*\nMasa matang: *${Math.round(target.growTime / 1000)} saat*\n\nTunggu masa tamat dan taip \`.tuai\`!\nKebarangkalian: \`.tanam odds\``
-            }, { quoted: m });
+            const kad = await panelCard({ kicker: 'DAH DITANAM', title: target.name, lines: [`Modal: RM ${target.price.toLocaleString('en-US')}`, `Masa matang: ${Math.round(target.growTime / 1000)} saat`, pilih(TANAM_OK)], accent: '#22c55e', big: 'TANAM', bigLabel: 'STATUS', footerText: 'Taip .tuai bila masak' });
+            return sock.sendMessage(jid, { image: kad, caption: `🌱 ${target.name} dah ditanam` }, { quoted: m });
         }
 
         // 3. SEMAK STATUS KEBUN (.kebun)

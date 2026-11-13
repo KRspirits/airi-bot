@@ -1,3 +1,4 @@
+import { hantarKlip } from '../lib/klipkongsi.js';
 import { sceneGambar } from '../lib/sceneai.js';
 
 // =========================================================================
@@ -154,6 +155,7 @@ export default {
         user.jail = { status: true, release_at: now + Math.round(j.penjara * pjMul * 60e3), reason: j.nama, peguam_guna: false };
         await db.saveUser(user);
         const gambarTangkap = await sceneGambar('tangkap');
+        hantarKlip(sock, jid, m, 'polis', {}, '🚨 Kantoi!').catch(() => {});
         return sock.sendMessage(jid, { image: gambarTangkap, caption: `🚨 *KANTOI! ${j.nama.toUpperCase()}*\nDenda ${rp(denda)}. Kena tahan ${j.penjara} minit.\n\nOpsyen: \`.peguam 1-3\`, \`.rasuah\`, atau \`.lokap\` untuk tengok sisa masa.` }, { quoted: m });
     }
 };

@@ -1,3 +1,4 @@
+import { hantarKlip } from '../lib/klipkongsi.js';
 import * as store from '../lib/store.js';
 import { renderCandles } from '../lib/chart.js';
 
@@ -106,7 +107,9 @@ export default {
                 if (lilin.length < 2) lilin = [{ o: harga, h: harga, l: harga, c: harga }, { o: harga, h: harga, l: harga, c: harga }];
                 try {
                     const img = renderCandles(lilin, { title: "PASARAN AIRI'S CORNER", subtitle: aset === 'btc' ? 'Bitcoin · candle 5 minit' : 'Emas · candle 5 minit', harga });
-                    return sock.sendMessage(jid, { image: img, caption: ui }, { quoted: m });
+                    const hasilGambar = await sock.sendMessage(jid, { image: img, caption: ui }, { quoted: m });
+                    hantarKlip(sock, jid, m, 'crypto', { candles: lilin, harga, aset }, `📈 ${aset === 'emas' ? 'Emas' : 'BTC'} hidup 5 saat`).catch(() => {});
+                    return hasilGambar;
                 } catch (e) {
                     console.error('[CARTA]', e.message);
                     return sock.sendMessage(jid, { text: ui }, { quoted: m });

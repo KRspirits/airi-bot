@@ -5,6 +5,11 @@ import { VEHICLES, PHONE_DEVICES } from '../lib/gamedata.js';
 import { renderAppOrders } from '../lib/appcard.js';
 import { KERJA, suasana, kiraGaji, cdMinit, syaratGagal } from '../lib/jobs.js';
 import { mulUntuk, musimSemasa } from '../lib/musimkerja.js';
+import { panelCard } from '../lib/cards.js';
+import { pilih, KERJA_SIAP, ORDER_DITERIMA } from '../lib/suara.js';
+import { klipRider } from '../lib/klip.js';
+import { kadPekerja } from '../lib/kadkerja.js';
+import { hasApp } from '../lib/apps.js';
 
 // =========================================================================
 // 🛵 KERJA HALAL. Dua jenis kerja:
@@ -51,9 +56,20 @@ export async function getOrders() {
     return data;
 }
 
+// Klip penghantaran: satu setiap 2 minit setiap group (elak banjir video).
+const klipLepas = new Map();
+async function kirimKlip(sock, jid, m, { dari, ke, bayar }) {
+    const kini = Date.now();
+    if (kini - (klipLepas.get(jid) || 0) < 2 * 60e3) return;
+    klipLepas.set(jid, kini);
+    const buf = await klipRider({ dari, ke, bayar });
+    if (!buf) return;
+    await sock.sendMessage(jid, { video: buf, mimetype: 'video/mp4', caption: `🎬 Penghantaran ${dari} → ${ke} selesai` }, { quoted: m }).catch(() => {});
+}
+
 export default {
     name: 'kerja_halal',
-    alias: ['job', 'grab', 'foodpanda', 'terima'],
+    alias: ['grab', 'foodpanda', 'terima'],
     category: 'kerja',
     execute: async ({ sock, m, user, db, args = [] }) => {
         const jid = m.key.remoteJid;
@@ -77,7 +93,7 @@ export default {
                 const sua = suasana();
                 const kunci = `jobcd_${kerjaPilih.id}`;
                 const tinggal = (user.stats[kunci] || 0) + cdMinit(kerjaPilih, sua) * 60e3 - Date.now();
-                if (tinggal > 0) return reply(`⏳ Kerja ${kerjaPilih.nama} belum boleh. Tunggu ${Math.ceil(tinggal / 60e3)} minit.`);
+                if (tinggal > 0) return reply(`⏳ Kerja ${kerjaPilih.nama} belum sempat. Sabar ya, tinggal ${Math.ceil(tinggal / 60e3)} minit lagi.`);
                 const { gaji: gajiAsas, tip } = kiraGaji(kerjaPilih, sua);
                 const gaji = Math.round(gajiAsas * mulUntuk(kerjaPilih.id));
                 user.wallet = (user.wallet || 0) + gaji + tip;
@@ -85,7 +101,21 @@ export default {
                 user.stats[kunci] = Date.now();
                 await db.saveUser(user);
                 const suasanaTxt = sua.label.length ? `\nSuasana: ${sua.label.join(' · ')}` : '';
-                return reply(`💼 *${kerjaPilih.nama}* siap!\nGaji: ${rp(gaji)}${tip ? `\n🎁 Tip: ${rp(tip)}` : ''}${suasanaTxt}\nBaki: ${rp(user.wallet)}`);
+                const kad = await panelCard({ kicker: 'KERJA HARI INI', title: kerjaPilih.nama, lines: [`Gaji: RM ${gaji.toLocaleString('en-US')}`, tip ? `Tip: RM ${tip}` : 'Tiada tip kali ni', sua.label.length ? sua.label.join(' · ') : 'Suasana biasa', `Baki: RM ${(user.wallet || 0).toLocaleString('en-US')}`], accent: '#38bdf8', big: `RM ${gaji.toLocaleString('en-US')}`, bigLabel: 'GAJI', footerText: pilih(KERJA_SIAP) });
+                if (!user.stats[`kad_${kerjaPilih.id}`]) {
+                user.stats[`kad_${kerjaPilih.id}`] = true;
+                await db.saveUser(user);
+                const kadStaf = await kadPekerja({ nama: user.name || sender.split('@')[0], jawatan: kerjaPilih.nama, userId: sender, kerjaId: kerjaPilih.id, tahap: 1 });
+                await sock.sendMessage(jid, { image: kadStaf, caption: '🪪 Kad pekerja baharu dah keluar!' }, { quoted: m }).catch(() => {});
+            }
+            return sock.sendMessage(jid, { image: kad, caption: pilih(KERJA_SIAP) }, { quoted: m });
+            }
+            if (sub === 'kad') {
+                const kerjaKad = diri.jenis || KERJA.find(k => user.stats[`kad_${k.id}`])?.id;
+                if (!kerjaKad) return reply('Belum ada kad pekerja. Mohon kerja dulu dengan `.job apply grab` atau `.job buat [id]`.');
+                const jawatanKad = kerjaKad === 'grab' ? 'Rider GRAB (penumpang)' : kerjaKad === 'food' ? 'Rider FOODPANDA (makanan)' : (KERJA.find(k => k.id === kerjaKad)?.nama || kerjaKad);
+                const kadSemasa = await kadPekerja({ nama: user.name || sender.split('@')[0], jawatan: jawatanKad, userId: sender, kerjaId: kerjaKad, tahap: 1 });
+                return sock.sendMessage(jid, { image: kadSemasa, caption: '🪪 Kad pekerja awak' }, { quoted: m });
             }
             if (!sub) {
                 const sua = suasana();
@@ -101,20 +131,23 @@ export default {
                 diri.jenis = jenis;
                 kerja[sender] = diri;
                 await store.set('kerja', 'pekerja', kerja);
-                return reply(`✅ Kau dah jadi rider *${jenis === 'grab' ? 'GRAB (penumpang)' : 'FOODPANDA (makanan)'}*.\nTaip \`.${jenis === 'grab' ? 'grab' : 'foodpanda'}\` untuk tengok order.`);
+                const kadApply = await kadPekerja({ nama: user.name || sender.split('@')[0], jawatan: jenis === 'grab' ? 'Rider GRAB (penumpang)' : 'Rider FOODPANDA (makanan)', userId: sender, kerjaId: jenis, tahap: 1 });
+                await sock.sendMessage(jid, { image: kadApply, caption: '🪪 Selamat datang! Ini kad pekerja awak.' }, { quoted: m });
+                return reply(`✅ Awak dah jadi rider *${jenis === 'grab' ? 'GRAB (penumpang)' : 'FOODPANDA (makanan)'}*.\nTaip \`.${jenis === 'grab' ? 'grab' : 'foodpanda'}\` untuk tengok order.`);
             }
             if (!diri.jenis) return reply('Belum kerja. Mohon dengan `.job apply grab` atau `.job apply food`.');
-            return reply(`🛵 Kerja kau: *${diri.jenis === 'grab' ? 'GRAB' : 'FOODPANDA'}*\nHari ini: ${diri.harian.n}/${HARIAN_MAX} order siap.`);
+            return reply(`🛵 Kerja awak: *${diri.jenis === 'grab' ? 'GRAB' : 'FOODPANDA'}*\nHari ini: ${diri.harian.n}/${HARIAN_MAX} order siap.`);
         }
 
         if (cmd === 'grab' || cmd === 'foodpanda') {
+            if (!hasApp(user, cmd === 'grab' ? 'grab' : 'foodpanda')) return reply(`📲 Pasang app dulu: \`.app pasang ${cmd === 'grab' ? 'grab' : 'foodpanda'}\``);
             const jenis = cmd === 'grab' ? 'grab' : 'food';
             const err = ada(user);
             if (err) return reply(`❌ ${err}`);
-            if (diri.jenis !== jenis) return reply(`❌ Kau belum jadi rider ${jenis === 'grab' ? 'GRAB' : 'FOODPANDA'}. Taip \`.job apply ${jenis}\` dulu.`);
+            if (diri.jenis !== jenis) return reply(`❌ Awak belum jadi rider ${jenis === 'grab' ? 'GRAB' : 'FOODPANDA'}. Taip \`.job apply ${jenis}\` dulu.`);
             const data = await getOrders();
             const senarai = data.senarai.filter(o => o.jenis === jenis && !o.tuntut).sort(() => Math.random() - 0.5).slice(0, 4);
-            const img = renderAppOrders(jenis === 'grab' ? 'GrabFood' : 'foodpanda', senarai, senarai.length ? 'Pilih satu, taip .terima [id]' : 'Tunggu order baharu');
+            const img = await renderAppOrders(jenis === 'grab' ? 'GrabFood' : 'foodpanda', senarai, senarai.length ? 'Pilih satu, taip .terima [id]' : 'Tunggu order baharu');
             return sock.sendMessage(jid, { image: img, caption: `${jenis === 'grab' ? 'GRAB' : 'FOODPANDA'}: ${senarai.length} order tersedia` }, { quoted: m });
         }
 
@@ -126,7 +159,7 @@ export default {
             const data = await getOrders();
             const o = data.senarai.find(x => x.id === args[0]);
             if (!o) return reply('❌ Order tu tak wujud. Taip `.grab` atau `.foodpanda` untuk senarai.');
-            if (o.jenis !== diri.jenis) return reply('❌ Order tu bukan untuk kerja kau.');
+            if (o.jenis !== diri.jenis) return reply('❌ Order tu bukan untuk kerja awak.');
             if (o.tuntut) return reply('❌ Order tu dah diambil.');
             if (o.pemesan === sender) return reply('😅 Awak tak boleh terima order sendiri.');
             o.tuntut = sender;
@@ -137,7 +170,9 @@ export default {
             kerja[sender] = diri;
             await store.set('kerja', 'pekerja', kerja);
             await db.saveUser(user);
-            return reply(`✅ *${o.jenis === 'grab' ? 'Penumpang dihantar' : 'Makanan dihantar'}!* [${o.id}]\n${o.dari} → ${o.ke} (${o.jarak} km)\nBayaran: ${rp(bayar)}\nBaki: ${rp(user.wallet)}`);
+            const kad = await panelCard({ kicker: o.jenis === 'grab' ? 'GRAB · PENUMPANG' : 'FOODPANDA · MAKANAN', title: o.kedai, lines: [`${o.dari} → ${o.ke}`, `${o.jarak} km`, `Bayaran: RM ${bayar.toLocaleString('en-US')}`], accent: o.jenis === 'grab' ? '#22c55e' : '#f43f5e', big: `RM ${bayar.toLocaleString('en-US')}`, bigLabel: 'BAYARAN', footerText: `Order ${o.id} · ${pilih(ORDER_DITERIMA)}` });
+            kirimKlip(sock, jid, m, { dari: o.dari, ke: o.ke, bayar }).catch(() => {});
+            return sock.sendMessage(jid, { image: kad, caption: pilih(ORDER_DITERIMA) }, { quoted: m });
         }
         return reply('❌ Arahan tak dikenali. Taip `.job` untuk mula.');
     }

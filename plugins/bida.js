@@ -1,3 +1,5 @@
+import fs from 'fs';
+import { klipScene } from '../lib/klip.js';
 import { beritaPasaran } from './pasaran.js';
 import { VEHICLES, PHONE_DEVICES } from '../lib/gamedata.js';
 import { toItem, kadBarang } from '../lib/items.js';
@@ -149,7 +151,14 @@ export async function triggerRandomAuction(sock, chatId) {
 ⚠️ Isi boleh jadi barang berharga, tunai, atau sampah. Nasib-nasib!
 👉 Taip: \`.bida [jumlah_rm]\` untuk membida. Pemula pun boleh join!`;
 
-    await sock.sendMessage(chatId, { text: notis });
+    // Poster lelongan (assets/lelong/<jenis>.jpg). Kalau tak ada, guna teks sahaja.
+    const posterFail = new URL(`../assets/lelong/${jenis}.jpg`, import.meta.url);
+    if (fs.existsSync(posterFail)) {
+        await sock.sendMessage(chatId, { image: fs.readFileSync(posterFail), caption: notis }).catch(() => sock.sendMessage(chatId, { text: notis }));
+    } else {
+        await sock.sendMessage(chatId, { text: notis });
+    }
+    klipScene('lelong', { tapak }).then(buf => buf && sock.sendMessage(chatId, { video: buf, mimetype: 'video/mp4', caption: '🔨 Lelongan dibuka!' })).catch(() => {});
     if (config.voice) speak(sock, chatId, 'auction').catch(() => {});
 
     // Tamat Lelongan Selepas 60 Saat

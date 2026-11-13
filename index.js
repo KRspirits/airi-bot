@@ -15,6 +15,7 @@ import { LEVEL_REQUIRED, levelOf } from './lib/level.js';
 import { trackQuest } from './lib/quest.js';
 import { recordActivity, isActive } from './lib/activity.js';
 import { resolveAlias } from './lib/aliases.js';
+import { panduanSekali } from './lib/panduan.js';
 import { db } from './lib/database.js';
 import { loadPlugins } from './lib/loader.js';
 import { initState, state, addGroup, activeEvent, purgeActive } from './lib/state.js';
@@ -162,6 +163,7 @@ async function onMessage(m) {
 
         return withUserLock(senderJid, async () => {
         const user = await db.getUser(senderJid, senderName), before = snapshot(user);
+        await panduanSekali(sock, m, user, db, parsed.cmd);
         trackQuest(senderJid, parsed.cmd).catch(() => {});
         const perlu = LEVEL_REQUIRED[parsed.cmd];
         if (perlu && levelOf(user) < perlu) {
