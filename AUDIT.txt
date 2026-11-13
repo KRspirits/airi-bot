@@ -45,3 +45,14 @@ SEMAKAN SUSULAN (v60)
   Buffer tanpa tipe Node, jenis objek literal). Tiada nama tak wujud tinggal.
 - Ujian logik (tanpa dependency): aktiviti group, ambang level, nilai ekonomi: lulus.
 - Belum diuji: kad, Gemini, Mongo, lelongan end-to-end, inventory barang.
+
+SEMAKAN PENUH (v98)
+- Sintaks semua fail .js: lulus.
+- Import/export antara fail: lulus (132 fail, tiada yang hilang).
+- Nama tak wujud (compiler TypeScript): tiada, kecuali amaran palsu 'Buffer' (global Node).
+- Aset yang dirujuk kod: semua wujud (lelong x3, apps x2, buah_epik x14).
+- Menu awam: tiada command owner (veto, errlog, reset, start_event, bida_now) bocor.
+- Ujian logik tanpa dependency: lulus (level, XP, cache, BM, kerja, cukai acara, jarak, tier).
+- Alias bertindih: 25 pasangan, semuanya warisan. Loader pilih deterministik (lihat CONFLICTS.txt).
+- Tidak boleh disahkan dari sandbox: rendering kad/klip (canvas, ffmpeg), Mongo, Gemini,
+  WhatsApp sebenar, had kadar, dan interaksi serentak banyak pemain.
