@@ -56,3 +56,11 @@ SEMAKAN PENUH (v98)
 - Alias bertindih: 25 pasangan, semuanya warisan. Loader pilih deterministik (lihat CONFLICTS.txt).
 - Tidak boleh disahkan dari sandbox: rendering kad/klip (canvas, ffmpeg), Mongo, Gemini,
   WhatsApp sebenar, had kadar, dan interaksi serentak banyak pemain.
+
+SEMAKAN v100
+- Bot mati: tiada kitaran import, semua plugin ada export/name/execute, rejection dikendali.
+  Punca paling munasabah: memori (klip lukis 60 canvas). Kini satu canvas dipakai semula.
+- Gambar job dua kali: dibetulkan, kini satu gambar sahaja.
+- XP banyak sumber: dikumpul ke lib/xp.js, had 300 XP sehari.
+- IC tahap salah: kini tahap sebenar dan XP.
+- Klip brand: Grab, foodpanda, Pos Laju (warna + logo).

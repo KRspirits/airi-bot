@@ -133,7 +133,7 @@ async function onMessage(m) {
     
     m.message = unwrap(m.message);
     const jid = m.key.remoteJid;
-    recordActivity(jid, m.key.participant || jid);
+    if (!m.key.fromMe) recordActivity(jid, m.key.participant || jid); // mesej bot sendiri tak kira sebagai aktiviti
     const isMe = Boolean(m.key.fromMe);
     const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : (m.key.participant || jid);
     const senderName = isMe ? 'Owner' : (m.pushName || 'Warga Gelap');
