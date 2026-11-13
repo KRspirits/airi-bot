@@ -7,7 +7,7 @@ const TANAMAN = {
     cili: { name: 'Cili Bara Fertigasi 🌶️', price: 1000, growTime: 60 * 1000, returnMin: 2200, returnMax: 3500, illegal: false },
     strawberi: { name: 'Strawberi Cameron Highlands 🍓', price: 3000, growTime: 2 * 60 * 1000, returnMin: 6500, returnMax: 9500, illegal: false },
     kangkung: { name: 'Kangkung Sawah 🥬', price: 300, growTime: 40 * 1000, returnMin: 800, returnMax: 1400, illegal: false },
-    durian: { name: 'Durian Musang King 🍈', price: 15000, growTime: 5 * 60 * 1000, returnMin: 30000, returnMax: 48000, illegal: false },
+    durian: { name: 'Durian Musang King', price: 15000, growTime: 5 * 60 * 1000, returnMin: 30000, returnMax: 48000, illegal: false },
     ketum: { name: 'Daun Ubat Tradisional Hijau 🍃', price: 5000, growTime: 90 * 1000, returnMin: 15000, returnMax: 28000, illegal: true },
     epal: { name: 'Epal Fuji Cameron 🍎', price: 2000, growTime: 90 * 1000, returnMin: 4500, returnMax: 7000, illegal: false },
     anggur: { name: 'Anggur Ladang Import 🍇', price: 4000, growTime: 150 * 1000, returnMin: 9000, returnMax: 13000, illegal: false },
@@ -15,9 +15,9 @@ const TANAMAN = {
     limau: { name: 'Limau Nipis Kampung 🍋', price: 400, growTime: 40 * 1000, returnMin: 900, returnMax: 1400, illegal: false },
     pisang: { name: 'Pisang Berangan 🍌', price: 600, growTime: 60 * 1000, returnMin: 1300, returnMax: 2000, illegal: false },
     nanas: { name: 'Nanas Moris 🍍', price: 1200, growTime: 80 * 1000, returnMin: 2600, returnMax: 3900, illegal: false },
-    betik: { name: 'Betik Eksotika 🍈', price: 800, growTime: 60 * 1000, returnMin: 1700, returnMax: 2600, illegal: false },
+    betik: { name: 'Betik Eksotika', price: 800, growTime: 60 * 1000, returnMin: 1700, returnMax: 2600, illegal: false },
     mangga: { name: 'Mangga Harumanis 🥭', price: 6000, growTime: 150 * 1000, returnMin: 13000, returnMax: 19000, illegal: false },
-    rambutan: { name: 'Rambutan Binjai 🔴', price: 4000, growTime: 150 * 1000, returnMin: 8500, returnMax: 12500, illegal: false },
+    rambutan: { name: 'Rambutan Binjai', price: 4000, growTime: 150 * 1000, returnMin: 8500, returnMax: 12500, illegal: false },
 };
 
 // 🎟️ Tiket benih: bayar sekali, benih yang keluar ditentukan rawak ikut kebarangkalian.

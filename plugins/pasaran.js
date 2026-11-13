@@ -108,7 +108,7 @@ export default {
                 try {
                     const img = renderCandles(lilin, { title: "PASARAN AIRI'S CORNER", subtitle: aset === 'btc' ? 'Bitcoin · candle 5 minit' : 'Emas · candle 5 minit', harga });
                     const hasilGambar = await sock.sendMessage(jid, { image: img, caption: ui }, { quoted: m });
-                    hantarKlip(sock, jid, m, 'crypto', { candles: lilin, harga, aset }, `📈 ${aset === 'emas' ? 'Emas' : 'BTC'} hidup 5 saat`).catch(() => {});
+                    hantarKlip(sock, jid, m, 'crypto', { candles: lilin, harga, aset }, `📈 ${aset === 'emas' ? 'Emas' : 'BTC'} · 5 minit terakhir`).catch(() => {});
                     return hasilGambar;
                 } catch (e) {
                     console.error('[CARTA]', e.message);

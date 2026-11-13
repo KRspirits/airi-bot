@@ -35,25 +35,51 @@ function ada(user) {
     return null;
 }
 
+let kunciOrder = Promise.resolve();
+const ORDER_HIDUP_MS = 15 * 60e3;
+const ORDER_AKTIF = 8;
+
+function buatOrder(i, kini) {
+    const bandar = Object.keys(BANDAR);
+    const dari = pick(bandar);
+    let ke = pick(bandar); while (ke === dari) ke = pick(bandar);
+    const jarak = Math.round(jarakKm(dari, ke) * 1.3 * 10) / 10;
+    const ride = i % 2 === 0;
+    const id = (ride ? 'G' : 'F') + kini.toString(36).slice(-4).toUpperCase() + Math.random().toString(36).slice(2, 4).toUpperCase();
+    return ride
+        ? { id, t: kini, jenis: 'grab', brand: 'GrabFood', kedai: 'Penumpang', dari, ke, jarak, bayar: Math.round(5 + jarak * 1.6 + rnd(0, 3)), eta: Math.round(jarak * 2) + 3, rating: (4.4 + rnd(0, 0.6)).toFixed(1), tuntut: null, pemesan: null }
+        : { id, t: kini, jenis: 'food', brand: 'foodpanda', kedai: pick(KEDAI), dari, ke, jarak, bayar: Math.round(6 + jarak * 1.8 + rnd(0, 4)), eta: Math.round(jarak * 2) + 3, rating: (4.4 + rnd(0, 0.6)).toFixed(1), tuntut: null, pemesan: null };
+}
+
+/** Senarai order kekal hidup 15 minit. Order baharu ditambah bila order aktif kurang dari 8. */
 export async function getOrders() {
-    const tetingkap = Math.floor(Date.now() / (3 * 60e3));
+    const kini = Date.now();
     let data = await store.get('kerja', 'orders', null);
-    if (!data || data.tetingkap !== tetingkap) {
-        const bandar = Object.keys(BANDAR);
-        const senarai = Array.from({ length: 8 }, (_, i) => {
-            const dari = pick(bandar);
-            let ke = pick(bandar); while (ke === dari) ke = pick(bandar);
-            const jarak = Math.round(jarakKm(dari, ke) * 1.3 * 10) / 10;
-            const ride = i % 2 === 0;
-            return ride
-                ? { id: `G${tetingkap % 1000}${i}`, jenis: 'grab', brand: 'GrabFood', kedai: 'Penumpang', dari, ke, jarak, bayar: Math.round(5 + jarak * 1.6 + rnd(0, 3)), tuntut: null, pemesan: null }
-                : { id: `F${tetingkap % 1000}${i}`, jenis: 'food', brand: 'foodpanda', kedai: pick(KEDAI), dari, ke, jarak, bayar: Math.round(6 + jarak * 1.8 + rnd(0, 4)), tuntut: null, pemesan: null };
-        });
-        senarai.forEach(o => { o.eta = Math.round(o.jarak * 2) + 3 + Math.floor(rnd(0, 4)); o.rating = (4.4 + rnd(0, 0.6)).toFixed(1); });
-        data = { tetingkap, senarai };
-        await store.set('kerja', 'orders', data);
+    if (!data || !Array.isArray(data.senarai)) data = { senarai: [] };
+    data.senarai = data.senarai.filter(o => (kini - (o.t || 0)) < ORDER_HIDUP_MS && (!o.tuntut || kini - (o.t_tuntut || 0) < 3 * 60e3));
+    const aktif = data.senarai.filter(o => !o.tuntut).length;
+    for (let k = aktif; k < ORDER_AKTIF; k++) {
+        let o = buatOrder(data.senarai.length + k, kini);
+        while (data.senarai.some(x => x.id === o.id)) o = buatOrder(k + Math.floor(Math.random() * 99), kini);
+        data.senarai.push(o);
     }
+    await store.set('kerja', 'orders', data);
     return data;
+}
+
+/** Ambil order secara bersiri: satu pemain sahaja boleh menang setiap order. */
+function ambilOrder(id, sender) {
+    const hasil = kunciOrder.then(async () => {
+        const data = await store.get('kerja', 'orders', null);
+        const o = data?.senarai?.find(x => x.id === id);
+        if (!o) return { ok: false, mesej: '❌ Order tu dah tamat atau tak wujud. Taip `.grab` atau `.foodpanda` untuk senarai baharu.' };
+        if (o.tuntut) return { ok: false, mesej: '❌ Order tu dah diambil rider lain.' };
+        o.tuntut = sender; o.t_tuntut = Date.now();
+        await store.set('kerja', 'orders', data);
+        return { ok: true, order: o };
+    });
+    kunciOrder = hasil.catch(() => {});
+    return hasil;
 }
 
 // Klip penghantaran: satu setiap 2 minit setiap group (elak banjir video).
@@ -156,14 +182,14 @@ export default {
             if (diri.harian.n >= HARIAN_MAX) return reply(`Had ${HARIAN_MAX} order sehari dah penuh. Esok boleh ambil lagi.`);
             const err = ada(user);
             if (err) return reply(`❌ ${err}`);
-            const data = await getOrders();
-            const o = data.senarai.find(x => x.id === args[0]);
-            if (!o) return reply('❌ Order tu tak wujud. Taip `.grab` atau `.foodpanda` untuk senarai.');
-            if (o.jenis !== diri.jenis) return reply('❌ Order tu bukan untuk kerja awak.');
-            if (o.tuntut) return reply('❌ Order tu dah diambil.');
-            if (o.pemesan === sender) return reply('😅 Awak tak boleh terima order sendiri.');
-            o.tuntut = sender;
-            await store.set('kerja', 'orders', data);
+            const dulu = await getOrders();
+            const o0 = dulu.senarai.find(x => x.id === args[0]);
+            if (!o0) return reply('❌ Order tu dah tamat atau tak wujud. Taip `.grab` atau `.foodpanda` untuk senarai baharu.');
+            if (o0.jenis !== diri.jenis) return reply('❌ Order tu bukan untuk kerja awak.');
+            if (o0.pemesan === sender) return reply('😅 Awak tak boleh terima order sendiri.');
+            const ambil = await ambilOrder(args[0], sender);
+            if (!ambil.ok) return reply(ambil.mesej);
+            const o = ambil.order;
             const bayar = Math.round((o.bayar + Math.round(rnd(0, 4))) * mulUntuk(o.jenis === 'grab' ? 'teksi' : 'kafe'));
             user.wallet = (user.wallet || 0) + bayar;
             diri.harian.n += 1;
