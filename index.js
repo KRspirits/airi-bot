@@ -16,6 +16,9 @@ import { trackQuest } from './lib/quest.js';
 import { recordActivity, isActive } from './lib/activity.js';
 import { resolveAlias } from './lib/aliases.js';
 import { panduanSekali } from './lib/panduan.js';
+import { resolvePilihan } from './lib/pilihan.js';
+import { konteks } from './lib/konteks.js';
+import { kenalMata } from './lib/mata.js';
 import { db } from './lib/database.js';
 import { loadPlugins } from './lib/loader.js';
 import { initState, state, addGroup, activeEvent, purgeActive } from './lib/state.js';
@@ -137,7 +140,9 @@ async function onMessage(m) {
     const isMe = Boolean(m.key.fromMe);
     const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : (m.key.participant || jid);
     const senderName = isMe ? 'Owner' : (m.pushName || 'Warga Gelap');
-    const teks = extractText(m.message);
+    let teks = extractText(m.message);
+    const pilihanNombor = resolvePilihan(senderJid, teks);
+    if (pilihanNombor) teks = pilihanNombor;
     
     if (jid.endsWith('@g.us')) addGroup(jid);
 
@@ -164,13 +169,16 @@ async function onMessage(m) {
         return withUserLock(senderJid, async () => {
         const user = await db.getUser(senderJid, senderName), before = snapshot(user);
         await panduanSekali(sock, m, user, db, parsed.cmd);
+        const mataSebelum = user.mata;
+        const mataUser = kenalMata(user, senderJid);
+        if (!mataSebelum) await db.saveUser(user).catch(() => {});
         trackQuest(senderJid, parsed.cmd).catch(() => {});
         const perlu = LEVEL_REQUIRED[parsed.cmd];
         if (perlu && levelOf(user) < perlu) {
             return sock.sendMessage(jid, { text: `🔒 *${parsed.cmd}* dibuka pada level ${perlu}.\nLevel awak sekarang: ${levelOf(user)}. Kumpul XP dengan \`.kerja\` dan \`.daily\`.` }, { quoted: m });
         }
         try { 
-            await action.execute({ sock, m, user, db, args: parsed.args || [] }); 
+            await konteks.run({ mata: mataUser }, () => action.execute({ sock, m, user, db, args: parsed.args || [] }));
         }
         catch (err) {
             console.error(`[COMMAND ERROR] .${parsed.cmd}:`, err);
