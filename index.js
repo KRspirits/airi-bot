@@ -182,7 +182,7 @@ async function onMessage(m) {
         }
         catch (err) {
             console.error(`[COMMAND ERROR] .${parsed.cmd}:`, err);
-            await sock.sendMessage(jid, { text: 'Aduh, ada wayar tersangkut sekejap hehe~ Cuba lagi kejap lagi ya! 🥺' }, { quoted: m }).catch(() => {});
+            await sock.sendMessage(jid, { text: 'Ada masalah sekejap. Cuba lagi ya, kalau masih sama bagitahu owner.' }, { quoted: m }).catch(() => {});
             return;
         }
         await afterCommand({ m, jid, senderJid, senderName, cmd: parsed.cmd, action, before });
