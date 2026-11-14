@@ -2,7 +2,7 @@ import { beriXp } from '../lib/xp.js';
 import { BANDAR } from '../lib/peta.js';
 import { hantarKlip } from '../lib/klipkongsi.js';
 import * as store from '../lib/store.js';
-import { KERJA, suasana, kiraGaji, cdMinit, syaratGagal } from '../lib/jobs.js';
+import { KERJA, suasana, kiraGaji, cdMinit, syaratGagal, bayaranApp } from '../lib/jobs.js';
 import { mulUntuk } from '../lib/musimkerja.js';
 import { kadPekerja } from '../lib/kadkerja.js';
 import { hasApp, APPS } from '../lib/apps.js';
@@ -22,6 +22,8 @@ import { panelCard } from '../lib/cards.js';
 const RIDER = {
     grab: { nama: 'Rider GRAB (penumpang)', app: 'grab', ket: 'Hantar penumpang dengan kereta' },
     foodpanda: { nama: 'Rider FOODPANDA (makanan)', app: 'foodpanda', ket: 'Hantar makanan pelanggan' },
+    ojol: { nama: 'Rider OJOL (penumpang, ID)', app: 'ojol', ket: 'Hantar penumpang di Indonesia' },
+    gojek: { nama: 'Rider GOJEK (makanan, ID)', app: 'gojek', ket: 'Hantar makanan di Indonesia' },
 };
 const PINTAS = { food: 'foodpanda' };
 const rp = n => `RM ${Math.round(Number(n) || 0).toLocaleString('en-US')}`;
@@ -96,7 +98,10 @@ export default {
         const kunciCd = `jobcd_${k.id}`;
         const tinggal = (user.stats[kunciCd] || 0) + cdMinit(k, sua) * 60e3 - Date.now();
         if (tinggal > 0) return reply(`⏳ ${k.nama} sekejap lagi. Tunggu ${Math.ceil(tinggal / 60e3)} minit ya.`);
-        const { gaji: asas, tip } = kiraGaji(k, sua);
+        // kerja app: bayaran ikut jarak (asas + kadar x km), bukan julat tetap
+        const jarakApp = k.app ? Math.round((2 + Math.random() * 20) * 10) / 10 : 0;
+        const { gaji: asasTetap, tip } = kiraGaji(k, sua);
+        const asas = k.app ? bayaranApp(k.app, jarakApp) : asasTetap;
         const gaji = Math.round(asas * mulUntuk(k.id));
         user.wallet = (user.wallet || 0) + gaji + tip;
         beriXp(user, k.app ? 30 : 10, 'job');

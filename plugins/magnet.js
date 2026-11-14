@@ -1,4 +1,4 @@
-const MAGNET_TIERS = {
+export const MAGNET_TIERS = {
     1: { name: 'Magnet Speaker Radio Asas', price: 0, mult: 1.0, maxTier: 1 },
     2: { name: 'Magnet Kuat Neodymium', price: 5000, mult: 1.5, maxTier: 2 },
     3: { name: 'Magnet Industri Kilang', price: 20000, mult: 2.2, maxTier: 3 },

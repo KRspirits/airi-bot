@@ -1,3 +1,4 @@
+import { renderJalaPages } from '../lib/jalacard.js';
 import fs from 'fs';
 import path from 'path';
 import { renderCatchCard } from '../lib/card.js';
@@ -9,16 +10,19 @@ import { logEvent } from '../lib/log.js';
 // Disimpan sebagai rentetan JSON (kunci JID mengandungi titik; rentetan lebih selamat untuk Mongo).
 const legacyPath = path.resolve('./database_pancing.json');
 export let pancingDB = {};
+let pancingSiapDibaca = false; // hanya true bila data berjaya dibaca (elak tulis ganti data sebenar dengan data kosong)
 try {
     const raw = await store.get('pancing', 'db', null);
     if (raw) pancingDB = JSON.parse(raw);
     else if (fs.existsSync(legacyPath)) pancingDB = JSON.parse(fs.readFileSync(legacyPath, 'utf8')); // migrasi data lama
+    pancingSiapDibaca = true;
 } catch (err) {
-    console.error('[PANCING] Gagal membaca data, mula kosong:', err.message);
+    console.error('[PANCING] Gagal membaca data. Simpanan dihentikan supaya data sedia ada tak ditulis ganti:', err.message);
     pancingDB = {};
 }
 let saveTimer = null;
 export function savePancingDB() {
+    if (!pancingSiapDibaca) { console.warn('[PANCING] simpanan dibatalkan: data belum berjaya dibaca'); return; }
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => store.set('pancing', 'db', JSON.stringify(pancingDB)).catch(e => console.error('[PANCING SAVE]', e.message)), 1500);
     saveTimer.unref?.();
@@ -319,6 +323,7 @@ const caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai:
 
                 let hasilJalaTeks = `🕸️ *TEBARAN JALA BERJAYA!* 🕸️\nKau sauk air laut dan naikkan:\n\n`;
                 let totalHarga = 0;
+                const koleksiJala = [];
 
                 for (let i = 0; i < jumlahTangkapan; i++) {
                     const rngJala = Math.random();
@@ -327,6 +332,9 @@ const caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai:
                                     rngJala < (0.0105 + (pData.jala.bonus_rare || 0)) ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
                                     rngJala < 0.60 ? IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)] : SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
 
+                    const rarJala = IKAN_MITOS.includes(tangkapan) ? 'mitos' : IKAN_RARE.includes(tangkapan) ? 'rare' : SAMPAH.includes(tangkapan) ? 'sampah' : 'biasa';
+                    tangkapan = { ...tangkapan, rarity: rarJala };
+                    koleksiJala.push({ nama: tangkapan.nama, harga: tangkapan.harga, rarity: rarJala });
                     pData.tong_ikan.push(tangkapan);
                     totalHarga += tangkapan.harga;
                     
@@ -348,6 +356,9 @@ const caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai:
                                  `💵 Anggaran Nilai Pasaran: *RM ${totalHarga.toLocaleString()}*\n\n` +
                                  `[ ${statusJala} ]\n🕸️ Sisa Ketahanan: ${sisaJalaDisplay}x`;
 
+                if (koleksiJala.length) {
+                    for (const halaman of renderJalaPages(koleksiJala)) await sock.sendMessage(jid, { image: halaman }, { quoted: m }).catch(() => {});
+                }
                 return sock.sendMessage(jid, { text: hasilJalaTeks }, { quoted: m });
             }
 

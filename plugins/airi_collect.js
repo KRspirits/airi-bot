@@ -6,11 +6,14 @@ import { CATALOG, ensureP, ownedNames, rarityOf, savePancingDB } from '../lib/fi
 import { standings } from '../lib/season.js';
 import { claim } from '../lib/mythic.js';
 import { logEvent } from '../lib/log.js';
+import { VEHICLES } from '../lib/gamedata.js';
 
 // Koleksi: album, gabung ikan (hibrid), liga mingguan, tangkap makhluk mitos.
 const ORDER = ['sampah', 'biasa', 'rare', 'mitos'];
 // Hadiah lengkap set (sekali je per set). Besar sengaja, ikut arahan owner.
-const SET_REWARD = { biasa: 1000000, rare: 10000000, mitos: 100000000 }; // dikurangkan 10x supaya tetap bermakna
+const SET_REWARD = { biasa: 1000000, rare: 10000000, mitos: 100000000 }; // ganjaran set penuh
+const PAGE_REWARD = { biasa: 500000, rare: 3000000, mitos: 20000000 };  // ganjaran setiap halaman (12 ikan) lengkap
+const IKAN_PER_HALAMAN = 12;
 // Nombor album: 1 = biasa, 2 = rare, 3 = mitos.
 const ALBUM_NO = { '1': 'biasa', '2': 'rare', '3': 'mitos' };
 const ALBUM_LABEL = { biasa: 'ALBUM 1 · BIASA', rare: 'ALBUM 2 · RARE', mitos: 'ALBUM 3 · MITOS' };
@@ -37,15 +40,37 @@ export default {
             const pd = ensureP(sender), owned = ownedNames(pd);
             let sub = (args[0] || 'mitos').toLowerCase();
             if (sub === 'klaim') {
-                user.album_claim ||= {}; let total = 0; const got = [];
+                user.album_claim ||= {}; user.album_page_claim ||= {};
+                let total = 0; const got = [], halaman = [];
                 for (const r of ['biasa', 'rare', 'mitos']) {
+                    // ganjaran per halaman yang lengkap
+                    const bilHalaman = Math.ceil(CATALOG[r].length / IKAN_PER_HALAMAN);
+                    for (let p = 1; p <= bilHalaman; p++) {
+                        const kunci = `${r}_${p}`;
+                        const ikanHalaman = CATALOG[r].slice((p - 1) * IKAN_PER_HALAMAN, p * IKAN_PER_HALAMAN);
+                        if (user.album_page_claim[kunci] || !ikanHalaman.every(f => owned.has(f.nama))) continue;
+                        user.album_page_claim[kunci] = true; total += PAGE_REWARD[r]; halaman.push(`${r} hal.${p}`);
+                    }
+                    // ganjaran set penuh
                     if (user.album_claim[r] || !CATALOG[r].every(f => owned.has(f.nama))) continue;
                     user.album_claim[r] = true; total += SET_REWARD[r]; got.push(r);
                     const b = `Pakar ${r}`; if (!user.badges.includes(b)) user.badges.push(b);
                 }
-                if (!total) return reply('Belum ada set yang lengkap 100%. Teruskan memancing! 🎣');
+                // album penuh: ketiga-tiga set siap -> kenderaan paling mahal dalam showroom (barang, boleh pakai)
+                let kenderaanTxt = '';
+                if (!user.album_kenderaan && ['biasa', 'rare', 'mitos'].every(r => user.album_claim[r])) {
+                    const v = [...VEHICLES].sort((a, b) => b.price - a.price)[0];
+                    user.items = Array.isArray(user.items) ? user.items : [];
+                    user.items.push({ id: 'AL' + Date.now().toString(36).slice(-4), nama: v.name, desc: 'Ganjaran album penuh', nilai: v.price, bida: 0, kategori: 'Kenderaan', nadir: 'LEGENDARI', kind: 'vehicle', ref: v.id, t: Date.now() });
+                    user.album_kenderaan = true;
+                    kenderaanTxt = `\n🚗 Ganjaran album penuh: *${v.name}* (lihat di \`.item\`)`;
+                }
+                if (!total && !kenderaanTxt) return reply('Belum ada halaman atau set yang lengkap. Teruskan memancing! 🎣');
                 user.wallet += total; await db.saveUser(user);
-                return reply(`🎉 *ALBUM LENGKAP!* Set ${got.join(', ')} siap. Hadiah ${rm(total)} + lencana baru!`);
+                const bahagian = [];
+                if (halaman.length) bahagian.push(`📄 Halaman: ${halaman.join(', ')}`);
+                if (got.length) bahagian.push(`📚 Set: ${got.join(', ')}`);
+                return reply(`🎉 *GANJARAN ALBUM!*\n${bahagian.join('\n')}\nHadiah tunai: ${rm(total)}${kenderaanTxt}`);
             }
             sub = ALBUM_NO[sub] || sub;
             if (!CATALOG[sub] || sub === 'sampah') return reply('Pilihan: `.album 1` (biasa) | `.album 2` (rare) | `.album 3` (mitos) | `.album klaim`\nTambah nombor halaman, contoh: `.album mitos 2`');

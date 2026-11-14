@@ -11,6 +11,10 @@ import { pilih, KERJA_SIAP, ORDER_DITERIMA } from '../lib/suara.js';
 import { klipRider } from '../lib/klip.js';
 import { kadPekerja } from '../lib/kadkerja.js';
 import { hasApp } from '../lib/apps.js';
+import { DAERAH, jarakDaerah, pickPasangan } from '../lib/daerah.js';
+import { bayaranApp } from '../lib/jobs.js';
+import { petaOrderAsli } from '../lib/petaasli.js';
+import { rm } from '../lib/util.js';
 
 // =========================================================================
 // 🛵 KERJA HALAL. Dua jenis kerja:
@@ -38,18 +42,27 @@ function ada(user) {
 
 let kunciOrder = Promise.resolve();
 const ORDER_HIDUP_MS = 15 * 60e3;
-const ORDER_AKTIF = 8;
+const ORDER_AKTIF = 10;
+
+// Peta pemetaan app: arahan -> jenis order, negara, brand, nama paparan
+const RUTE = {
+    grab:      { jenis: 'grab',  app: 'grab',      negara: 'MY', brand: 'GrabFood',  nama: 'GRAB' },
+    foodpanda: { jenis: 'food',  app: 'foodpanda', negara: 'MY', brand: 'foodpanda', nama: 'FOODPANDA' },
+    ojol:      { jenis: 'ojol',  app: 'ojol',      negara: 'ID', brand: 'Ojol',      nama: 'OJOL' },
+    gojek:     { jenis: 'gojek', app: 'gojek',     negara: 'ID', brand: 'Gojek',     nama: 'GOJEK' },
+};
 
 function buatOrder(i, kini) {
-    const bandar = Object.keys(BANDAR);
-    const dari = pick(bandar);
-    let ke = pick(bandar); while (ke === dari) ke = pick(bandar);
-    const jarak = Math.round(jarakKm(dari, ke) * 1.3 * 10) / 10;
-    const ride = i % 2 === 0;
-    const id = (ride ? 'G' : 'F') + kini.toString(36).slice(-4).toUpperCase() + Math.random().toString(36).slice(2, 4).toUpperCase();
-    return ride
-        ? { id, t: kini, jenis: 'grab', brand: 'GrabFood', kedai: 'Penumpang', dari, ke, jarak, bayar: Math.round(5 + jarak * 1.6 + rnd(0, 3)), eta: Math.round(jarak * 2) + 3, rating: (4.4 + rnd(0, 0.6)).toFixed(1), tuntut: null, pemesan: null }
-        : { id, t: kini, jenis: 'food', brand: 'foodpanda', kedai: pick(KEDAI), dari, ke, jarak, bayar: Math.round(6 + jarak * 1.8 + rnd(0, 4)), eta: Math.round(jarak * 2) + 3, rating: (4.4 + rnd(0, 0.6)).toFixed(1), tuntut: null, pemesan: null };
+    // 5 order Malaysia, 5 order Indonesia. Bergilir antara penumpang (ride) dan makanan (food).
+    const negara = i < 5 ? 'MY' : 'ID';
+    const ride = (i % 5) % 2 === 0;
+    const { dari, ke } = pickPasangan(negara);
+    const jarak = Math.round(jarakDaerah(negara, dari, ke) * 1.3 * 10) / 10;
+    const jenis = ride ? (negara === 'MY' ? 'grab' : 'ojol') : (negara === 'MY' ? 'food' : 'gojek');
+    const brand = ride ? (negara === 'MY' ? 'GrabFood' : 'Ojol') : (negara === 'MY' ? 'foodpanda' : 'Gojek');
+    const id = (negara === 'MY' ? 'M' : 'I') + kini.toString(36).slice(-4).toUpperCase() + Math.random().toString(36).slice(2, 4).toUpperCase();
+    const bayar = bayaranApp(jenis, jarak) + Math.round(rnd(0, 50));
+    return { id, t: kini, negara, jenis, brand, kedai: ride ? 'Penumpang' : pick(KEDAI), dari, ke, jarak, bayar, eta: Math.round(jarak * 2) + 3, rating: (4.4 + rnd(0, 0.6)).toFixed(1), tuntut: null, pemesan: null };
 }
 
 /** Senarai order kekal hidup 15 minit. Order baharu ditambah bila order aktif kurang dari 8. */
@@ -166,18 +179,18 @@ export default {
             return reply(`🛵 Kerja awak: *${diri.jenis === 'grab' ? 'GRAB' : 'FOODPANDA'}*\nHari ini: ${diri.harian.n}/${HARIAN_MAX} order siap.`);
         }
 
-        if (cmd === 'grab' || cmd === 'foodpanda') {
-            if (!hasApp(user, cmd === 'grab' ? 'grab' : 'foodpanda')) return reply(`📲 Pasang app dulu: \`.app pasang ${cmd === 'grab' ? 'grab' : 'foodpanda'}\``);
-            const jenis = cmd === 'grab' ? 'grab' : 'food';
+        if (RUTE[cmd]) {
+            const r = RUTE[cmd];
+            if (!hasApp(user, r.app)) return reply(`📲 Pasang app dulu: \`.app pasang ${r.app}\``);
             const err = ada(user);
             if (err) return reply(`❌ ${err}`);
-            if (diri.jenis !== jenis) return reply(`❌ Awak belum jadi rider ${jenis === 'grab' ? 'GRAB' : 'FOODPANDA'}. Taip \`.job apply ${jenis}\` dulu.`);
+            if (diri.jenis !== r.jenis) return reply(`❌ Awak belum jadi rider ${r.nama}. Taip \`.job ${r.app}\` dulu.`);
             const data = await getOrders();
-            const senarai = data.senarai.filter(o => o.jenis === jenis && !o.tuntut).sort(() => Math.random() - 0.5).slice(0, 4);
-            const img = await renderAppOrders(jenis === 'grab' ? 'GrabFood' : 'foodpanda', senarai, senarai.length ? 'Pilih satu, taip .terima [id]' : 'Tunggu order baharu');
-            return sock.sendMessage(jid, { image: img, caption: `${jenis === 'grab' ? 'GRAB' : 'FOODPANDA'}: ${senarai.length} order tersedia` }, { quoted: m });
+            const senarai = data.senarai.filter(o => o.jenis === r.jenis && !o.tuntut).sort(() => Math.random() - 0.5).slice(0, 5);
+            const gambar = await petaOrderAsli(r.negara, senarai, r.app);
+            const baris = senarai.map((o, i) => `${i + 1}. [${o.id}] ${o.kedai}\n   ${o.dari} → ${o.ke} · ${o.jarak} km · ${rm(o.bayar)}`).join('\n');
+            return sock.sendMessage(jid, { image: gambar, caption: `🗺️ *${r.nama}* · ${senarai.length} order sedia\n\n${baris || 'Tunggu order baharu...'}\n\nTaip \`.terima [id]\` untuk ambil.` }, { quoted: m });
         }
-
         if (cmd === 'terima') {
             if (!diri.jenis) return reply('Belum kerja. Mohon dengan `.job apply grab` atau `.job apply food`.');
             if (diri.harian.n >= HARIAN_MAX) return reply(`Had ${HARIAN_MAX} order sehari dah penuh. Esok boleh ambil lagi.`);

@@ -88,8 +88,9 @@ export function resolveNego(raw, state, diminta) {
     let obj = null;
     if (teks) { try { obj = JSON.parse(teks[0]); } catch { obj = null; } }
     const kelar = v => Math.min(max, Math.max(min, Math.round(Number(v))));
+    // Jawapan tak boleh diurai = ralat sambungan AI, bukan hujah pemain ditolak.
     if (!obj || !['terima', 'kira', 'tolak'].includes(obj.keputusan)) {
-        return { status: 'tolak', harga: semasa, balasan: 'Airi tak faham hujah tu. Harga kekal.' };
+        return { status: 'ralat', harga: semasa, balasan: '' };
     }
     const balasan = String(obj.balasan || '').replace(/\s+/g, ' ').trim().slice(0, 200) || 'Airi dah fikir.';
     if (obj.keputusan === 'terima' && Number.isFinite(diminta)) return { status: 'terima', harga: kelar(diminta), balasan };
@@ -206,8 +207,12 @@ async function tawar(sender, args, reply) {
     if (!Number.isFinite(diminta) || diminta <= 0) return reply('❌ Format: `.tawar [jumlah] [sebab]`. Contoh: `.tawar 15000 barang baru, box masih ada`');
 
     st.rounds += 1;
-    const raw = await askPlain(buildNegoPrompt(st, diminta, sebab));
-    const keputusan = resolveNego(raw, st, diminta);
+    let keputusan = resolveNego(await askPlain(buildNegoPrompt(st, diminta, sebab)), st, diminta);
+    if (keputusan.status === 'ralat') keputusan = resolveNego(await askPlain(buildNegoPrompt(st, diminta, sebab)), st, diminta); // cuba sekali lagi
+    if (keputusan.status === 'ralat') {
+        st.rounds -= 1; // ralat sambungan tak dikira sebagai pusingan
+        return reply('⚠️ Airi tak dapat jawab sekarang (masalah sambungan). Hujah awak tak dikira. Cuba `.tawar` lagi sekejap lagi.');
+    }
     st.bayar = keputusan.harga;
     st.expires = Math.max(st.expires, Date.now() + 60_000);
     const ikon = keputusan.status === 'terima' ? '✅' : keputusan.status === 'kira' ? '🤝' : '❌';

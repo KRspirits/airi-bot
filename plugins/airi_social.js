@@ -92,7 +92,7 @@ export default {
                 `Aset ${t.name} ${rm(networth(t))}... ahlong pun kata "kita tengok dulu ya". 🙈`,
                 `${mem.nick || t.name} ni rajin betul kerja, tapi duit pandai lari sendiri. 💸`
             ]);
-            const line = clean(ai) && !/RALAT/.test(ai || '') ? clean(ai) : fb;
+            const line = clean(ai) && !/RALAT|berehat sekejap/.test(ai || '') ? clean(ai) : fb;
             await sock.sendMessage(jid, { text: `🎤 *ROAST UNTUK ${tag(target)}*\n\n${line}\n\n_Usik manja je tau, jangan merajuk!_ 🌸`, mentions: [target] }, { quoted: m });
             if (config.voice && args.includes('suara')) await speak(sock, jid, 'welcome');
             return;
@@ -112,7 +112,7 @@ export default {
                 kicker: 'LAPORAN POLIS', title: 'Siasatan: ' + t.name, accent: '#38e8ff', avatar: await getAvatar(sock, target),
                 lines: [{ k: 'Tahap risiko', v: risk, c: risk === 'BERSIH' ? '#4ade80' : '#fbbf24' }, { k: 'Jenayah (7 hari)', v: crimes.length }, { k: 'Masuk lokap (7 hari)', v: jails.length },
                     { k: 'Jadi mangsa (7 hari)', v: victim.length }, { k: 'Sedang di lokap', v: isJailed(t) ? 'Ya' : 'Tidak' }, ...last,
-                    clean(ai) && !/RALAT/.test(ai || '') ? clean(ai).slice(0, 110) : 'Nota Airi: suspek nampak mencurigakan tapi comel.']
+                    clean(ai) && !/RALAT|berehat sekejap/.test(ai || '') ? clean(ai).slice(0, 110) : 'Nota Airi: suspek nampak mencurigakan tapi comel.']
             }, `🕵️ Laporan siasatan ${tag(target)}`, { mentions: [target] });
         }
 
