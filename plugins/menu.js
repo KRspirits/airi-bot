@@ -6,53 +6,53 @@ import { levelOf, LEVEL_REQUIRED } from '../lib/level.js';
 // 📜 MENU: papan gambar yang terangkan setiap bahagian bot dan command untuk ditaip.
 // Bahagian owner (veto) tak ditunjuk. Latar Airi berbeza setiap kali dibuka.
 const SEKSYEN = (ws) => [
-    { tajuk: '📱 Telefon & Rider', warna: '#38e8ff', baris: [
-        ['.device', 'Katalog telefon. Wajib beli telefon dulu'],
-        ['.job grab', 'Kerja GRAB (penumpang, perlu GrabApp & kereta)'],
-        ['.job foodpanda', 'Kerja FOODPANDA (makanan, perlu app & kereta)'],
-        ['.grab', 'Senarai order GRAB'],
-        ['.foodpanda', 'Senarai order FOODPANDA'],
-        ['.app pasang grab', 'Pasang GrabApp dalam telefon (RM500)'],
-        ['.terima [id]', 'Terima order, bayaran terus masuk'] ] },
-    { tajuk: '📲 Media Sosial', warna: '#f472b6', baris: [
-        ['.upload tiktok [caption]', 'Upload ke TikTok (atau ig)'],
-        ['.feed', 'Lihat post terkini'],
-        ['.like [id] / .share [id]', 'Like atau share post orang'],
-        ['.follow @user', 'Ikut pemain lain'],
-        ['.claim', 'Tuntut pendapatan like dan follow'] ] },
-    { tajuk: '💰 Ekonomi & Pasaran', warna: '#fbbf24', baris: [
-        ['.kerja', 'Gaji setiap 3 minit (dapat XP)'],
+    { tajuk: '🚀 Mula Di Sini', warna: '#4ade80', baris: [
+        ['.mula', 'Menu pilihan nombor (untuk pemain baru)'],
+        ['.menu penuh', 'Senarai semua command'],
+        ['.balance', 'Lihat baki dan level'] ] },
+    { tajuk: '💼 Kerja & App', warna: '#38e8ff', baris: [
+        ['.job', 'Senarai kerja'],
+        ['.job [id]', 'Mohon kerja (contoh: .job runcit)'],
+        ['.app', 'Senarai app'],
+        ['.app pasang [id]', 'Pasang app (contoh: .app pasang grab)'],
+        ['.musim_sekarang', 'Musim kerja sekarang'] ] },
+    { tajuk: '🛵 Order Penghantaran', warna: '#22c55e', baris: [
+        ['.grab', 'Order GRAB (Malaysia)'],
+        ['.foodpanda', 'Order foodpanda (Malaysia)'],
+        ['.ojol', 'Order Ojol (Indonesia)'],
+        ['.gojek', 'Order Gojek (Indonesia)'],
+        ['.terima [id]', 'Ambil satu order'] ] },
+    { tajuk: '💰 Duit & Tukaran', warna: '#fbbf24', baris: [
         ['.daily', 'Bonus harian'],
-        ['.bal', 'Kad bank dan portfolio'],
-        ['.pasaran', 'Carta candle BTC (.pasaran emas untuk emas)'],
-        ['.beli_btc / .jual_btc', 'Beli atau jual Bitcoin'] ] },
+        ['.transfer @user [jumlah]', 'Hantar duit'],
+        ['.kadar', 'Kadar RM ke Rupiah'],
+        ['.tukar [jumlah] rm/idr', 'Tukar mata wang'],
+        ['.mata rm/idr', 'Tukar paparan mata wang'] ] },
+    { tajuk: '📈 Pasaran', warna: '#f97316', baris: [
+        ['.pasaran', 'Carta BTC dan emas'] ] },
     { tajuk: '🎣 Memancing', warna: '#4ade80', baris: [
-        ['.kedai_pancing', 'Beli joran dan jala'],
-        ['.mancing', 'Memancing (level 3)'],
-        ['.jala', 'Jala pukal (level 8)'],
-        ['.ikan', 'Lihat tong ikan'],
-        ['.jual_ikan', 'Jual ikan dalam tong'] ] },
-    { tajuk: '🎰 Judi', warna: '#c084fc', baris: [
-        ['.kupon [rm]', 'Kupon gosok'],
-        ['.roda [rm]', 'Roda nasib'],
-        ['.tekaan [1-10] [rm]', 'Teka nombor'],
-        ['.tarung @user [rm]', 'Tarung dengan pemain lain'] ] },
-    { tajuk: '🖼️ Jual Gambar', warna: '#fb7185', baris: [
-        ['.jual_gambar', 'Hantar gambar barang (sebagai dokumen untuk kadar kamera)'],
-        ['.tawar [rm] [sebab]', 'Tawar harga dengan hujah'],
-        ['.setuju', 'Terima tawaran'] ] },
-    { tajuk: '🏆 Profil & Pencapaian', warna: '#7dd3fc', baris: [
-        ['.myid', 'Kad pengenalan awak'],
-        ['.achievement', 'Senarai pencapaian'],
-        ['.album 1 / 2 / 3', 'Album biasa, rare, mitos'],
-        ['.level', 'Level dan XP awak'],
-        ['.top', 'Papan teratas'],
-        ['.sejarah_musim', 'Juara musim lepas'] ] },
+        ['.mancing', 'Pancing satu ikan'],
+        ['.jala', 'Tebar jala (banyak ikan)'],
+        ['.kedai_pancing', 'Beli joran, umpan, jala'],
+        ['.kedai_magnet', 'Beli magnet mancing'],
+        ['.ikan', 'Tong ikan'] ] },
+    { tajuk: '📚 Album & Koleksi', warna: '#7dd3fc', baris: [
+        ['.album', 'Album ikan (siluet = belum dapat)'],
+        ['.album klaim', 'Tuntut ganjaran halaman dan set'],
+        ['.item', 'Barang dan kenderaan'] ] },
+    { tajuk: '🎰 Judi & Hiburan', warna: '#c084fc', baris: [
+        ['.kupon', 'Kupon kad'],
+        ['.roda', 'Roda bertuah'],
+        ['.dadu', 'Dadu'] ] },
+    { tajuk: '📲 Sosial & Profil', warna: '#f472b6', baris: [
+        ['.feed', 'Suapan sosial'],
+        ['.tiktok', 'Profil TikTok'],
+        ['.instagram', 'Profil Instagram'],
+        ['.ic', 'Kad pengenalan'] ] },
     { tajuk: '💬 Airi', warna: '#a78bfa', baris: [
-        ['.airi [soalan]', 'Tanya Airi (balas teks)'],
+        ['.airi [soalan]', 'Tanya Airi'],
         ['.tanya [soalan]', 'Tanya AI'],
-        ['.roast @user', 'Roast seseorang'],
-        ['.berita_cyber', 'Berita keselamatan siber'] ] },
+        ['.roast @user', 'Roast seseorang'] ] },
 ];
 
 export default {

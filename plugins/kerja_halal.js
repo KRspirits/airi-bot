@@ -109,7 +109,7 @@ async function kirimKlip(sock, jid, m, { dari, ke, bayar, brand }) {
 
 export default {
     name: 'kerja_halal',
-    alias: ['grab', 'foodpanda', 'terima'],
+    alias: ['grab', 'foodpanda', 'ojol', 'gojek', 'terima'],
     category: 'kerja',
     execute: async ({ sock, m, user, db, args = [] }) => {
         const jid = m.key.remoteJid;
@@ -187,9 +187,9 @@ export default {
             if (diri.jenis !== r.jenis) return reply(`❌ Awak belum jadi rider ${r.nama}. Taip \`.job ${r.app}\` dulu.`);
             const data = await getOrders();
             const senarai = data.senarai.filter(o => o.jenis === r.jenis && !o.tuntut).sort(() => Math.random() - 0.5).slice(0, 5);
-            const gambar = await petaOrderAsli(r.negara, senarai, r.app);
+            const gambar = await renderAppOrders(r.brand, senarai, senarai.length ? 'Pilih satu, taip .terima [id]' : 'Tunggu order baharu');
             const baris = senarai.map((o, i) => `${i + 1}. [${o.id}] ${o.kedai}\n   ${o.dari} → ${o.ke} · ${o.jarak} km · ${rm(o.bayar)}`).join('\n');
-            return sock.sendMessage(jid, { image: gambar, caption: `🗺️ *${r.nama}* · ${senarai.length} order sedia\n\n${baris || 'Tunggu order baharu...'}\n\nTaip \`.terima [id]\` untuk ambil.` }, { quoted: m });
+            return sock.sendMessage(jid, { image: gambar, caption: `${r.nama} · ${senarai.length} order\n\n${baris || 'Tunggu order baharu...'}\n\nTaip \`.terima [id]\` untuk ambil.` }, { quoted: m });
         }
         if (cmd === 'terima') {
             if (!diri.jenis) return reply('Belum kerja. Mohon dengan `.job apply grab` atau `.job apply food`.');

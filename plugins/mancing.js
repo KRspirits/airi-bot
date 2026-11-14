@@ -239,9 +239,6 @@ export default {
 
             if (cmd === 'mancing') {
                 const now = Date.now();
-                if (now - (cdMancing.get(senderId) || 0) < 120000) {
-                    return sock.sendMessage(jid, { text: `⏳ Ikan tengah riki umpan tu! Sabar ${Math.ceil((120000 - (now - (cdMancing.get(senderId) || 0))) / 1000)} saat lagi.` }, { quoted: m });
-                }
 
                 // Newbie (akaun <= 7 hari): 3 cast percuma tanpa umpan
                 user.stats = user.stats || {};
@@ -252,8 +249,6 @@ export default {
                 if (!percuma && (!pData.umpan || pData.umpan.qty <= 0)) {
                     return sock.sendMessage(jid, { text: `❌ Kotak umpan kosong! Pergi borong di \`.kedai_pancing\` dulu.` }, { quoted: m });
                 }
-
-                cdMancing.set(senderId, now);
                 if (percuma) { user.stats.free_mancing -= 1; await db.saveUser(user); }
                 else { pData.umpan.qty -= 1; }
 
