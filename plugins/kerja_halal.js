@@ -1,3 +1,4 @@
+import { buffKenderaan } from '../lib/kenderaanbuff.js';
 import { beriXp } from '../lib/xp.js';
 import * as store from '../lib/store.js';
 import { myt } from '../lib/util.js';
@@ -201,7 +202,7 @@ export default {
             const ambil = await ambilOrder(args[0], sender);
             if (!ambil.ok) return reply(ambil.mesej);
             const o = ambil.order;
-            const bayar = Math.round((o.bayar + Math.round(rnd(0, 4))) * mulUntuk(o.jenis === 'grab' ? 'teksi' : 'kafe'));
+            const bayar = Math.round((o.bayar + Math.round(rnd(0, 4))) * mulUntuk(o.jenis === 'grab' ? 'teksi' : 'kafe') * (buffKenderaan(user).app || 1));
             user.wallet = (user.wallet || 0) + bayar;
             diri.harian.n += 1;
             beriXp(user, 30, 'rider');

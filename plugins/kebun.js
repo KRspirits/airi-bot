@@ -1,3 +1,4 @@
+import { beriXp } from '../lib/xp.js';
 import { hantarKlip } from '../lib/klipkongsi.js';
 import { panelCard } from '../lib/cards.js';
 import { TIER, darabGabungan, perluKad, kadVarieti } from '../lib/nadir.js';
@@ -117,9 +118,9 @@ export default {
             const patutGambar = nadirTinggi || gred.darab >= 1.6;
             user.wallet += untung;
             user.farm.crop = null;
+            beriXp(user, 10, 'kebun');
             await db.saveUser(user);
 
-            if (nadirTinggi) hantarKlip(sock, jid, m, 'buah', { crop: cropTuai, nadir: varietiPilih.nadir }, `🍉 ${varietiPilih.nama} (${varietiPilih.nadir})`).catch(() => {});
             if (patutGambar) {
                 try {
                     const gambar = await drawBuah({ crop: cropTuai, nama: info.name, varieti: varietiPilih.nama, nadir: varietiPilih.nadir, gred: gred.nama, nilai: untung });

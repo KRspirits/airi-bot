@@ -84,9 +84,6 @@ export default {
         }
 
         // 4. BALING MAGNET DASAR SUNGAI
-        if (user.jail?.status && now < user.jail.release_at) {
-            return sock.sendMessage(jid, { text: '⛓️ Awak dalam lokap, tak boleh baling magnet!' }, { quoted: m });
-        }
 
         const cd = 90 * 1000;
         const lastRun = cooldownMagnet.get(senderId) || 0;

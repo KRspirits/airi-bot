@@ -76,6 +76,7 @@ export default {
             sub = ALBUM_NO[sub] || sub;
             if (!CATALOG[sub] || sub === 'sampah') return reply('Pilihan: `.album 1` (biasa) | `.album 2` (rare) | `.album 3` (mitos) | `.album klaim`\nTambah nombor halaman, contoh: `.album mitos 2`');
             const semua = CATALOG[sub].map(f => ({ nama: f.nama, rarity: sub, owned: owned.has(f.nama) }));
+            semua.sort((a, b) => Number(b.owned) - Number(a.owned)); // yang dah dapat dulu
             const PER = 12;
             const pages = Math.max(1, Math.ceil(semua.length / PER));
             const page = Math.min(pages, Math.max(1, parseInt(args[1]) || 1));

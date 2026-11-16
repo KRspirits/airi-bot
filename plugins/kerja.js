@@ -10,13 +10,6 @@ export default {
         const senderId = m.key.participant || m.key.remoteJid;
         const now = Date.now();
 
-        // Semak lokap
-        if (user.jail?.status && now < user.jail.release_at) {
-            return sock.sendMessage(jid, { 
-                text: '❌ Dalam lokap mana ada kerja! Pergi kutip puntung rokok sana.' 
-            }, { quoted: m });
-        }
-
         // Semak Cooldown (Contoh: 3 minit rehat)
         const COOLDOWN_TIME = 3 * 60 * 1000;
         const lastWork = cooldownKerja.get(senderId) || 0;

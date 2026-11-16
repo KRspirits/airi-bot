@@ -1,3 +1,4 @@
+import { buffKenderaan } from '../lib/kenderaanbuff.js';
 import { beriXp } from '../lib/xp.js';
 import { BANDAR } from '../lib/peta.js';
 import { hantarKlip } from '../lib/klipkongsi.js';
@@ -100,7 +101,7 @@ export default {
         const jarakApp = k.app ? Math.round((2 + Math.random() * 20) * 10) / 10 : 0;
         const { gaji: asasTetap, tip } = kiraGaji(k, sua);
         const asas = k.app ? bayaranApp(k.app, jarakApp) : asasTetap;
-        const gaji = Math.round(asas * mulUntuk(k.id));
+        const gaji = Math.round(asas * mulUntuk(k.id) * (k.app ? (buffKenderaan(user).app || 1) : 1));
         user.wallet = (user.wallet || 0) + gaji + tip;
         beriXp(user, k.app ? 30 : 10, 'job');
         user.stats[kunciCd] = Date.now();

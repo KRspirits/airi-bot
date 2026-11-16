@@ -42,8 +42,6 @@ export const VETO_EVENTS = {
     GOD_OF_FORTUNE: { name: '🌟 Restu Dewa Rezeki', desc: 'Kemenangan game nasib 2x ganda!' },
     MYTHIC_TIDE: { name: '🌀 Pasang Mitos', desc: 'Makhluk mitos muncul lebih kerap & peluang mitos pancing naik!' },
     DAILY_FIESTA: { name: '🎉 Pesta Hadiah Harian', desc: 'Hadiah .daily 3x ganda!' },
-    EGG_HATCH_SPEED: { name: '🐣 Inkubator Kilat', desc: '(belum aktif)' },
-    AHLONG_DISCOUNT: { name: '🦈 Pelupusan Faedah', desc: '(belum aktif)' }
 };
 export const activeGlobalEvent = null; // dikekalkan untuk keserasian import lama; guna state.event
 

@@ -1,3 +1,5 @@
+import { beriXp } from '../lib/xp.js';
+import { buffKenderaan } from '../lib/kenderaanbuff.js';
 import { hantarKlip } from '../lib/klipkongsi.js';
 import { sceneGambar } from '../lib/sceneai.js';
 
@@ -11,11 +13,11 @@ const JENAYAH = [
     { id: 'curi_kereta', nama: 'Curi Kereta', min: 5000, max: 30000, risiko: 0.35, penjara: 20, cd: 10 },
     { id: 'scam', nama: 'Scam Online', min: 3000, max: 25000, risiko: 0.30, penjara: 15, cd: 8 },
     { id: 'peras_ugut', nama: 'Peras Ugut', min: 8000, max: 40000, risiko: 0.38, penjara: 25, cd: 15 },
-    { id: 'rompak_kedai', nama: 'Rompak Kedai Runcit', min: 10000, max: 60000, risiko: 0.40, penjara: 30, cd: 20 },
-    { id: 'seludup', nama: 'Seludup Barang', min: 50000, max: 200000, risiko: 0.45, penjara: 60, cd: 45 },
-    { id: 'godam_kripto', nama: 'Godam Kripto', min: 100000, max: 1000000, risiko: 0.50, penjara: 90, cd: 90 },
-    { id: 'rompak_bank', nama: 'Rompak Bank', min: 200000, max: 800000, risiko: 0.55, penjara: 120, cd: 120 },
-    { id: 'rompak_kasino', nama: 'Rompak Kasino', min: 500000, max: 2000000, risiko: 0.65, penjara: 240, cd: 240 },
+    { id: 'rompak_kedai', nama: 'Rompak Kedai Runcit', min: 10000, max: 60000, risiko: 0.40, penjara: 30, cd: 20, kos: 5000 },
+    { id: 'seludup', nama: 'Seludup Barang', min: 50000, max: 200000, risiko: 0.45, penjara: 60, cd: 45, kos: 25000, perlu: { kereta: true } },
+    { id: 'godam_kripto', nama: 'Godam Kripto', min: 100000, max: 1000000, risiko: 0.50, penjara: 90, cd: 90, kos: 50000, perlu: { bm: 'Dokumen Palsu' } },
+    { id: 'rompak_bank', nama: 'Rompak Bank', min: 200000, max: 800000, risiko: 0.55, penjara: 120, cd: 120, kos: 100000, perlu: { kereta: true, bm: 'Pelan Rompakan' } },
+    { id: 'rompak_kasino', nama: 'Rompak Kasino', min: 500000, max: 2000000, risiko: 0.65, penjara: 240, cd: 240, kos: 200000, perlu: { bm: 'Helikopter Lari' } },
 ];
 
 const GELAP = [
@@ -81,12 +83,10 @@ export default {
 
         if (cmd === 'peguam') {
             if (!dalamLokap) return reply('✅ Awak tak dalam lokap, tak perlu peguam.');
-            if (user.jail.peguam_guna) return reply('❌ Peguam dah digunakan untuk tahanan ni.');
             const pilih = PEGUAM[parseInt(args[0])];
             if (!pilih) return reply('❌ Format: `.peguam 1`, `.peguam 2`, atau `.peguam 3`.');
             if ((user.wallet || 0) < pilih.fi) return reply(`❌ Yuran peguam ${rp(pilih.fi)} tak cukup.`);
             user.wallet -= pilih.fi;
-            user.jail.peguam_guna = true;
             if (Math.random() < pilih.peluang) {
                 const baru = Math.round(sisaLokap * (1 - pilih.kurang));
                 user.jail.release_at = now + baru;
@@ -121,7 +121,7 @@ export default {
         // ---------------- JENAYAH ----------------
         const pilih = (args[0] || '').toLowerCase();
         if (!pilih) {
-            const senarai = JENAYAH.map(j => `• \`.jenayah ${j.id}\` — ${j.nama}\n   Hasil ${rp(j.min)} – ${rp(j.max)} · Risiko ${Math.round(j.risiko * 100)}% · Penjara ${j.penjara} minit`);
+            const senarai = JENAYAH.map(j => `• \`.jenayah ${j.id}\` — ${j.nama}\n   Hasil ${rp(j.min)} – ${rp(j.max)} · Risiko ${Math.round(j.risiko * 100)}% · Penjara ${j.penjara} minit${j.kos ? ` · Modal ${rp(j.kos)}` : ' · Percuma'}${j.perlu?.kereta ? ' · perlu kenderaan' : ''}${j.perlu?.bm ? ` · perlu ${j.perlu.bm} (.gelap)` : ''}`);
             return reply(`🕶️ *SENARAI JENAYAH*\n\n${senarai.join('\n')}\n\nBoleh buat bila-bila masa. Beli peralatan di \`.gelap\`.`);
         }
         const j = JENAYAH.find(x => x.id === pilih);
@@ -129,6 +129,13 @@ export default {
         if (dalamLokap) return reply(`⛓️ Awak dalam lokap. Sisa ${minit(sisaLokap)} minit. Guna \`.peguam\` atau \`.rasuah\`, atau tunggu.`);
         const cdTinggal = (user.stats[`jen_${j.id}`] || 0) + j.cd * 60e3 - now;
         if (cdTinggal > 0) return reply(`⏳ ${j.nama} belum boleh, tunggu ${minit(cdTinggal)} minit lagi.`);
+        // syarat & kos: sesetengah jenayah perlukan kenderaan atau barang blackmarket, dan modal
+        if (j.perlu?.kereta && !user.vehicle) return reply(`🚗 ${j.nama} perlukan kenderaan. Beli dulu di \`.showroom\`.`);
+        const idxBm = j.perlu?.bm ? (user.bm_items || []).findIndex(b => b.nama === j.perlu.bm) : -1;
+        if (j.perlu?.bm && idxBm < 0) return reply(`🕶️ ${j.nama} perlukan *${j.perlu.bm}* dari \`.gelap\`.`);
+        if (j.kos && (user.wallet || 0) < j.kos) return reply(`❌ ${j.nama} perlukan modal ${rp(j.kos)}. Duit awak ${rp(user.wallet || 0)}.`);
+        if (j.kos) user.wallet -= j.kos;
+        if (idxBm >= 0) user.bm_items.splice(idxBm, 1);
 
         // guna peralatan blackmarket sekali
         let risiko = j.risiko, hasilMul = 1, pjMul = 1;
@@ -140,12 +147,14 @@ export default {
         }
         user.bm_items = user.bm_items.filter(b => !guna.includes(b));
         const namaGuna = guna.map(b => b.nama).join(' + ');
+        risiko += buffKenderaan(user).jenayah || 0; // kenderaan mewah kurangkan risiko
         risiko = Math.min(0.9, Math.max(0.05, risiko));
         user.stats[`jen_${j.id}`] = now;
 
         if (Math.random() >= risiko) {
             const hasil = Math.round(rawak(j.min, j.max) * hasilMul);
             user.wallet = (user.wallet || 0) + hasil;
+            beriXp(user, 10, 'jenayah');
             await db.saveUser(user);
             const gambar = await sceneGambar('rompak');
             return sock.sendMessage(jid, { image: gambar, caption: `🏴‍☠️ *${j.nama.toUpperCase()} BERJAYA!*\nHasil: ${rp(hasil)}${guna.length ? `\n🕶️ Peralatan: ${namaGuna}` : ''}\nBaki: ${rp(user.wallet)}` }, { quoted: m });
@@ -155,7 +164,6 @@ export default {
         user.jail = { status: true, release_at: now + Math.round(j.penjara * pjMul * 60e3), reason: j.nama, peguam_guna: false };
         await db.saveUser(user);
         const gambarTangkap = await sceneGambar('tangkap');
-        hantarKlip(sock, jid, m, 'polis', {}, '🚨 Kantoi!').catch(() => {});
         return sock.sendMessage(jid, { image: gambarTangkap, caption: `🚨 *KANTOI! ${j.nama.toUpperCase()}*\nDenda ${rp(denda)}. Kena tahan ${j.penjara} minit.\n\nOpsyen: \`.peguam 1-3\`, \`.rasuah\`, atau \`.lokap\` untuk tengok sisa masa.` }, { quoted: m });
     }
 };

@@ -6,9 +6,6 @@ export default {
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const args = teks.trim().split(' ').slice(1);
 
-        if (user.jail?.status && Date.now() < user.jail.release_at) {
-            return sock.sendMessage(jid, { text: '⛓️ Awak dalam lokap, jangan sibuk nak menyabung ayam!' }, { quoted: m });
-        }
 
         let taruhan = parseInt(args[0]);
         if (!taruhan || isNaN(taruhan) || taruhan <= 0) {
