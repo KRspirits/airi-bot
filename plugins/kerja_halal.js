@@ -13,7 +13,6 @@ import { kadPekerja } from '../lib/kadkerja.js';
 import { hasApp } from '../lib/apps.js';
 import { DAERAH, jarakDaerah, pickPasangan } from '../lib/daerah.js';
 import { bayaranApp } from '../lib/jobs.js';
-import { petaOrderAsli } from '../lib/petaasli.js';
 import { rm } from '../lib/util.js';
 
 // =========================================================================
@@ -42,25 +41,23 @@ function ada(user) {
 
 let kunciOrder = Promise.resolve();
 const ORDER_HIDUP_MS = 15 * 60e3;
-const ORDER_AKTIF = 10;
+const ORDER_AKTIF = 8;
 
 // Peta pemetaan app: arahan -> jenis order, negara, brand, nama paparan
 const RUTE = {
     grab:      { jenis: 'grab',  app: 'grab',      negara: 'MY', brand: 'GrabFood',  nama: 'GRAB' },
     foodpanda: { jenis: 'food',  app: 'foodpanda', negara: 'MY', brand: 'foodpanda', nama: 'FOODPANDA' },
-    ojol:      { jenis: 'ojol',  app: 'ojol',      negara: 'ID', brand: 'Ojol',      nama: 'OJOL' },
-    gojek:     { jenis: 'gojek', app: 'gojek',     negara: 'ID', brand: 'Gojek',     nama: 'GOJEK' },
 };
 
 function buatOrder(i, kini) {
-    // 5 order Malaysia, 5 order Indonesia. Bergilir antara penumpang (ride) dan makanan (food).
-    const negara = i < 5 ? 'MY' : 'ID';
-    const ride = (i % 5) % 2 === 0;
+    // Order Malaysia sahaja. Bergilir antara penumpang (grab) dan makanan (foodpanda).
+    const negara = 'MY';
+    const ride = i % 2 === 0;
     const { dari, ke } = pickPasangan(negara);
     const jarak = Math.round(jarakDaerah(negara, dari, ke) * 1.3 * 10) / 10;
-    const jenis = ride ? (negara === 'MY' ? 'grab' : 'ojol') : (negara === 'MY' ? 'food' : 'gojek');
-    const brand = ride ? (negara === 'MY' ? 'GrabFood' : 'Ojol') : (negara === 'MY' ? 'foodpanda' : 'Gojek');
-    const id = (negara === 'MY' ? 'M' : 'I') + kini.toString(36).slice(-4).toUpperCase() + Math.random().toString(36).slice(2, 4).toUpperCase();
+    const jenis = ride ? 'grab' : 'food';
+    const brand = ride ? 'GrabFood' : 'foodpanda';
+    const id = 'M' + kini.toString(36).slice(-4).toUpperCase() + Math.random().toString(36).slice(2, 4).toUpperCase();
     const bayar = bayaranApp(jenis, jarak) + Math.round(rnd(0, 50));
     return { id, t: kini, negara, jenis, brand, kedai: ride ? 'Penumpang' : pick(KEDAI), dari, ke, jarak, bayar, eta: Math.round(jarak * 2) + 3, rating: (4.4 + rnd(0, 0.6)).toFixed(1), tuntut: null, pemesan: null };
 }
@@ -109,7 +106,7 @@ async function kirimKlip(sock, jid, m, { dari, ke, bayar, brand }) {
 
 export default {
     name: 'kerja_halal',
-    alias: ['grab', 'foodpanda', 'ojol', 'gojek', 'terima'],
+    alias: ['grab', 'foodpanda', 'terima'],
     category: 'kerja',
     execute: async ({ sock, m, user, db, args = [] }) => {
         const jid = m.key.remoteJid;
@@ -211,7 +208,7 @@ export default {
             kerja[sender] = diri;
             await store.set('kerja', 'pekerja', kerja);
             await db.saveUser(user);
-            const kad = await panelCard({ kicker: o.jenis === 'grab' ? 'GRAB · PENUMPANG' : 'FOODPANDA · MAKANAN', title: o.kedai, lines: [`${o.dari} → ${o.ke}`, `${o.jarak} km`, `Bayaran: RM ${bayar.toLocaleString('en-US')}`], accent: o.jenis === 'grab' ? '#22c55e' : '#f43f5e', big: `RM ${bayar.toLocaleString('en-US')}`, bigLabel: 'BAYARAN', footerText: `Order ${o.id} · ${pilih(ORDER_DITERIMA)}` });
+            const kad = await panelCard({ kicker: ({ grab: 'GRAB · PENUMPANG', food: 'FOODPANDA · MAKANAN' })[o.jenis] || 'ORDER', title: o.kedai, lines: [`${o.dari} → ${o.ke}`, `${o.jarak} km`, `Bayaran: RM ${bayar.toLocaleString('en-US')}`], accent: o.jenis === 'grab' ? '#22c55e' : '#f43f5e', big: `RM ${bayar.toLocaleString('en-US')}`, bigLabel: 'BAYARAN', footerText: `Order ${o.id} · ${pilih(ORDER_DITERIMA)}` });
             kirimKlip(sock, jid, m, { dari: o.dari, ke: o.ke, bayar, brand: o.brand }).catch(() => {});
             return sock.sendMessage(jid, { image: kad, caption: pilih(ORDER_DITERIMA) }, { quoted: m });
         }

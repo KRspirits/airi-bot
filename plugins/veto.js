@@ -187,7 +187,7 @@ export default {
                 return reply(on ? '🔥 Hari Pembersihan dimulakan sejam!' : '🕊️ Hari Pembersihan dihentikan.');
             }
             case 'maintenance': { state.maintenance = (args[0] || '').toLowerCase() === 'on'; saveState(); return reply(`🛠️ Mod penyelenggaraan: ${state.maintenance ? 'ON (hanya owner)' : 'OFF'}`); }
-            case 'bulletin_now': { const d = await makeBulletin(db, jid.endsWith('@g.us') ? jid : undefined); return sendCard(sock, jid, m, 'newsCard', d, `📰 ${d.headline}`); }
+            case 'bulletin_now': { const d = await makeBulletin(db, jid.endsWith('@g.us') ? jid : undefined, sock); return sendCard(sock, jid, m, 'newsCard', d, `📰 ${d.headline}`); }
             case 'testwelcome': {
                 if (!jid.endsWith('@g.us')) return reply('Guna dalam group.');
                 await handleParticipants(sock, { id: jid, participants: [sender], action: 'add' }); void speak; return;

@@ -1,3 +1,4 @@
+import { pemainGroup } from '../lib/groupusers.js';
 export default {
     name: 'bounty',
     alias: ['list_bounty', 'buru', 'wanted'],
@@ -10,7 +11,7 @@ export default {
 
         // 1. LIHAT SENARAI PALING DIKEHENDAKI (.list_bounty)
         if (commandUsed === 'list_bounty' || commandUsed === 'wanted') {
-            const allUsers = await db.getAllUsers();
+            const allUsers = await pemainGroup(sock, m.key.remoteJid, await db.getAllUsers());
             // Tapis mereka yang ada nilai bounty melebihi 0
             const wantedList = allUsers
                 .filter(u => u.stats?.bounty > 0)

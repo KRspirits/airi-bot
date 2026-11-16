@@ -1,3 +1,4 @@
+import { pemainGroup } from '../lib/groupusers.js';
 import { config } from '../config.js';
 import { askAiri, judgeCourtAppeal, appraiseItem, verifyPantun } from '../lib/geminiAI.js';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
@@ -180,7 +181,7 @@ export default {
 
             // 7. BULETIN CYBER (.buletin_cyber)
             if (cmd === 'buletin_cyber') {
-                const allUsers = await db.getAllUsers();
+                const allUsers = await pemainGroup(sock, m.key.remoteJid, await db.getAllUsers());
                 const topKaya = allUsers.sort((a, b) => ((b.wallet || 0) + (b.bank || 0)) - ((a.wallet || 0) + (a.bank || 0)))[0]?.name || 'Tiada';
                 const banduan = allUsers.filter(u => u.jail?.status).map(u => u.name).slice(0, 2).join(', ') || 'Semua warga baik-baik';
                 const promptBuletin = `${personaAiri}\nBuat siaran berita ringkas kelakar. Paling kaya: ${topKaya}. Dalam lokap: ${banduan}. Gaya wartawan cilik ceria.`;

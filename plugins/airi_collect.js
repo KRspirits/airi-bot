@@ -1,3 +1,4 @@
+import { pemainGroup } from '../lib/groupusers.js';
 import { getAvatar } from '../lib/render.js';
 import { extractText, parseCmd, mentions, num, rm, pick, rand } from '../lib/util.js';
 import { sendCard } from '../lib/render.js';
@@ -31,7 +32,7 @@ export default {
         if (cmd === 'tangkap') return claim({ sock, m, user, db, code: args[0] });
 
         if (cmd === 'liga') {
-            const users = await db.getAllUsers(), st = (await standings(users)).slice(0, 8);
+            const users = await pemainGroup(sock, m.key.remoteJid, await db.getAllUsers()), st = (await standings(users)).slice(0, 8);
             return sendCard(sock, jid, m, 'topCard', { title: 'LIGA MINGGUAN', subtitle: 'Pertambahan aset minggu ini  •  tamat Ahad 11 malam', accent: '#fbbf24',
                 rows: st.map((r, i) => ({ name: r.name, sub: i < 3 ? `Hadiah RM ${[100000, 50000, 25000][i].toLocaleString('en-US')}` : '', value: (r.gain >= 0 ? '+' : '-') + rm(Math.abs(r.gain)) })) }, '🏆 Liga mingguan Airi\'s Corner');
         }

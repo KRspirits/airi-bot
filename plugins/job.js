@@ -22,8 +22,6 @@ import { panelCard } from '../lib/cards.js';
 const RIDER = {
     grab: { nama: 'Rider GRAB (penumpang)', app: 'grab', ket: 'Hantar penumpang dengan kereta' },
     foodpanda: { nama: 'Rider FOODPANDA (makanan)', app: 'foodpanda', ket: 'Hantar makanan pelanggan' },
-    ojol: { nama: 'Rider OJOL (penumpang, ID)', app: 'ojol', ket: 'Hantar penumpang di Indonesia' },
-    gojek: { nama: 'Rider GOJEK (makanan, ID)', app: 'gojek', ket: 'Hantar makanan di Indonesia' },
 };
 const PINTAS = { food: 'foodpanda' };
 const rp = n => `RM ${Math.round(Number(n) || 0).toLocaleString('en-US')}`;

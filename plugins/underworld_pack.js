@@ -19,7 +19,9 @@ export default {
                 if ((targetUser.wallet || 0) < 1000) return sock.sendMessage(jid, { text: '💸 Mangsa tak ada cukup tunai untuk dirompak.' }, { quoted: m });
                 const nasib = Math.random();
                 if (nasib > 0.6) {
-                    const hasil = Math.min(Math.floor(Math.random() * 5000) + 1000, Math.floor((targetUser.wallet || 0) * 0.5));
+                    // Hasil rompakan: sehingga 40% wallet mangsa (had atas 40%). Minimum RM1,000 kalau mangsa mampu.
+                    const hadRob = Math.floor((targetUser.wallet || 0) * 0.4);
+                    const hasil = hadRob < 1 ? 0 : Math.min(hadRob, Math.max(Math.min(1000, hadRob), Math.floor(hadRob * (0.25 + Math.random() * 0.75))));
                     user.wallet = (user.wallet || 0) + hasil;
                     targetUser.stats.dirompak_last = Date.now();
                     if (cmd === 'rompak' || cmd === 'rob') targetUser.wallet = Math.max(0, (targetUser.wallet || 0) - hasil);

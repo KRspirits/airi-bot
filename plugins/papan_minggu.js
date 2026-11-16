@@ -7,7 +7,7 @@ export default {
     category: 'info',
     execute: async ({ sock, m }) => {
         const jid = m.key.remoteJid;
-        const data = await papanSemasa();
+        const data = await papanSemasa(sock, jid);
         return sock.sendMessage(jid, { text: teksPapan(data, 'PAPAN MINGGUAN · SEMASA') }, { quoted: m });
     }
 };

@@ -1,0 +1,60 @@
+PADANAN GAMBAR IKAN BIASA (ikut senarai pemilik)
+Nombor = nombor gambar dalam senarai_ikan_biasa.png
+
+#01 -> Ikan Kembung
+#02 -> Ikan Selar Kuning
+#03 -> Ikan Merah
+#04 -> Ikan Siakap
+#05 -> Ikan Kerapu
+#06 -> Ikan Tamban
+#07 -> Ikan Tamban Sisik
+#08 -> Ikan Bilis
+#09 -> Ikan Jenahak
+#10 -> Ikan Siakap Putih
+#11 -> Ikan Keli
+#12 -> Ikan Kerapu Hitam
+#13 -> Ikan Merah Sumbo
+#14 -> Ikan Kerapu Gelama
+#15 -> Ikan Baung
+#16 -> Sotong Katak
+#17 -> Ikan Patin
+#18 -> Ketam Nipah
+#19 -> Ikan Gelama
+#20 -> Ketam Bakau
+#21 -> Ikan Kerapu Harimau
+#22 -> Ikan Siakap Batu
+#23 -> Ikan Gelama Papan
+#24 -> Ikan Merah Pucat
+#25 -> Ikan Kerisi
+#26 -> Ikan Cencaru
+#27 -> Ikan Mabong
+#28 -> Ikan Tenggiri
+#29 -> Ikan Aya / Tongkol
+#30 -> Ikan Bawal Putih
+#31 -> Ikan Tongkol Hitam
+#32 -> Ikan Bawal
+#33 -> Ikan Bawal Emas
+#34 -> Ikan Bawal Tambak
+#35 -> Ikan Belanak
+#36 -> Ikan Belanak Putih
+#37 -> Ikan Kedera
+#38 -> Ikan Tilapia Hitam
+#39 -> Ikan Tilapia
+#40 -> Ikan Haruan
+#41 -> Ikan Toman
+#42 -> Ikan Kerapu Bara
+#43 -> Ikan Toman Bunga
+#44 -> Ikan Bujuk
+#45 -> Ikan Pari
+#46 -> Ikan Kerapu Merah
+#47 -> Ikan Kerapu Sunoh
+#48 -> Ikan Alu-Alu
+#49 -> Ikan Todak
+#50 -> Ikan Pari Ketuka
+#51 -> Sotong
+#52 -> Sotong Kurita
+#53 -> Ketam Bunga
+#54 -> Udang
+#55 -> Siput Sedut
+#56 -> Siput Balitong
+#57 -> Kupang

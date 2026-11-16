@@ -174,7 +174,7 @@ export default {
 
         // ---------- BULETIN ----------
         if (cmd === 'buletin_cyber' || cmd === 'buletin') {
-            const data = await makeBulletin(db, jid.endsWith('@g.us') ? jid : undefined);
+            const data = await makeBulletin(db, jid.endsWith('@g.us') ? jid : undefined, sock);
             await sendCard(sock, jid, m, 'newsCard', data, `📰 *THE AIRI TIMES* | ${data.headline}`);
             if (config.voice && args.includes('suara')) await speak(sock, jid, 'eventStart');
         }

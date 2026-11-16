@@ -19,15 +19,11 @@ const SEKSYEN = (ws) => [
     { tajuk: '🛵 Order Penghantaran', warna: '#22c55e', baris: [
         ['.grab', 'Order GRAB (Malaysia)'],
         ['.foodpanda', 'Order foodpanda (Malaysia)'],
-        ['.ojol', 'Order Ojol (Indonesia)'],
-        ['.gojek', 'Order Gojek (Indonesia)'],
         ['.terima [id]', 'Ambil satu order'] ] },
-    { tajuk: '💰 Duit & Tukaran', warna: '#fbbf24', baris: [
+    { tajuk: '💰 Duit', warna: '#fbbf24', baris: [
         ['.daily', 'Bonus harian'],
-        ['.transfer @user [jumlah]', 'Hantar duit'],
-        ['.kadar', 'Kadar RM ke Rupiah'],
-        ['.tukar [jumlah] rm/idr', 'Tukar mata wang'],
-        ['.mata rm/idr', 'Tukar paparan mata wang'] ] },
+        ['.transfer @user [jumlah]', 'Hantar duit (RM)'],
+        ['.balance', 'Lihat baki'] ] },
     { tajuk: '📈 Pasaran', warna: '#f97316', baris: [
         ['.pasaran', 'Carta BTC dan emas'] ] },
     { tajuk: '🎣 Memancing', warna: '#4ade80', baris: [
