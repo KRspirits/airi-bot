@@ -15,9 +15,9 @@ const JENAYAH = [
     { id: 'peras_ugut', nama: 'Peras Ugut', min: 8000, max: 40000, risiko: 0.38, penjara: 25, cd: 15 },
     { id: 'rompak_kedai', nama: 'Rompak Kedai Runcit', min: 10000, max: 60000, risiko: 0.40, penjara: 30, cd: 20, kos: 5000 },
     { id: 'seludup', nama: 'Seludup Barang', min: 50000, max: 200000, risiko: 0.45, penjara: 60, cd: 45, kos: 25000, perlu: { kereta: true } },
-    { id: 'godam_kripto', nama: 'Godam Kripto', min: 100000, max: 1000000, risiko: 0.50, penjara: 90, cd: 90, kos: 50000, perlu: { bm: 'Dokumen Palsu' } },
-    { id: 'rompak_bank', nama: 'Rompak Bank', min: 200000, max: 800000, risiko: 0.55, penjara: 120, cd: 120, kos: 100000, perlu: { kereta: true, bm: 'Pelan Rompakan' } },
-    { id: 'rompak_kasino', nama: 'Rompak Kasino', min: 500000, max: 2000000, risiko: 0.65, penjara: 240, cd: 240, kos: 200000, perlu: { bm: 'Helikopter Lari' } },
+    { id: 'godam_kripto', nama: 'Godam Kripto', min: 200000, max: 2000000, risiko: 0.50, penjara: 90, cd: 90, kos: 50000, perlu: { bm: 'Dokumen Palsu' } },
+    { id: 'rompak_bank', nama: 'Rompak Bank', min: 400000, max: 1600000, risiko: 0.55, penjara: 120, cd: 120, kos: 100000, perlu: { kereta: true, bm: 'Pelan Rompakan' } },
+    { id: 'rompak_kasino', nama: 'Rompak Kasino', min: 1000000, max: 4000000, risiko: 0.65, penjara: 240, cd: 240, kos: 200000, perlu: { bm: 'Helikopter Lari' } },
 ];
 
 const GELAP = [

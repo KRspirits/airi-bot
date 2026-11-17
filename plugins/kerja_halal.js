@@ -202,7 +202,10 @@ export default {
             const ambil = await ambilOrder(args[0], sender);
             if (!ambil.ok) return reply(ambil.mesej);
             const o = ambil.order;
-            const bayar = Math.round((o.bayar + Math.round(rnd(0, 4))) * mulUntuk(o.jenis === 'grab' ? 'teksi' : 'kafe') * (buffKenderaan(user).app || 1));
+            const asasTerima = o.bayar + Math.round(rnd(0, 4));
+            const mulMusim = mulUntuk(o.jenis === 'grab' ? 'teksi' : 'kafe');
+            const buffApp = buffKenderaan(user).app || 1;
+            const bayar = Math.round(asasTerima * mulMusim * buffApp);
             user.wallet = (user.wallet || 0) + bayar;
             diri.harian.n += 1;
             beriXp(user, 30, 'rider');
@@ -211,7 +214,8 @@ export default {
             await db.saveUser(user);
             const kad = await panelCard({ kicker: ({ grab: 'GRAB · PENUMPANG', food: 'FOODPANDA · MAKANAN' })[o.jenis] || 'ORDER', title: o.kedai, lines: [`${o.dari} → ${o.ke}`, `${o.jarak} km`, `Bayaran: RM ${bayar.toLocaleString('en-US')}`], accent: o.jenis === 'grab' ? '#22c55e' : '#f43f5e', big: `RM ${bayar.toLocaleString('en-US')}`, bigLabel: 'BAYARAN', footerText: `Order ${o.id} · ${pilih(ORDER_DITERIMA)}` });
             kirimKlip(sock, jid, m, { dari: o.dari, ke: o.ke, bayar, brand: o.brand }).catch(() => {});
-            return sock.sendMessage(jid, { image: kad, caption: pilih(ORDER_DITERIMA) }, { quoted: m });
+            const pecahan = `💵 Asas RM ${asasTerima.toLocaleString('en-US')}${mulMusim !== 1 ? ` × musim ${mulMusim.toFixed(2)}` : ''}${buffApp !== 1 ? ` × kenderaan ${buffApp.toFixed(2)}` : ''} = *RM ${bayar.toLocaleString('en-US')}*`;
+            return sock.sendMessage(jid, { image: kad, caption: `${pilih(ORDER_DITERIMA)}\n\n${pecahan}` }, { quoted: m });
         }
         return reply('❌ Arahan tak dikenali. Taip `.job` untuk mula.');
     }

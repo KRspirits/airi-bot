@@ -21,27 +21,31 @@ export default {
 
         // 1. UPGRADE MAGNET
         if (commandUsed === 'upgrade_magnet') {
-            const nextTier = (user.magnet?.tier || 1) + 1;
-            const targetGear = MAGNET_TIERS[nextTier];
+            try {
+                const nextTier = (user.magnet?.tier || 1) + 1;
+                const targetGear = MAGNET_TIERS[nextTier];
 
-            if (!targetGear) {
-                return sock.sendMessage(jid, { text: '⚡ Magnet awak dah max level (Kren Elektromagnet Pelabuhan)!' }, { quoted: m });
-            }
+                if (!targetGear) {
+                    return sock.sendMessage(jid, { text: '⚡ Magnet awak dah max level (Kren Elektromagnet Pelabuhan)!' }, { quoted: m });
+                }
 
-            if (user.wallet < targetGear.price) {
-                return sock.sendMessage(jid, { 
-                    text: `❌ Duit poket tak cukup! Upgrade ke *${targetGear.name}* perlu RM ${targetGear.price.toLocaleString()}` 
+                if (Number(user.wallet || 0) < targetGear.price) {
+                    return sock.sendMessage(jid, {
+                        text: `❌ Duit poket tak cukup! Upgrade ke *${targetGear.name}* perlu RM ${targetGear.price.toLocaleString()}`
+                    }, { quoted: m });
+                }
+
+                user.wallet = Number(user.wallet || 0) - targetGear.price;
+                user.magnet = { ...(user.magnet || {}), tier: nextTier, name: targetGear.name };
+                await db.saveUser(user);
+
+                return sock.sendMessage(jid, {
+                    text: `🧲 *UPGRADE BERJAYA!* Sekarang awak guna *${targetGear.name}* (Multiplier Khazanah: x${targetGear.mult})!`
                 }, { quoted: m });
+            } catch (err) {
+                console.error('[MAGNET] upgrade gagal:', err && err.message, '| wallet:', user.wallet, '| tier:', user.magnet?.tier);
+                return sock.sendMessage(jid, { text: '❌ Upgrade tak berjaya sekarang. Cuba lagi sebentar, atau bagitahu owner kalau masih sama.' }, { quoted: m });
             }
-
-            user.wallet -= targetGear.price;
-            user.magnet.tier = nextTier;
-            user.magnet.name = targetGear.name;
-            await db.saveUser(user);
-
-            return sock.sendMessage(jid, {
-                text: `🧲 *UPGRADE BERJAYA!* Sekarang awak guna *${targetGear.name}* (Multiplier Khazanah: x${targetGear.mult})!`
-            }, { quoted: m });
         }
 
         // 2. TIMBANG BESI BURUK KILO

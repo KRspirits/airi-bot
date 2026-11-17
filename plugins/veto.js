@@ -130,8 +130,7 @@ export default {
             case 'set_income': { const n = parseInt(args[0]); if (isNaN(n) || n < 0) return reply('❌ Amaun tak sah.'); user.wallet = n; await db.saveUser(user); return reply(`👑 Dana tunai ditetapkan ${rm(n)}.`); }
             case 'give_cash': case 'give_gold': case 'give_btc': {
                 const n = Number(args.find(a => /^-?\d+(\.\d+)?$/.test(a))); if (!target || isNaN(n)) return reply(`❌ Format: \`.${cmd} @user [nilai]\``);
-                const t = await db.getUser(target); t.crypto ||= { btc: 0, gold: 0 };
-                if (cmd === 'give_cash') t.wallet = (t.wallet || 0) + n; else t.crypto[cmd === 'give_gold' ? 'gold' : 'btc'] = (t.crypto[cmd === 'give_gold' ? 'gold' : 'btc'] || 0) + n;
+                const t = await db.getUser(target); if (cmd === 'give_cash') t.wallet = (t.wallet || 0) + n; else t[cmd === 'give_gold' ? 'emas' : 'btc'] = (t[cmd === 'give_gold' ? 'emas' : 'btc'] || 0) + n;
                 await db.saveUser(t); return reply(`👑 Suntikan ${cmd.replace('give_', '')} ${n.toLocaleString('en-US')} ke @${num(target)}`, { mentions: [target] });
             }
             case 'jail_user': {

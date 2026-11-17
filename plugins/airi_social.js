@@ -1,3 +1,4 @@
+import { pengirimAktif } from '../lib/activity.js';
 import { levelOf } from '../lib/level.js';
 import { config } from '../config.js';
 import { extractText, parseCmd, mentions, num, rm, pick, rand, networth, tierOf, fmtDur, isJailed, myt } from '../lib/util.js';
@@ -16,9 +17,9 @@ const tag = j => '@' + num(j);
 const clean = s => String(s || '').replace(/[*_`#\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
 
 async function inGroup(sock, jid, users) {
-    if (!jid.endsWith('@g.us')) return users;
+    if (!jid.endsWith('@g.us')) return [];
     const meta = await sock.groupMetadata(jid).catch(() => null);
-    if (!meta) return users;
+    if (!meta) return users.filter(u => pengirimAktif(jid, 200).includes(u.id));
     const ids = new Set(meta.participants.map(p => p.id));
     return users.filter(u => ids.has(u.id));
 }

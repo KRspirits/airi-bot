@@ -1,3 +1,7 @@
+import { KEDAI, KEDAI_LV } from '../lib/kedaidata.js';
+import { renderKedai } from '../lib/kedaicard.js';
+import { levelOf } from '../lib/level.js';
+import { penggandaMancing, penggandaJala } from '../lib/magnetbuff.js';
 import { beriXp } from '../lib/xp.js';
 import { renderJalaPages } from '../lib/jalacard.js';
 import fs from 'fs';
@@ -32,43 +36,7 @@ export function savePancingDB() {
 const cdMancing = new Map();
 
 // --- KATALOG KEDAI PANCING & JALA (HARGA KAYANGAN & NERF BUFF) ---
-const KEDAI = {
-    rod: {
-        '1': { nama: 'Rod Buluh', harga: 50000, buff_rare: 0.02, ket: '+2% Peluang Ikan Rare' },
-        '2': { nama: 'Rod Karbon', harga: 350000, buff_rare: 0.05, ket: '+5% Peluang Ikan Rare' },
-        '3': { nama: 'Rod Fiber Kevlar', harga: 1500000, buff_rare: 0.08, ket: '+8% Peluang Ikan Rare' },
-        '4': { nama: 'Rod Titanium Pro', harga: 5000000, buff_rare: 0.12, ket: '+12% Peluang Ikan Rare' },
-        '5': { nama: 'Rod Naga Emas', harga: 15000000, buff_rare: 0.18, ket: '+18% Peluang Ikan Rare' }
-    },
-    reel: {
-        '1': { nama: 'Reel Kayu', harga: 100000, buff_mitos: 0.002, ket: '+0.2% Peluang Mitos' },
-        '2': { nama: 'Reel Aluminium', harga: 800000, buff_mitos: 0.005, ket: '+0.5% Peluang Mitos' },
-        '3': { nama: 'Reel Serat Karbon', harga: 2500000, buff_mitos: 0.010, ket: '+1.0% Peluang Mitos' },
-        '4': { nama: 'Reel Dragster V8', harga: 8000000, buff_mitos: 0.020, ket: '+2.0% Peluang Mitos' },
-        '5': { nama: 'Reel Kuantum Apex', harga: 25000000, buff_mitos: 0.035, ket: '+3.5% Peluang Mitos' }
-    },
-    umpan: {
-        '1': { nama: 'Sisa Roti', harga: 5000, qty: 10, bonus_all: 0, ket: 'Umpan biasa (10x guna)' },
-        '2': { nama: 'Cacing Merah', harga: 20000, qty: 10, bonus_all: 0.01, ket: '+1% Tarik Ikan (10x guna)' },
-        '3': { nama: 'Udang Hidup', harga: 80000, qty: 10, bonus_all: 0.03, ket: '+3% Tarik Ikan (10x guna)' },
-        '4': { nama: 'Palet Premium', harga: 250000, qty: 10, bonus_all: 0.05, ket: '+5% Tarik Ikan (10x guna)' },
-        '5': { nama: 'Umpan VIP Berkilau', harga: 800000, qty: 10, bonus_all: 0.10, ket: '+10% Tarik Ikan (10x guna)' }
-    },
-    jala: {
-        '1': { nama: 'Jala Kain Nilon', harga: 150000, qty: 3, min_tangkapan: 1, max_tangkapan: 2, ket: 'Sauk 1-2 ekor (Ketahanan: 3)' },
-        '2': { nama: 'Jala Berantai Besi', harga: 800000, qty: 5, min_tangkapan: 2, max_tangkapan: 3, ket: 'Sauk 2-3 ekor (Ketahanan: 5)' },
-        '3': { nama: 'Jala Serat Karbon', harga: 3000000, qty: 6, min_tangkapan: 2, max_tangkapan: 4, bonus_rare: 0.01, ket: 'Sauk 2-4 ekor + Rare (Ketahanan: 6)' },
-        '4': { nama: 'Jala Mega Trawler', harga: 10000000, qty: 8, min_tangkapan: 3, max_tangkapan: 5, bonus_rare: 0.02, ket: 'Sauk 3-5 ekor (Ketahanan: 8)' },
-        '5': { nama: 'Jala Kuantum Emas', harga: 35000000, qty: 10, min_tangkapan: 4, max_tangkapan: 6, bonus_mitos: 0.002, ket: '+0.2% Sauk Mitos! (Ketahanan: 10)' }
-    },
-    akuarium: {
-        '1': { nama: 'Balang Kaca', harga: 50000, slot: 2, ket: 'Boleh bela 2 Ikan' },
-        '2': { nama: 'Akuarium Sederhana', harga: 500000, slot: 4, ket: 'Boleh bela 4 Ikan' },
-        '3': { nama: 'Akuarium Premium', harga: 1200000, slot: 6, ket: 'Boleh bela 6 Ikan' },
-        '4': { nama: 'Mega Tank Akuatik', harga: 3000000, slot: 8, ket: 'Boleh bela 8 Ikan' },
-        '5': { nama: 'Lautan Buatan VVIP', harga: 10000000, slot: 10, ket: 'Boleh bela 10 Ikan' }
-    }
-};
+
 
 const SAMPAH = [
     { nama: 'Selipar Jepun Putus 🩴', harga: 10, buff: 'Tiada' }, 
@@ -147,9 +115,11 @@ const IKAN_MITOS = [
     { nama: 'Penyu Purba Mata Ruby 🐢', harga: 1140000, buff: 'Tiada' }, { nama: 'Ikan Tuah Kaca Dewa 🐟', harga: 3600000, buff: 'Tiada' },
 ];
 
+const BELI_CMD = { beli_rod: 'rod', beli_reel: 'reel', beli_umpan: 'umpan', beli_jala: 'jala', beli_akuarium: 'akuarium' };
+
 export default {
     name: 'mancing',
-    alias: ['ikan', 'akuarium', 'bela_ikan', 'jual_ikan', 'jual_akuarium', 'kedai_pancing', 'beli_pancing', 'jala'],
+    alias: ['ikan', 'akuarium', 'bela_ikan', 'jual_ikan', 'jual_akuarium', 'kedai_pancing', 'beli_pancing', 'beli_rod', 'beli_reel', 'beli_umpan', 'beli_jala', 'beli_akuarium', 'jala'],
     execute: async ({ sock, m, user, db }) => {
         try {
             const jid = m.key.remoteJid;
@@ -175,31 +145,22 @@ export default {
 
             if (cmd === 'kedai_pancing') {
                 let ui = `╔═════════════════════════════╗\n    🎣 𝗞𝗘𝗗𝗔𝗜 𝗣𝗔𝗡𝗖𝗜𝗡𝗚 𝗣𝗥𝗢 (𝗛𝗔𝗥𝗗𝗖𝗢𝗥𝗘)\n╠═════════════════════════════╣\n\n`;
-                const susunKatalog = (title, category) => {
-                    let text = `*📍 ${title}*\n`;
-                    for (const [id, item] of Object.entries(KEDAI[category])) {
-                        text += `${id}. ${item.nama} (RM ${item.harga.toLocaleString()})\n   └ ${item.ket}\n`;
-                    }
-                    return text + '\n';
-                };
-
-                ui += susunKatalog('ROD (Tarik Ikan Rare)', 'rod');
-                ui += susunKatalog('REEL (Tarik Ikan Mitos)', 'reel');
-                ui += susunKatalog('UMPAN (Peluang Joran)', 'umpan');
-                ui += susunKatalog('JALA (Tangkapan Pukal Massal)', 'jala');
-                ui += susunKatalog('AKUARIUM (Slot Buff)', 'akuarium');
-                
-                ui += `🛒 *Cara Beli:* \`.beli_pancing [kategori] [nombor]\`\nContoh: \`.beli_pancing jala 1\``;
-                return sock.sendMessage(jid, { text: ui }, { quoted: m });
+                const gambar = await renderKedai();
+                return sock.sendMessage(jid, {
+                    image: gambar,
+                    caption: '🛒 *Cara beli:* `.beli_rod [no]` · `.beli_reel [no]` · `.beli_umpan [no]` · `.beli_jala [no]` · `.beli_akuarium [no]`',
+                }, { quoted: m });
             }
 
-            if (cmd === 'beli_pancing') {
-                const kategori = args[0]?.toLowerCase();
-                const id = args[1];
+            if (cmd === 'beli_pancing' || BELI_CMD[cmd]) {
+                const kategori = BELI_CMD[cmd] || args[0]?.toLowerCase();
+                const id = BELI_CMD[cmd] ? args[0] : args[1];
                 if (!['rod', 'reel', 'umpan', 'jala', 'akuarium'].includes(kategori) || !id) return sock.sendMessage(jid, { text: `❌ Format: \`.beli_pancing [rod/reel/umpan/jala/akuarium] [nombor]\`` }, { quoted: m });
                 
                 const item = KEDAI[kategori][id];
                 if (!item) return sock.sendMessage(jid, { text: `❌ Kod nombor tak wujud dalam kedai.` }, { quoted: m });
+                const perluLv = KEDAI_LV[kategori]?.[id] || 1;
+                if (levelOf(user) < perluLv) return sock.sendMessage(jid, { text: `🔒 ${item.nama} dibuka pada level ${perluLv}. Level awak sekarang ${levelOf(user)}.` }, { quoted: m });
                 if ((user.wallet || 0) < item.harga) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup RM ${item.harga.toLocaleString()}!` }, { quoted: m });
 
                 user.wallet -= item.harga;
@@ -251,13 +212,13 @@ export default {
                 const rng = Math.random();
                 const pilih = arr => arr[Math.floor(Math.random() * arr.length)];
                 let rarity, ikanDapat;
-                const ev = activeEvent(), tide = ev?.code === 'MYTHIC_TIDE' ? 0.03 : 0, frenzy = ev?.code === 'MEGA_HARVEST' ? 0.45 : 0;
+                const ev = activeEvent(), tide = ev?.code === 'MYTHIC_TIDE' ? 0.03 : 0, frenzy = ev?.code === 'MEGA_HARVEST' ? 0.08 : 0;
                 if (rng < (0.0001 + tide + (pData.reel.buff_mitos || 0) + (pData.umpan.bonus_all || 0))) { rarity = 'mitos'; ikanDapat = pilih(IKAN_MITOS); }
-                else if (rng < (0.0105 + frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0))) { rarity = 'rare'; ikanDapat = pilih(IKAN_RARE); }
-                else if (rng < 0.60) { rarity = 'biasa'; ikanDapat = pilih(IKAN_BIASA); }
+                else if (rng < (0.0105 + Math.min(0.02, frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0) * 0.3))) { rarity = 'rare'; ikanDapat = pilih(IKAN_RARE); }
+                else if (rng < 0.80) { rarity = 'biasa'; ikanDapat = pilih(IKAN_BIASA); }
                 else { rarity = 'sampah'; ikanDapat = pilih(SAMPAH); }
 
-                ikanDapat = { ...ikanDapat, rarity };
+                ikanDapat = { ...ikanDapat, rarity, harga: Math.round(ikanDapat.harga * penggandaMancing(user)) };
                 (pData.dex ||= {})[ikanDapat.nama] = true;
                 beriXp(user, rarity === 'mitos' ? 50 : rarity === 'rare' ? 15 : 5, 'mancing');
                 pData.tong_ikan.push(ikanDapat);
@@ -319,11 +280,11 @@ let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: R
                     const rngJala = Math.random();
                     // Drop rate Hardcore untuk Jala
                     let tangkapan = rngJala < (0.0001 + (pData.jala.bonus_mitos || 0)) ? IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)] :
-                                    rngJala < (0.0105 + (pData.jala.bonus_rare || 0)) ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
-                                    rngJala < 0.60 ? IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)] : SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
+                                    rngJala < (0.0105 + Math.min(0.02, pData.jala.bonus_rare || 0)) ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
+                                    rngJala < 0.80 ? IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)] : SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
 
                     const rarJala = IKAN_MITOS.includes(tangkapan) ? 'mitos' : IKAN_RARE.includes(tangkapan) ? 'rare' : SAMPAH.includes(tangkapan) ? 'sampah' : 'biasa';
-                    tangkapan = { ...tangkapan, rarity: rarJala };
+                    tangkapan = { ...tangkapan, rarity: rarJala, harga: Math.round(tangkapan.harga * penggandaJala(user)) };
                     koleksiJala.push({ nama: tangkapan.nama, harga: tangkapan.harga, rarity: rarJala });
                     pData.tong_ikan.push(tangkapan);
                     totalHarga += tangkapan.harga;
