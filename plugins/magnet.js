@@ -1,3 +1,4 @@
+import { undiItem, gambarItem } from '../lib/magnetitem.js';
 export const MAGNET_TIERS = {
     1: { name: 'Magnet Speaker Radio Asas', price: 0, mult: 1.0, maxTier: 1 },
     2: { name: 'Magnet Kuat Neodymium', price: 5000, mult: 1.5, maxTier: 2 },
@@ -48,19 +49,18 @@ export default {
             }
         }
 
-        // 2. TIMBANG BESI BURUK KILO
+        // 2. JUAL ITEM MAGNET (dulu jual besi)
         if (commandUsed === 'jual_besi') {
-            const scrap = user.inventory.scrap_metal || 0;
-            if (scrap <= 0) return sock.sendMessage(jid, { text: '❌ Tiada besi buruk untuk ditimbang.' }, { quoted: m });
+            const simpanan = user.inventory.magnet_items || [];
+            if (!simpanan.length) return sock.sendMessage(jid, { text: '❌ Tiada item dari magnet lagi. Taip `.magnet` untuk baling.' }, { quoted: m });
 
-            const hargaPerKg = 25; // RM25/KG
-            const total = scrap * hargaPerKg;
-            user.wallet += total;
-            user.inventory.scrap_metal = 0;
+            const jumlah = simpanan.reduce((t, it) => t + (it.harga || 0), 0);
+            user.wallet = (user.wallet || 0) + jumlah;
+            user.inventory.magnet_items = [];
             await db.saveUser(user);
 
             return sock.sendMessage(jid, {
-                text: `⚖️ *KILANG BESI BURUK*\nDitimbang: *${scrap} KG*\nHasil: *+RM ${total.toLocaleString()}* masuk wallet!`
+                text: `🧲 *JUAL ITEM MAGNET*\nDijual: *${simpanan.length} item*\nHasil: *+RM ${jumlah.toLocaleString()}* masuk wallet!`
             }, { quoted: m });
         }
 
@@ -122,22 +122,15 @@ export default {
             }, { quoted: m });
         }
 
-        // Loot Besi Buruk Kilo
-        const kutipanKg = Math.floor((Math.random() * 20 + 5) * (1 + (currentTier - 1) * 0.15)); // naik perlahan ikut tier
-        user.inventory.scrap_metal = (user.inventory.scrap_metal || 0) + kutipanKg;
+        // Loot item magnet (ikut tier, bukan besi)
+        const item = undiItem(currentTier);
+        user.inventory.magnet_items = [...(user.inventory.magnet_items || []), { id: item.id, nama: item.nama, tier: item.tier, jenis: item.jenis, harga: item.harga }];
         await db.saveUser(user);
 
-        const barangRawak = ['Rim Basikal Lajak', 'Tong Gas Hijau Karat', 'Tin Biskut Kemek', 'Pagar Besi Buruk'];
-        const brg = barangRawak[Math.floor(Math.random() * barangRawak.length)];
-
-        return sock.sendMessage(jid, {
-            text: `
-┌───「 🧲 𝗧𝗔𝗥𝗜𝗞𝗔𝗡 𝗠𝗔𝗚𝗡𝗘𝗧 」
-├ ⚙️ 𝗚𝗲𝗮𝗿  : ${MAGNET_TIERS[currentTier].name}
-├ 🔩 𝗕𝗮𝗿𝗮𝗻𝗴 : ${brg}
-├ ⚖️ 𝗕𝗲𝗿𝗮𝘁  : +${kutipanKg} KG Besi Buruk
-└───────────────────────────
-Taip \`.jual_besi\` untuk timbang atau \`.upgrade_magnet\`!`
-        }, { quoted: m });
+        const gambar = gambarItem(item);
+        const teksItem = `┌───「 🧲 𝗧𝗔𝗥𝗜𝗞𝗔𝗡 𝗠𝗔𝗚𝗡𝗘𝗧 」\n├ ⚙️ 𝗚𝗲𝗮𝗿  : ${MAGNET_TIERS[currentTier].name}\n├ 🎁 𝗜𝘁𝗲𝗺  : ${item.nama}\n├ 🏷️ 𝗧𝗶𝗲𝗿  : ${item.tier} · ${item.jenis}\n├ 💵 𝗡𝗶𝗹𝗮𝗶 : RM ${item.harga.toLocaleString()}\n└───────────────────────────\nTaip \`.jual_besi\` untuk jual semua item, atau \`.upgrade_magnet\`!`;
+        return gambar
+            ? sock.sendMessage(jid, { image: gambar, caption: teksItem }, { quoted: m })
+            : sock.sendMessage(jid, { text: teksItem }, { quoted: m });
     }
 };

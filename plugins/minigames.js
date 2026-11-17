@@ -1,7 +1,7 @@
 let bossHP = 50000;
 
 export default {
-    name: 'serang_boss',
+    name: 'minigames',
     alias: [
         'bgk', 'tarik_tali', 'teka_nombor', 'kotak_beracun',
         'tembak_botol', 'lumba_kuda', 'tikam_nombor', 'coinflip',
@@ -12,27 +12,6 @@ export default {
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const args = teks.trim().split(' ').slice(1);
         const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
-
-        // 1. BOSS RAID PvE BERAMAI-RAMAI (.serang_boss)
-        if (cmd === 'serang_boss') {
-            const damage = Math.floor(Math.random() * 2500) + 500;
-            bossHP -= damage;
-
-            if (bossHP <= 0) {
-                bossHP = 50000; // Hidupkan semula bos
-                const reward = 50000;
-                user.wallet += reward;
-                await db.saveUser(user);
-
-                return sock.sendMessage(jid, {
-                    text: `💥 *AI ROGUE TITAN-X BERJAYA DITUMPASKAN!*\nKau berjaya melancarkan serangan pemusnah dan menuntut ganjaran *RM ${reward.toLocaleString()}*!`
-                }, { quoted: m });
-            }
-
-            return sock.sendMessage(jid, {
-                text: `⚔️ Serangan mengenai bos!\nDamage: *${damage}*\nBaki HP Bos Dunia: *${bossHP.toLocaleString()} HP*`
-            }, { quoted: m });
-        }
 
         // 2. GACHA SKIN MLBB (.gacha_mlbb)
         if (cmd === 'gacha_mlbb') {

@@ -1,3 +1,4 @@
+import { renderAkuarium } from '../lib/akuariumcard.js';
 import { KEDAI, KEDAI_LV } from '../lib/kedaidata.js';
 import { renderKedai } from '../lib/kedaicard.js';
 import { levelOf } from '../lib/level.js';
@@ -39,80 +40,95 @@ const cdMancing = new Map();
 
 
 const SAMPAH = [
-    { nama: 'Selipar Jepun Putus 🩴', harga: 10, buff: 'Tiada' }, 
-    { nama: 'Tayar Motor Botak 🛞', harga: 15, buff: 'Tiada' },
-    { nama: 'Ranting Kayu Reput 🪵', harga: 5, buff: 'Tiada' },
-    { nama: 'Tin Milo Kemek 🥫', harga: 2, buff: 'Tiada' },
-    { nama: 'Plastik Maggi Kari 🍜', harga: 1, buff: 'Tiada' }
+    { nama: 'Plastik Maggi Kari 🍜', harga: 5, buff: 'Tiada' }, { nama: 'Tin Milo Kemek 🥫', harga: 7, buff: 'Tiada' },
+    { nama: 'Ranting Kayu Reput 🪵', harga: 9, buff: 'Tiada' }, { nama: 'Selipar Jepun Putus 🩴', harga: 11, buff: 'Tiada' },
+    { nama: 'Tayar Motor Botak 🛞', harga: 14, buff: 'Tiada' }, { nama: 'Tin Kopi Terbuang 🥫', harga: 16, buff: 'Tiada' },
+    { nama: 'Kasut Bola Koyak 👟', harga: 18, buff: 'Tiada' }, { nama: 'Beg Plastik Lusuh 🛍️', harga: 20, buff: 'Tiada' },
 ];
 
 const IKAN_BIASA = [
-    { nama: 'Ikan Kembung 🐟', harga: 8000, buff: 'Tiada' }, { nama: 'Ikan Selar Kuning 🐟', harga: 8400, buff: 'Tiada' },
-    { nama: 'Ikan Merah 🐟', harga: 13000, buff: 'Tiada' }, { nama: 'Ikan Siakap 🐟', harga: 4600, buff: 'Tiada' },
-    { nama: 'Ikan Kerapu 🐟', harga: 5200, buff: 'Tiada' }, { nama: 'Ikan Tamban 🐟', harga: 3000, buff: 'Tiada' },
-    { nama: 'Ikan Tamban Sisik 🐟', harga: 6200, buff: 'Tiada' }, { nama: 'Ikan Bilis 🐟', harga: 2000, buff: 'Tiada' },
-    { nama: 'Ikan Jenahak 🐟', harga: 28000, buff: 'Tiada' }, { nama: 'Ikan Siakap Putih 🐟', harga: 7800, buff: 'Tiada' },
-    { nama: 'Ikan Keli 🐟', harga: 8400, buff: 'Tiada' }, { nama: 'Ikan Kerapu Hitam 🐟', harga: 9000, buff: 'Tiada' },
-    { nama: 'Ikan Merah Sumbo 🐟', harga: 9600, buff: 'Tiada' }, { nama: 'Ikan Kerapu Gelama 🐟', harga: 10200, buff: 'Tiada' },
-    { nama: 'Ikan Baung 🐟', harga: 10600, buff: 'Tiada' }, { nama: 'Sotong Katak 🦑', harga: 12000, buff: 'Tiada' },
-    { nama: 'Ikan Patin 🐟', harga: 18000, buff: 'Tiada' }, { nama: 'Ketam Nipah 🦀', harga: 25000, buff: 'Tiada' },
-    { nama: 'Ikan Gelama 🐟', harga: 8400, buff: 'Tiada' }, { nama: 'Ketam Bakau 🦀', harga: 13400, buff: 'Tiada' },
-    { nama: 'Ikan Kerapu Harimau 🐟', harga: 14000, buff: 'Tiada' }, { nama: 'Ikan Siakap Batu 🐟', harga: 14600, buff: 'Tiada' },
-    { nama: 'Ikan Gelama Papan 🐟', harga: 15000, buff: 'Tiada' }, { nama: 'Ikan Merah Pucat 🐟', harga: 15000, buff: 'Tiada' },
-    { nama: 'Ikan Kerisi 🐟', harga: 11600, buff: 'Tiada' }, { nama: 'Ikan Cencaru 🐟', harga: 11000, buff: 'Tiada' },
-    { nama: 'Ikan Mabong 🐟', harga: 17400, buff: 'Tiada' }, { nama: 'Ikan Tenggiri 🐟', harga: 24000, buff: 'Tiada' },
-    { nama: 'Ikan Aya / Tongkol 🐟', harga: 18400, buff: 'Tiada' }, { nama: 'Ikan Bawal Putih 🐟', harga: 19000, buff: 'Tiada' },
-    { nama: 'Ikan Tongkol Hitam 🐟', harga: 19600, buff: 'Tiada' }, { nama: 'Ikan Bawal 🐟', harga: 20000, buff: 'Tiada' },
-    { nama: 'Ikan Bawal Emas 🐟', harga: 35000, buff: 'Tiada' }, { nama: 'Ikan Bawal Tambak 🐟', harga: 21200, buff: 'Tiada' },
-    { nama: 'Ikan Belanak 🐟', harga: 14000, buff: 'Tiada' }, { nama: 'Ikan Belanak Putih 🐟', harga: 22200, buff: 'Tiada' },
-    { nama: 'Ikan Kedera 🐟', harga: 12400, buff: 'Tiada' }, { nama: 'Ikan Tilapia Hitam 🐟', harga: 23400, buff: 'Tiada' },
-    { nama: 'Ikan Tilapia 🐟', harga: 24000, buff: 'Tiada' }, { nama: 'Ikan Haruan 🐟', harga: 15600, buff: 'Tiada' },
-    { nama: 'Ikan Toman 🐟', harga: 29000, buff: 'Tiada' }, { nama: 'Ikan Kerapu Bara 🐟', harga: 25600, buff: 'Tiada' },
-    { nama: 'Ikan Toman Bunga 🐟', harga: 26200, buff: 'Tiada' }, { nama: 'Ikan Bujuk 🐟', harga: 26800, buff: 'Tiada' },
-    { nama: 'Ikan Pari 🐡', harga: 13600, buff: 'Tiada' }, { nama: 'Ikan Kerapu Merah 🐟', harga: 27800, buff: 'Tiada' },
-    { nama: 'Ikan Kerapu Sunoh 🐟', harga: 25000, buff: 'Tiada' }, { nama: 'Ikan Alu-Alu 🐟', harga: 29000, buff: 'Tiada' },
-    { nama: 'Ikan Todak 🐟', harga: 29400, buff: 'Tiada' }, { nama: 'Ikan Pari Ketuka 🐡', harga: 30000, buff: 'Tiada' },
-    { nama: 'Sotong 🦑', harga: 30600, buff: 'Tiada' }, { nama: 'Sotong Kurita 🦑', harga: 31200, buff: 'Tiada' },
-    { nama: 'Ketam Bunga 🦀', harga: 31600, buff: 'Tiada' }, { nama: 'Udang 🦐', harga: 32200, buff: 'Tiada' },
-    { nama: 'Siput Sedut 🐚', harga: 4000, buff: 'Tiada' }, { nama: 'Siput Balitong 🐚', harga: 33400, buff: 'Tiada' },
-    { nama: 'Kupang 🐚', harga: 34000, buff: 'Tiada' },
+    { nama: 'Ikan Bilis 🐟', harga: 1000, buff: 'Tiada' }, { nama: 'Ikan Tamban 🐟', harga: 1120, buff: 'Tiada' },
+    { nama: 'Siput Sedut 🐚', harga: 1250, buff: 'Tiada' }, { nama: 'Ikan Siakap 🐟', harga: 1380, buff: 'Tiada' },
+    { nama: 'Ikan Kerapu 🐟', harga: 1500, buff: 'Tiada' }, { nama: 'Ikan Tamban Sisik 🐟', harga: 1630, buff: 'Tiada' },
+    { nama: 'Ikan Siakap Putih 🐟', harga: 1760, buff: 'Tiada' }, { nama: 'Ikan Kembung 🐟', harga: 1880, buff: 'Tiada' },
+    { nama: 'Ikan Selar Kuning 🐟', harga: 2010, buff: 'Tiada' }, { nama: 'Ikan Keli 🐟', harga: 2140, buff: 'Tiada' },
+    { nama: 'Ikan Gelama 🐟', harga: 2260, buff: 'Tiada' }, { nama: 'Ikan Kerapu Hitam 🐟', harga: 2390, buff: 'Tiada' },
+    { nama: 'Ikan Merah Sumbo 🐟', harga: 2520, buff: 'Tiada' }, { nama: 'Ikan Kerapu Gelama 🐟', harga: 2640, buff: 'Tiada' },
+    { nama: 'Ikan Baung 🐟', harga: 2770, buff: 'Tiada' }, { nama: 'Ikan Cencaru 🐟', harga: 2900, buff: 'Tiada' },
+    { nama: 'Ikan Kerisi 🐟', harga: 3020, buff: 'Tiada' }, { nama: 'Sotong Katak 🦑', harga: 3150, buff: 'Tiada' },
+    { nama: 'Ikan Kedera 🐟', harga: 3280, buff: 'Tiada' }, { nama: 'Ikan Merah 🐟', harga: 3400, buff: 'Tiada' },
+    { nama: 'Ketam Bakau 🦀', harga: 3530, buff: 'Tiada' }, { nama: 'Ikan Pari 🐡', harga: 3660, buff: 'Tiada' },
+    { nama: 'Ikan Kerapu Harimau 🐟', harga: 3780, buff: 'Tiada' }, { nama: 'Ikan Belanak 🐟', harga: 3910, buff: 'Tiada' },
+    { nama: 'Ikan Siakap Batu 🐟', harga: 4040, buff: 'Tiada' }, { nama: 'Ikan Gelama Papan 🐟', harga: 4160, buff: 'Tiada' },
+    { nama: 'Ikan Merah Pucat 🐟', harga: 4290, buff: 'Tiada' }, { nama: 'Ikan Haruan 🐟', harga: 4420, buff: 'Tiada' },
+    { nama: 'Ikan Mabong 🐟', harga: 4540, buff: 'Tiada' }, { nama: 'Ikan Patin 🐟', harga: 4670, buff: 'Tiada' },
+    { nama: 'Ikan Aya / Tongkol 🐟', harga: 4800, buff: 'Tiada' }, { nama: 'Ikan Bawal Putih 🐟', harga: 4930, buff: 'Tiada' },
+    { nama: 'Ikan Tongkol Hitam 🐟', harga: 5050, buff: 'Tiada' }, { nama: 'Ikan Bawal 🐟', harga: 5180, buff: 'Tiada' },
+    { nama: 'Ikan Bawal Tambak 🐟', harga: 5310, buff: 'Tiada' }, { nama: 'Ikan Belanak Putih 🐟', harga: 5430, buff: 'Tiada' },
+    { nama: 'Ikan Tilapia Hitam 🐟', harga: 5560, buff: 'Tiada' }, { nama: 'Ikan Tenggiri 🐟', harga: 5690, buff: 'Tiada' },
+    { nama: 'Ikan Tilapia 🐟', harga: 5810, buff: 'Tiada' }, { nama: 'Ketam Nipah 🦀', harga: 5940, buff: 'Tiada' },
+    { nama: 'Ikan Kerapu Sunoh 🐟', harga: 6070, buff: 'Tiada' }, { nama: 'Ikan Kerapu Bara 🐟', harga: 6190, buff: 'Tiada' },
+    { nama: 'Ikan Toman Bunga 🐟', harga: 6320, buff: 'Tiada' }, { nama: 'Ikan Bujuk 🐟', harga: 6450, buff: 'Tiada' },
+    { nama: 'Ikan Kerapu Merah 🐟', harga: 6570, buff: 'Tiada' }, { nama: 'Ikan Jenahak 🐟', harga: 6700, buff: 'Tiada' },
+    { nama: 'Ikan Toman 🐟', harga: 6830, buff: 'Tiada' }, { nama: 'Ikan Alu-Alu 🐟', harga: 6950, buff: 'Tiada' },
+    { nama: 'Ikan Todak 🐟', harga: 7080, buff: 'Tiada' }, { nama: 'Ikan Pari Ketuka 🐡', harga: 7210, buff: 'Tiada' },
+    { nama: 'Sotong 🦑', harga: 7330, buff: 'Tiada' }, { nama: 'Sotong Kurita 🦑', harga: 7460, buff: 'Tiada' },
+    { nama: 'Ketam Bunga 🦀', harga: 7590, buff: 'Tiada' }, { nama: 'Udang 🦐', harga: 7710, buff: 'Tiada' },
+    { nama: 'Siput Balitong 🐚', harga: 7840, buff: 'Tiada' }, { nama: 'Kupang 🐚', harga: 7970, buff: 'Tiada' },
+    { nama: 'Ikan Bawal Emas 🐟', harga: 8090, buff: 'Tiada' }, { nama: 'Ikan Terubok Kecil 🐟', harga: 8220, buff: 'Tiada' },
+    { nama: 'Ikan Pelitup 🐟', harga: 8350, buff: 'Tiada' }, { nama: 'Ikan Sebarau 🐟', harga: 8470, buff: 'Tiada' },
+    { nama: 'Ikan Lampam 🐟', harga: 8600, buff: 'Tiada' }, { nama: 'Ikan Tembakul 🐟', harga: 8730, buff: 'Tiada' },
+    { nama: 'Ikan Kaci 🐟', harga: 8850, buff: 'Tiada' }, { nama: 'Ikan Kerapu Kecil 🐟', harga: 8980, buff: 'Tiada' },
+    { nama: 'Ikan Pedang Kecil 🐟', harga: 9110, buff: 'Tiada' }, { nama: 'Ikan Bawal Hijau 🐟', harga: 9230, buff: 'Tiada' },
+    { nama: 'Ikan Keli Kecil 🐟', harga: 9360, buff: 'Tiada' }, { nama: 'Ikan Sembilang Kecil 🐟', harga: 9490, buff: 'Tiada' },
+    { nama: 'Ikan Parang 🐟', harga: 9620, buff: 'Tiada' }, { nama: 'Ikan Pinjal 🐟', harga: 9740, buff: 'Tiada' },
+    { nama: 'Ikan Torpedo 🐟', harga: 9870, buff: 'Tiada' }, { nama: 'Sotong Kecil 🦑', harga: 10000, buff: 'Tiada' },
 ];
 
 const IKAN_RARE = [
-    { nama: 'Lobster Biru 🦞', harga: 390000, buff: '+2% Lulus Jenayah' }, { nama: 'Pari Hantu 🦇', harga: 325000, buff: 'Tiada' },
-    { nama: 'Ikan Buntal Beracun 🐡', harga: 286000, buff: 'Tiada' }, { nama: 'Kerapu Harimau 🐅', harga: 416000, buff: 'Tiada' },
-    { nama: 'Sotong Kurita Gergasi 🐙', harga: 728000, buff: '+RM1,000 Gaji Kerja' }, { nama: 'Ikan Layaran 🗡️', harga: 455000, buff: 'Tiada' },
-    { nama: 'Kerapu Bara 🌋', harga: 468000, buff: 'Tiada' }, { nama: 'Kelah Merah 🐟', harga: 1040000, buff: '+RM1,500 Gaji' },
-    { nama: 'Ikan Empurau 👑', harga: 910000, buff: '+RM2,500 Gaji Kerja' }, { nama: 'Ketam Raja Alaska 🦀', harga: 546000, buff: 'Tiada' },
-    { nama: 'Ikan Pedang 🗡️', harga: 507000, buff: 'Tiada' }, { nama: 'Barakuda Ganas 🦈', harga: 572000, buff: 'Tiada' },
-    { nama: 'Ikan Duri Bisa 🐡', harga: 273000, buff: 'Tiada' }, { nama: 'Ikan Sumpit 💦', harga: 338000, buff: 'Tiada' },
-    { nama: 'Pari Karang Berdarah 🦇', harga: 650000, buff: '+5% Lulus Jenayah' },
-    { nama: 'Kerapu Naga 🐉', harga: 650000, buff: '+RM1,000 Gaji' }, { nama: 'Ikan Tapah Raksasa 🐟', harga: 832000, buff: '+3% Lulus Jenayah' },
-    { nama: 'Kura-Kura Emas 🐢', harga: 1170000, buff: '-5% Peluang Kantoi' }, { nama: 'Belut Elektrik Hitam ⚡', harga: 481000, buff: 'Tiada' },
-    { nama: 'Pari Bintang ✨', harga: 507000, buff: 'Tiada' }, { nama: 'Ketam Batu Berlumut 🦀', harga: 364000, buff: 'Tiada' },
-    { nama: 'Tenggiri Biru 🐟', harga: 429000, buff: 'Tiada' }, { nama: 'Sotong Vampir 🦑', harga: 988000, buff: '+4% Lulus Jenayah' },
-    { nama: 'Ikan Gergaji 🪚', harga: 754000, buff: '+RM1,500 Gaji' }, { nama: 'Kuda Laut Mahkota 👑', harga: 1066000, buff: '+RM2,000 Gaji' },
-    { nama: 'Ikan Kaloi Gergasi 🐠', harga: 390000, buff: 'Tiada' }, { nama: 'Udang Galah Raja 🦐', harga: 442000, buff: 'Tiada' },
-    { nama: 'Ikan Sebelah Mata 👁️', harga: 312000, buff: 'Tiada' }, { nama: 'Ikan Terbang Berkaca 🪽', harga: 598000, buff: 'Tiada' },
-    { nama: 'Terumbu Karang Hidup 🪸', harga: 1300000, buff: '+RM3,000 Gaji' },
-    { nama: 'Gerutu Emas 🐟', harga: 240000, buff: 'Tiada' }, { nama: 'Kerapu Harimau 🐠', harga: 370000, buff: 'Tiada' },
-    { nama: 'Ikan Tembakul Ratu 🐡', harga: 196000, buff: 'Tiada' }, { nama: 'Pari Bunga Lotus 🐡', harga: 440000, buff: 'Tiada' },
-    { nama: 'Ikan Kelah Gergasi 🐟', harga: 310000, buff: 'Tiada' }, { nama: 'Sotong Naga 🦑', harga: 540000, buff: 'Tiada' },
+    { nama: 'Ikan Tembakul Ratu 🐡', harga: 100000, buff: 'Tiada' }, { nama: 'Gerutu Emas 🐟', harga: 119140, buff: 'Tiada' },
+    { nama: 'Ikan Duri Bisa 🐡', harga: 138290, buff: 'Tiada' }, { nama: 'Ikan Buntal Beracun 🐡', harga: 157440, buff: 'Tiada' },
+    { nama: 'Ikan Kelah Gergasi 🐟', harga: 176590, buff: 'Tiada' }, { nama: 'Ikan Sebelah Mata 👁️', harga: 195740, buff: 'Tiada' },
+    { nama: 'Pari Hantu 🦇', harga: 214890, buff: 'Tiada' }, { nama: 'Ikan Sumpit 💦', harga: 234040, buff: 'Tiada' },
+    { nama: 'Ketam Batu Berlumut 🦀', harga: 253190, buff: 'Tiada' }, { nama: 'Kerapu Harimau 🐠', harga: 272340, buff: 'Tiada' },
+    { nama: 'Lobster Biru 🦞', harga: 291480, buff: '+2% Lulus Jenayah' }, { nama: 'Ikan Kaloi Gergasi 🐠', harga: 310630, buff: 'Tiada' },
+    { nama: 'Kerapu Harimau 🐅', harga: 329780, buff: 'Tiada' }, { nama: 'Tenggiri Biru 🐟', harga: 348930, buff: 'Tiada' },
+    { nama: 'Pari Bunga Lotus 🐡', harga: 368080, buff: 'Tiada' }, { nama: 'Udang Galah Raja 🦐', harga: 387230, buff: 'Tiada' },
+    { nama: 'Ikan Layaran 🗡️', harga: 406380, buff: 'Tiada' }, { nama: 'Kerapu Bara 🌋', harga: 425530, buff: 'Tiada' },
+    { nama: 'Belut Elektrik Hitam ⚡', harga: 444680, buff: 'Tiada' }, { nama: 'Ikan Pedang 🗡️', harga: 463830, buff: 'Tiada' },
+    { nama: 'Pari Bintang ✨', harga: 482970, buff: 'Tiada' }, { nama: 'Sotong Naga 🦑', harga: 502120, buff: 'Tiada' },
+    { nama: 'Ketam Raja Alaska 🦀', harga: 521270, buff: 'Tiada' }, { nama: 'Barakuda Ganas 🦈', harga: 540420, buff: 'Tiada' },
+    { nama: 'Ikan Terbang Berkaca 🪽', harga: 559570, buff: 'Tiada' }, { nama: 'Pari Karang Berdarah 🦇', harga: 578720, buff: '+5% Lulus Jenayah' },
+    { nama: 'Kerapu Naga 🐉', harga: 597870, buff: '+RM1,000 Gaji' }, { nama: 'Sotong Kurita Gergasi 🐙', harga: 617020, buff: '+RM1,000 Gaji Kerja' },
+    { nama: 'Ikan Gergaji 🪚', harga: 636170, buff: '+RM1,500 Gaji' }, { nama: 'Ikan Tapah Raksasa 🐟', harga: 655310, buff: '+3% Lulus Jenayah' },
+    { nama: 'Ikan Empurau 👑', harga: 674460, buff: '+RM2,500 Gaji Kerja' }, { nama: 'Sotong Vampir 🦑', harga: 693610, buff: '+4% Lulus Jenayah' },
+    { nama: 'Kelah Merah 🐟', harga: 712760, buff: '+RM1,500 Gaji' }, { nama: 'Kuda Laut Mahkota 👑', harga: 731910, buff: '+RM2,000 Gaji' },
+    { nama: 'Kura-Kura Emas 🐢', harga: 751060, buff: '-5% Peluang Kantoi' }, { nama: 'Terumbu Karang Hidup 🪸', harga: 770210, buff: '+RM3,000 Gaji' },
+    { nama: 'Ikan Kaloi Raja 🐟', harga: 789360, buff: 'Tiada' }, { nama: 'Ikan Empurau Biru 🐟', harga: 808510, buff: 'Tiada' },
+    { nama: 'Kerapu Mutiara 🐠', harga: 827660, buff: 'Tiada' }, { nama: 'Ketam Karang Emas 🦀', harga: 846800, buff: 'Tiada' },
+    { nama: 'Sotong Naga Bulan 🦑', harga: 865950, buff: 'Tiada' }, { nama: 'Pari Halimunan 🐡', harga: 885100, buff: 'Tiada' },
+    { nama: 'Belut Api 🐍', harga: 904250, buff: 'Tiada' }, { nama: 'Kuda Laut Pelangi 🐴', harga: 923400, buff: 'Tiada' },
+    { nama: 'Ikan Lumba Biru 🐬', harga: 942550, buff: 'Tiada' }, { nama: 'Penyu Karang Raja 🐢', harga: 961700, buff: 'Tiada' },
+    { nama: 'Ikan Bunga Api 🐠', harga: 980850, buff: 'Tiada' }, { nama: 'Siakap Gergasi 🐟', harga: 1000000, buff: 'Tiada' },
 ];
 
 const IKAN_MITOS = [
-    { nama: 'Jerung Putih Besar 🦈', harga: 1440000, buff: '+15% Lulus Jenayah' }, { nama: 'Ikan Paus Biru 🐋', harga: 2340000, buff: '+18% Lulus Jenayah' },
-    { nama: 'Megalodon Purba 🦖', harga: 1800000, buff: '+30% Lulus Jenayah' }, { nama: 'Naga Laut Raksasa 🐉', harga: 2880000, buff: '+RM30,000 Gaji Kerja' },
-    { nama: 'Kraken Emas 🦑', harga: 2700000, buff: '+25% Lulus Jenayah' }, { nama: 'Leviathan Penjaga Arus 🐲', harga: 3600000, buff: '+RM50,000 Gaji Kerja' },
-    { nama: 'Penyu Gergasi Purba 🐢', harga: 1260000, buff: '-10% Peluang Kantoi' }, { nama: 'Duyung Sesat 🧜‍♀️', harga: 1620000, buff: '+RM20,000 Gaji Kerja' },
-    { nama: 'Ikan Emas Lagenda 🐠', harga: 2160000, buff: '+20% Lulus Jenayah & Curi' }, { nama: 'Jerung Megamulut 🦈', harga: 1980000, buff: '+RM25,000 Gaji Kerja' },
-    { nama: 'Paus Orca Bintang 🐋', harga: 3060000, buff: '+RM35,000 Gaji' }, { nama: 'Ikan Purba Coelacanth 🐟', harga: 2340000, buff: '+25% Lulus Jenayah' },
-    { nama: 'Cumi-Cumi Kosmik 🦑', harga: 3240000, buff: '+RM40,000 Gaji' }, { nama: 'Pari Manta Nilam 🦇', harga: 2520000, buff: '+35% Lulus Jenayah' },
-    { nama: 'Penyu Belimbing Berlian 🐢', harga: 4320000, buff: '-20% Peluang Kantoi' }, { nama: 'Jerung Tukul Besi 🦈', harga: 1980000, buff: '+22% Lulus Jenayah' },
-    { nama: 'Ular Laut Obsidian 🐍', harga: 2160000, buff: '+RM28,000 Gaji' }, { nama: 'Ikan Duyung Hitam 🧜‍♀️', harga: 5400000, buff: '+RM60,000 Gaji' },
-    { nama: 'Tapak Sulaiman Magma 🌋', harga: 1620000, buff: '+18% Lulus Jenayah' }, { nama: 'Raja Ketam Atlantis 🦀', harga: 3960000, buff: '+RM45,000 Gaji' },
-    { nama: 'Naga Laut Bersisik Emas 🐉', harga: 2160000, buff: 'Tiada' }, { nama: 'Gurita Bulan Purnama 🐙', harga: 2880000, buff: 'Tiada' },
-    { nama: 'Penyu Purba Mata Ruby 🐢', harga: 1140000, buff: 'Tiada' }, { nama: 'Ikan Tuah Kaca Dewa 🐟', harga: 3600000, buff: 'Tiada' },
+    { nama: 'Penyu Purba Mata Ruby 🐢', harga: 1000000, buff: 'Tiada' }, { nama: 'Penyu Gergasi Purba 🐢', harga: 1290320, buff: '-10% Peluang Kantoi' },
+    { nama: 'Jerung Putih Besar 🦈', harga: 1580640, buff: '+15% Lulus Jenayah' }, { nama: 'Duyung Sesat 🧜‍♀️', harga: 1870960, buff: '+RM20,000 Gaji Kerja' },
+    { nama: 'Tapak Sulaiman Magma 🌋', harga: 2161290, buff: '+18% Lulus Jenayah' }, { nama: 'Megalodon Purba 🦖', harga: 2451610, buff: '+30% Lulus Jenayah' },
+    { nama: 'Jerung Megamulut 🦈', harga: 2741930, buff: '+RM25,000 Gaji Kerja' }, { nama: 'Jerung Tukul Besi 🦈', harga: 3032250, buff: '+22% Lulus Jenayah' },
+    { nama: 'Ikan Emas Lagenda 🐠', harga: 3322580, buff: '+20% Lulus Jenayah & Curi' }, { nama: 'Ular Laut Obsidian 🐍', harga: 3612900, buff: '+RM28,000 Gaji' },
+    { nama: 'Naga Laut Bersisik Emas 🐉', harga: 3903220, buff: 'Tiada' }, { nama: 'Ikan Paus Biru 🐋', harga: 4193540, buff: '+18% Lulus Jenayah' },
+    { nama: 'Ikan Purba Coelacanth 🐟', harga: 4483870, buff: '+25% Lulus Jenayah' }, { nama: 'Pari Manta Nilam 🦇', harga: 4774190, buff: '+35% Lulus Jenayah' },
+    { nama: 'Kraken Emas 🦑', harga: 5064510, buff: '+25% Lulus Jenayah' }, { nama: 'Naga Laut Raksasa 🐉', harga: 5354830, buff: '+RM30,000 Gaji Kerja' },
+    { nama: 'Gurita Bulan Purnama 🐙', harga: 5645160, buff: 'Tiada' }, { nama: 'Paus Orca Bintang 🐋', harga: 5935480, buff: '+RM35,000 Gaji' },
+    { nama: 'Cumi-Cumi Kosmik 🦑', harga: 6225800, buff: '+RM40,000 Gaji' }, { nama: 'Leviathan Penjaga Arus 🐲', harga: 6516120, buff: '+RM50,000 Gaji Kerja' },
+    { nama: 'Ikan Tuah Kaca Dewa 🐟', harga: 6806450, buff: 'Tiada' }, { nama: 'Raja Ketam Atlantis 🦀', harga: 7096770, buff: '+RM45,000 Gaji' },
+    { nama: 'Penyu Belimbing Berlian 🐢', harga: 7387090, buff: '-20% Peluang Kantoi' }, { nama: 'Ikan Duyung Hitam 🧜‍♀️', harga: 7677410, buff: '+RM60,000 Gaji' },
+    { nama: 'Naga Laut Api 🐉', harga: 7967740, buff: 'Tiada' }, { nama: 'Duyung Emas 🧜', harga: 8258060, buff: 'Tiada' },
+    { nama: 'Jerung Kristal 🦈', harga: 8548380, buff: 'Tiada' }, { nama: 'Gurita Bayangan 🐙', harga: 8838710, buff: 'Tiada' },
+    { nama: 'Ikan Dewa Laut 🐟', harga: 9129030, buff: 'Tiada' }, { nama: 'Penyu Abadi 🐢', harga: 9419350, buff: 'Tiada' },
+    { nama: 'Ular Laut Kaca 🐍', harga: 9709670, buff: 'Tiada' }, { nama: 'Burung Helang Laut 🦅', harga: 10000000, buff: 'Tiada' },
 ];
 
 const BELI_CMD = { beli_rod: 'rod', beli_reel: 'reel', beli_umpan: 'umpan', beli_jala: 'jala', beli_akuarium: 'akuarium' };
@@ -194,6 +210,11 @@ export default {
 
             if (cmd === 'mancing') {
                 const now = Date.now();
+                // Cooldown mancing: 60 saat antara lontaran (supaya tak boleh spam tanpa had)
+                if (now - (cdMancing.get(senderId + '_mancing') || 0) < 60000) {
+                    const tunggu = Math.ceil((60000 - (now - (cdMancing.get(senderId + '_mancing') || 0))) / 1000);
+                    return sock.sendMessage(jid, { text: `⏳ Joran masih basah. Tunggu ${tunggu} saat lagi.` }, { quoted: m });
+                }
 
                 // Newbie (akaun <= 7 hari): 3 cast percuma tanpa umpan
                 user.stats = user.stats || {};
@@ -206,6 +227,7 @@ export default {
                 }
                 if (percuma) { user.stats.free_mancing -= 1; await db.saveUser(user); }
                 else { pData.umpan.qty -= 1; }
+                cdMancing.set(senderId + '_mancing', now);
 
 
                 // NERF PELUANG: Mitos (0.2%), Rare (5%), Biasa (60%)
@@ -214,7 +236,7 @@ export default {
                 let rarity, ikanDapat;
                 const ev = activeEvent(), tide = ev?.code === 'MYTHIC_TIDE' ? 0.03 : 0, frenzy = ev?.code === 'MEGA_HARVEST' ? 0.08 : 0;
                 if (rng < (0.0001 + tide + (pData.reel.buff_mitos || 0) + (pData.umpan.bonus_all || 0))) { rarity = 'mitos'; ikanDapat = pilih(IKAN_MITOS); }
-                else if (rng < (0.0105 + Math.min(0.02, frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0) * 0.3))) { rarity = 'rare'; ikanDapat = pilih(IKAN_RARE); }
+                else if (rng < (0.0025 + Math.min(0.02, frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0) * 0.3))) { rarity = 'rare'; ikanDapat = pilih(IKAN_RARE); }
                 else if (rng < 0.80) { rarity = 'biasa'; ikanDapat = pilih(IKAN_BIASA); }
                 else { rarity = 'sampah'; ikanDapat = pilih(SAMPAH); }
 
@@ -249,9 +271,9 @@ let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: R
 
             if (cmd === 'jala') {
                 const now = Date.now();
-                // Cooldown jala Hardcore: 3 Minit (180,000 ms)
-                if (now - (cdMancing.get(senderId + '_jala') || 0) < 600000) {
-                    return sock.sendMessage(jid, { text: `⏳ Jala sedang dikeringkan! Tunggu ${Math.ceil((600000 - (now - (cdMancing.get(senderId + '_jala') || 0))) / 1000)} saat lagi.` }, { quoted: m });
+                // Cooldown jala: 5 minit (300,000 ms)
+                if (now - (cdMancing.get(senderId + '_jala') || 0) < 300000) {
+                    return sock.sendMessage(jid, { text: `⏳ Jala sedang dikeringkan! Tunggu ${Math.ceil((300000 - (now - (cdMancing.get(senderId + '_jala') || 0))) / 1000)} saat lagi.` }, { quoted: m });
                 }
 
                 if (!pData.jala || pData.jala.qty <= 0) {
@@ -280,7 +302,7 @@ let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: R
                     const rngJala = Math.random();
                     // Drop rate Hardcore untuk Jala
                     let tangkapan = rngJala < (0.0001 + (pData.jala.bonus_mitos || 0)) ? IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)] :
-                                    rngJala < (0.0105 + Math.min(0.02, pData.jala.bonus_rare || 0)) ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
+                                    rngJala < (0.0025 + Math.min(0.02, pData.jala.bonus_rare || 0)) ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
                                     rngJala < 0.80 ? IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)] : SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
 
                     const rarJala = IKAN_MITOS.includes(tangkapan) ? 'mitos' : IKAN_RARE.includes(tangkapan) ? 'rare' : SAMPAH.includes(tangkapan) ? 'sampah' : 'biasa';
@@ -323,11 +345,9 @@ let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: R
 
             if (cmd === 'akuarium') {
                 const ak = pData.akuarium;
-                let ui = `╔═════════════════════════════╗\n    🌊 ${ak.nama.toUpperCase()} [${ak.ikan.length}/${ak.slot}]\n╠═════════════════════════════╣\n`;
-                if (ak.ikan.length === 0) ui += `║ 🪹 Air kosong je...\n`;
-                ak.ikan.forEach((i, idx) => ui += `║ ${idx + 1}. ${i.nama}\n║ ⚡ ${i.buff}\n`);
-                ui += `╚═════════════════════════════╝\n💡 Nak jual ikan berharga? Taip \`.jual_akuarium [no]\``;
-                return sock.sendMessage(jid, { text: ui }, { quoted: m });
+                const gambar = await renderAkuarium(ak);
+                const senarai = ak.ikan.map((i, idx) => `${idx + 1}. ${i.nama} · ${i.buff}`).join('\n') || 'Belum ada ikan.';
+                return sock.sendMessage(jid, { image: gambar, caption: `🌊 *${ak.nama}* [${ak.ikan.length}/${ak.slot}]\n${senarai}\n\n💡 Jual ikan berharga: \`.jual_akuarium [no]\`` }, { quoted: m });
             }
 
             if (cmd === 'bela_ikan') {

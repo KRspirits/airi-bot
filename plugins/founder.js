@@ -73,27 +73,6 @@ export default {
             }, { quoted: m });
         }
 
-        // 4. SERU BOS DUNIA MANUAL (.spawn_boss)
-        if (commandUsed === 'spawn_boss') {
-            const senaraiBos = [
-                { nama: "Naga Tasik Chini Mengamuk", hp: "50,000 HP", drop: "RM 250,000" },
-                { nama: "Raja Penyamun Karak Highway", hp: "35,000 HP", drop: "RM 180,000" },
-                { nama: "Hantu Tetek Port Dickson", hp: "20,000 HP", drop: "RM 100,000" }
-            ];
-            const bos = senaraiBos[Math.floor(Math.random() * senaraiBos.length)];
-
-            const responBos = `
-┌───「 ⚠️ 𝗔𝗠𝗔𝗥𝗔𝗡: 𝗕𝗢𝗦𝗦 𝗗𝗨𝗡𝗜𝗔 𝗠𝗨𝗡𝗖𝗨𝗟 」
-├ 👾 𝗡𝗮𝗺𝗮  : ${bos.nama}
-├ ❤️ 𝗗𝗮𝗿𝗮𝗵 : ${bos.hp}
-├ 💰 𝗛𝗮𝗱𝗶𝗮𝗵: ${bos.drop} (Dibahagi sama rata)
-└───────────────────────────
-Semua pemain bersedia! Taip \`.serang_boss\` beramai-ramai untuk tumbangkan raksasa ni!
-💬 𝗔𝗶𝗿𝗶: "Founder dah lepaskan raksasa weh! Pakat serang cepat sebelum dia sapu duit grup!"`;
-
-            return sock.sendMessage(jid, { text: responBos }, { quoted: m });
-        }
-
         // 5. SEMAK MEMORI & STATUS SISTEM (.syscheck)
         if (commandUsed === 'syscheck') {
             const memUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);

@@ -34,9 +34,7 @@ const SEKSYEN = (ws) => [
         ['.jenayah', 'Senarai jenayah'],
         ['.gelap', 'Beli barang blackmarket'],
         ['.rob @user', 'Rompak mangsa'],
-        ['.peguam [1-3]', 'Peguam (keluar lokap)'],
-        ['.bos', 'Lihat bos yang sedang muncul'],
-        ['.serang', 'Lawan bos. Yang tak lawan kena rembat bank'] ] },
+        ['.peguam [1-3]', 'Peguam (keluar lokap)'] ] },
     { tajuk: '🎰 Judi & Hiburan', warna: '#c084fc', baris: [
         ['.kupon', 'Kupon kad'],
         ['.roda', 'Roda bertuah'],
@@ -54,7 +52,7 @@ export default {
     execute: async ({ sock, m, user, args = [] }) => {
         const jid = m.key.remoteJid;
         if ((args[0] || '').toLowerCase() === 'penuh') {
-            const OWNER = /veto|ownerid|start_event|stop_event|bida_now|reset_|errlog|syscheck|give_|jail_user|free_user|set_income|mythic|purge|maintenance|siar|bulletin_now|testwelcome|spawn_boss|musim_owner/i;
+            const OWNER = /veto|ownerid|start_event|stop_event|bida_now|reset_|errlog|syscheck|give_|jail_user|free_user|set_income|mythic|purge|maintenance|siar|bulletin_now|testwelcome|musim_owner/i;
             const zonBersih = MENU_ZONES.map(z => ({ ...z, items: z.items.filter(it => !OWNER.test(it)) })).filter(z => z.items.length).sort((x, y) => x.num - y.num);
             const PER = 3, halamanPenuh = Math.ceil(zonBersih.length / PER);
             const n = Math.min(halamanPenuh, Math.max(1, parseInt(args[1]) || 1));

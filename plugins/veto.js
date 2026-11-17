@@ -73,7 +73,7 @@ const MENU = `╭━━━━━━━━━━━━━━━━━━━━━
 export default {
     name: 'veto_amar', priority: 10,
     alias: ['veto', 'reset_season', 'reset_session', 'list_event', 'start_event', 'stop_event', 'musim', 'set_income', 'give_cash', 'give_gold', 'give_btc',
-        'jail_user', 'free_user', 'syscheck', 'siar', 'mythic', 'purge', 'maintenance', 'bulletin_now', 'testwelcome', 'spawn_boss'],
+        'jail_user', 'free_user', 'syscheck', 'siar', 'mythic', 'purge', 'maintenance', 'bulletin_now', 'testwelcome'],
     execute: async ({ sock, m, user, db }) => {
         const jid = m.key.remoteJid, sender = m.key.participant || jid;
         const p = parseCmd(extractText(m.message)); if (!p) return;
@@ -177,7 +177,6 @@ export default {
             }
             case 'bida_now': { const mula = await triggerRandomAuction(sock, jid); return mula === false ? reply('⏳ Lelongan lain masih berjalan di sini. Tunggu 60 saat, kemudian cuba lagi.') : undefined; }
             case 'mythic': return (await mythic.trigger(sock, jid)) ? undefined : reply('Makhluk mitos masih aktif di sini.');
-            case 'spawn_boss': return reply('Gunakan `.serang_boss` untuk bos dunia (pemunculan automatik oleh enjin lama).');
             case 'purge': {
                 const on = (args[0] || '').toLowerCase() === 'on';
                 state.purgeUntil = on ? Date.now() + 3600e3 : 0; state.purgeEndPending = on; saveState();
