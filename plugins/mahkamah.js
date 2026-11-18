@@ -1,3 +1,4 @@
+import { resolveJid } from '../lib/lidmap.js';
 export default {
     name: 'ikat_jamin',
     alias: ['undi_hukum', 'bicarakan'],
@@ -7,7 +8,7 @@ export default {
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const args = teks.trim().split(' ').slice(1);
         const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
-        const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+        const targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
 
         // 1. IKAT JAMIN KAWAN DARI LOKAP (.ikat_jamin @user)
         if (cmd === 'ikat_jamin') {

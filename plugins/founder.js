@@ -1,3 +1,4 @@
+import { resolveJid } from '../lib/lidmap.js';
 import { config } from '../config.js';
 
 export default {
@@ -36,7 +37,7 @@ export default {
 
         // 2. SUMBAT PEMAIN KE LOKAP (.jail_user @user [minit])
         if (commandUsed === 'jail_user') {
-            const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+            const targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
             const minit = parseInt(args[1]) || 10;
 
             if (!targetJid) {
@@ -57,7 +58,7 @@ export default {
 
         // 3. BEBASKAN PEMAIN DARI LOKAP (.free_user @user)
         if (commandUsed === 'free_user') {
-            const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+            const targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
             if (!targetJid) {
                 return sock.sendMessage(jid, { text: '❌ Tag sasaran! Contoh: `.free_user @user`' }, { quoted: m });
             }

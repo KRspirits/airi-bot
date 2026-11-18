@@ -210,11 +210,6 @@ export default {
 
             if (cmd === 'mancing') {
                 const now = Date.now();
-                // Cooldown mancing: 60 saat antara lontaran (supaya tak boleh spam tanpa had)
-                if (now - (cdMancing.get(senderId + '_mancing') || 0) < 60000) {
-                    const tunggu = Math.ceil((60000 - (now - (cdMancing.get(senderId + '_mancing') || 0))) / 1000);
-                    return sock.sendMessage(jid, { text: `⏳ Joran masih basah. Tunggu ${tunggu} saat lagi.` }, { quoted: m });
-                }
 
                 // Newbie (akaun <= 7 hari): 3 cast percuma tanpa umpan
                 user.stats = user.stats || {};
@@ -227,7 +222,6 @@ export default {
                 }
                 if (percuma) { user.stats.free_mancing -= 1; await db.saveUser(user); }
                 else { pData.umpan.qty -= 1; }
-                cdMancing.set(senderId + '_mancing', now);
 
 
                 // NERF PELUANG: Mitos (0.2%), Rare (5%), Biasa (60%)

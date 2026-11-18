@@ -1,3 +1,4 @@
+import { catatLid, resolveJid, resolveAsync } from './lib/lidmap.js';
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import express from 'express';
@@ -136,7 +137,10 @@ async function onMessage(m) {
     const jid = m.key.remoteJid;
     if (!m.key.fromMe) recordActivity(jid, m.key.participant || jid); // mesej bot sendiri tak kira sebagai aktiviti
     const isMe = Boolean(m.key.fromMe);
-    const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : (m.key.participant || jid);
+    catatLid(m);
+    // pastikan ID sebenar (nombor) diambil dulu, supaya akaun & gambar tak bercampur
+    for (const x of (m.message?.extendedTextMessage?.contextInfo?.mentionedJid || [])) await resolveAsync(x, sock);
+    const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : await resolveAsync(m.key.participant || jid, sock);
     const senderName = isMe ? 'Owner' : (m.pushName || 'Warga Gelap');
     let teks = extractText(m.message);
     const pilihanNombor = resolvePilihan(senderJid, teks);

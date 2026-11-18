@@ -1,3 +1,4 @@
+import { resolveJid } from '../lib/lidmap.js';
 import { pemainGroup } from '../lib/groupusers.js';
 import { config } from '../config.js';
 import { askAiri, judgeCourtAppeal, appraiseItem, verifyPantun } from '../lib/geminiAI.js';
@@ -48,7 +49,7 @@ export default {
 
             // 2. ROAST & PUJI (.roast / .puji)
             if (cmd === 'roast' || cmd === 'puji') {
-                let targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+                let targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
                 if (!targetJid) return sock.sendMessage(jid, { text: `❌ Alololo nak ${cmd} siapa tu? Tag la kawan dulu! Contoh: \`.${cmd} @user\`` }, { quoted: m });
 
                 const cleanTarget = String(targetJid).replace(/[^0-9]/g, '');

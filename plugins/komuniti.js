@@ -1,3 +1,4 @@
+import { resolveJid } from '../lib/lidmap.js';
 export default {
     name: 'komuniti',
     alias: ['pantun', 'lumba_siput', 'santau'],
@@ -6,7 +7,7 @@ export default {
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const commandUsed = teks.slice(1).trim().split(' ')[0].toLowerCase();
         const args = teks.trim().split(' ').slice(1);
-        const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+        const targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
 
         // 1. PERTARUNGAN PANTUN (.pantun)
         if (commandUsed === 'pantun') {

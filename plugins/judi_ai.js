@@ -1,3 +1,4 @@
+import { resolveJid } from '../lib/lidmap.js';
 import { hantarKlip } from '../lib/klipkongsi.js';
 import { sceneCard } from '../lib/scene.js';
 import { panelCard } from '../lib/cards.js';
@@ -178,7 +179,7 @@ async function tarung(sock, m, db, sender, jid, args) {
     const reply = (text, extra = {}) => sock.sendMessage(jid, { text, ...extra }, { quoted: m });
     const betRaw = args[args.length - 1];
     const bet = /^\d+$/.test(betRaw || '') ? Number(betRaw) : 0;
-    const target = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+    const target = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
     if (!target || target === sender) return reply('❌ Format: `.tarung @nama [jumlah]`. Tag lawan awak.');
     if (!bet || bet < MIN_BET || bet > MAX_BET) return reply(`❌ Taruhan antara RM ${MIN_BET.toLocaleString()} hingga RM ${MAX_BET.toLocaleString()}.`);
     const a = await db.getUser(sender), b = await db.getUser(target);

@@ -1,3 +1,4 @@
+import { resolveJid } from '../lib/lidmap.js';
 import { pindahDuit } from '../lib/pindah.js';
 
 // 💸 .transfer @user [jumlah]   (alias: .pay, .sedekah). Jumlah dalam RM.
@@ -9,7 +10,7 @@ export default {
         const jid = m.key.remoteJid;
         const pengirimJid = m.key.participant || jid;
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
-        const targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+        const targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
         const nombor = parseInt(teks.trim().split(/\s+/).find(x => /^\d+$/.test(x)), 10);
         const reply = (t, mentions) => sock.sendMessage(jid, mentions ? { text: t, mentions } : { text: t }, { quoted: m });
 
