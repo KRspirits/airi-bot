@@ -121,6 +121,30 @@ function pilihJenis() {
     return 'garaj';
 }
 
+import * as store from '../lib/store.js';
+import { db } from '../lib/database.js';
+
+// Simpan keadaan lelongan supaya bida tak hilang bila bot restart
+function simpanLelong() {
+    store.set('lelong', 'aktif', JSON.stringify(auctionState)).catch(() => {});
+}
+
+/** Dipanggil bila bot sambung semula: pulangkan bida lelongan yang tergantung. */
+export async function pulihLelong(sock) {
+    let data = null;
+    try { data = JSON.parse((await store.get('lelong', 'aktif', null)) || 'null'); } catch { data = null; }
+    if (!data) return;
+    for (const [chatId, l] of Object.entries(data)) {
+        if (l?.highestBidder && l.currentBid) {
+            const u = await db.getUser(l.highestBidder);
+            u.wallet = (u.wallet || 0) + l.currentBid;
+            await db.saveUser(u);
+            await sock.sendMessage(chatId, { text: `♻️ Lelongan terganggu (bot restart). Bida RM ${l.currentBid.toLocaleString()} dipulangkan kepada pembida.` }).catch(() => {});
+        }
+    }
+    await store.set('lelong', 'aktif', JSON.stringify({}));
+}
+
 export async function triggerRandomAuction(sock, chatId) {
     if (auctionState[chatId] && auctionState[chatId].active) return false; // lelongan lain masih berjalan
 
@@ -168,18 +192,25 @@ export async function triggerRandomAuction(sock, chatId) {
         lelong.active = false;
 
         if (!lelong.highestBidder) {
-            delete auctionState[chatId];
+            delete auctionState[chatId]; simpanLelong();
             return sock.sendMessage(chatId, { text: '🔔 *Lelongan dah habis!* Tak ada sesiapa bida langsung. Kontena tu balik ke asal.' });
         }
 
         const { db } = await import('../lib/database.js');
-        const hasilLoot = pickLoot(lelong.jenis);
-        const itemBaru = toItem(hasilLoot, lelong.currentBid);
+        // Rugi dikurangkan: kalau kena rugi, 60% peluang diundi semula sekali
+        let hasilLoot = pickLoot(lelong.jenis);
+        if (hasilLoot.type === 'rugi' && Math.random() < 0.6) hasilLoot = pickLoot(lelong.jenis);
+        // Untung mesti sekurang-kurangnya bernilai bida: kalau tak, bayar tunai 125% bida
+        if (hasilLoot.type === 'untung' && hasilLoot.value < lelong.currentBid) {
+            hasilLoot = { name: 'Pulangan tunai lelongan', value: Math.round(lelong.currentBid * 1.25), type: 'untung', desc: 'Tunai masuk terus ke wallet', kind: 'cash' };
+        }
+        const itemBaru = hasilLoot.kind === 'cash' ? null : toItem(hasilLoot, lelong.currentBid);
         await withUserLock(lelong.highestBidder, async () => {
         const pemenang = await db.getUser(lelong.highestBidder);
 
         pemenang.items = Array.isArray(pemenang.items) ? pemenang.items : [];
-        pemenang.items.push(itemBaru);
+        if (itemBaru) pemenang.items.push(itemBaru);
+        else pemenang.wallet = (pemenang.wallet || 0) + hasilLoot.value;
         if (lelong.jenis === 'premium') beritaPasaran('emas', 0.015);
         pemenang.stats = pemenang.stats || {};
         pemenang.stats.lelong_menang = (pemenang.stats.lelong_menang || 0) + 1;
@@ -203,9 +234,10 @@ export async function triggerRandomAuction(sock, chatId) {
 💬 𝗔𝗶𝗿𝗶: "${roaster}"`;
 
         await sock.sendMessage(chatId, { text: teksMenang, mentions: [lelong.highestBidder] });
-        try { const kad = await kadBarang(itemBaru); await sock.sendMessage(chatId, { image: kad, caption: `🎁 ${lelong.highestBidderName || 'Pemenang'} dapat *${itemBaru.nama}* (ID ${itemBaru.id})` }); } catch (e) { console.error('[KAD BARANG]', e.message); }
-        delete auctionState[chatId];
+        try { if (!itemBaru) throw new Error('tunai'); const kad = await kadBarang(itemBaru); await sock.sendMessage(chatId, { image: kad, caption: `🎁 ${lelong.highestBidderName || 'Pemenang'} dapat *${itemBaru.nama}* (ID ${itemBaru.id})` }); } catch (e) { console.error('[KAD BARANG]', e.message); }
+        delete auctionState[chatId]; simpanLelong();
     }, 60000);
+    simpanLelong();
     return true;
 }
 
@@ -258,6 +290,7 @@ export default {
         lelong.currentBid = amaunBida;
         lelong.highestBidder = senderJid;
         lelong.highestBidderName = m.pushName || 'Warga Gelap';
+        simpanLelong();
 
         return sock.sendMessage(jid, {
             text: `📈 *BIDAAN BAHARU DITERIMA!*\n👤 @${senderJid.split('@')[0]} meletakkan tawaran: *RM ${amaunBida.toLocaleString()}*!\nAda siapa lagi nak lawan? Taip \`.bida [nilai]\`!`,

@@ -230,7 +230,7 @@ export default {
                 let rarity, ikanDapat;
                 const ev = activeEvent(), tide = ev?.code === 'MYTHIC_TIDE' ? 0.03 : 0, frenzy = ev?.code === 'MEGA_HARVEST' ? 0.08 : 0;
                 if (rng < (0.0001 + tide + (pData.reel.buff_mitos || 0) + (pData.umpan.bonus_all || 0))) { rarity = 'mitos'; ikanDapat = pilih(IKAN_MITOS); }
-                else if (rng < (0.0025 + Math.min(0.02, frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0) * 0.3))) { rarity = 'rare'; ikanDapat = pilih(IKAN_RARE); }
+                else if (rng < (0.006 + Math.min(0.02, frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0) * 0.3))) { rarity = 'rare'; ikanDapat = pilih(IKAN_RARE); }
                 else if (rng < 0.80) { rarity = 'biasa'; ikanDapat = pilih(IKAN_BIASA); }
                 else { rarity = 'sampah'; ikanDapat = pilih(SAMPAH); }
 
@@ -296,7 +296,7 @@ let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: R
                     const rngJala = Math.random();
                     // Drop rate Hardcore untuk Jala
                     let tangkapan = rngJala < (0.0001 + (pData.jala.bonus_mitos || 0)) ? IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)] :
-                                    rngJala < (0.0025 + Math.min(0.02, pData.jala.bonus_rare || 0)) ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
+                                    rngJala < (0.006 + Math.min(0.02, pData.jala.bonus_rare || 0)) ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
                                     rngJala < 0.80 ? IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)] : SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
 
                     const rarJala = IKAN_MITOS.includes(tangkapan) ? 'mitos' : IKAN_RARE.includes(tangkapan) ? 'rare' : SAMPAH.includes(tangkapan) ? 'sampah' : 'biasa';

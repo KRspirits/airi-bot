@@ -3,6 +3,8 @@ import { hantarKlip } from '../lib/klipkongsi.js';
 import { panelCard } from '../lib/cards.js';
 import { TIER, darabGabungan, perluKad, kadVarieti } from '../lib/nadir.js';
 import { pilih as pilihAyat, TANAM_OK } from '../lib/suara.js';
+import { kadBuah } from '../lib/nadir.js';
+import fs from 'fs';
 import { drawBuah } from '../lib/buahcard.js';
 const TANAMAN = {
     cili: { name: 'Cili Bara Fertigasi 🌶️', price: 1000, growTime: 60 * 1000, returnMin: 2200, returnMax: 3500, illegal: false },
@@ -174,6 +176,8 @@ export default {
             user.farm = { crop: pilih, planted_at: Date.now(), harvest_at: Date.now() + target.growTime, is_illegal: false };
             await db.saveUser(user);
             const kad = await panelCard({ kicker: 'DAH DITANAM', title: target.name, lines: [`Modal: RM ${target.price.toLocaleString('en-US')}`, `Masa matang: ${Math.round(target.growTime / 1000)} saat`, pilihAyat(TANAM_OK)], accent: '#22c55e', big: 'TANAM', bigLabel: 'STATUS', footerText: 'Taip .tuai bila masak' });
+            const gambarTanam = kadBuah('', user.farm.crop);
+            if (gambarTanam) return sock.sendMessage(jid, { image: fs.readFileSync(gambarTanam), caption: `🌱 ${target.name} dah ditanam` }, { quoted: m });
             return sock.sendMessage(jid, { image: kad, caption: `🌱 ${target.name} dah ditanam` }, { quoted: m });
         }
 

@@ -1,3 +1,4 @@
+import { sasaranJid } from '../lib/target.js';
 import { resolveJid } from '../lib/lidmap.js';
 import * as store from '../lib/store.js';
 import { allow } from '../lib/cooldown.js';
@@ -188,7 +189,7 @@ export default {
             }
 
             if (cmd === 'follow') {
-                const target = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
+                const target = await sasaranJid(sock, m);
                 if (!target) return reply('❌ Format: `.follow @user`.');
                 if (target === sender) return reply('😅 Tak boleh ikut diri sendiri.');
                 const senaraiIkut = follows[target] || [];

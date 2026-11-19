@@ -1,3 +1,4 @@
+import { sasaranJid } from '../lib/target.js';
 import { resolveJid } from '../lib/lidmap.js';
 import { sceneCard } from '../lib/scene.js';
 export default {
@@ -8,7 +9,7 @@ export default {
             const jid = m.key.remoteJid;
             const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
             const cmd = teks.slice(1).trim().split(' ')[0].toLowerCase();
-            const targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
+            const targetJid = await sasaranJid(sock, m);
 
             if (cmd === 'rompak' || cmd === 'rob' || cmd === 'hackbank') {
                 if (!targetJid) return sock.sendMessage(jid, { text: `❌ Tag mangsa: \`.${cmd} @user\`` }, { quoted: m });

@@ -1,3 +1,4 @@
+import { sasaranJid } from '../lib/target.js';
 import { resolveJid } from '../lib/lidmap.js';
 import { pemainGroup } from '../lib/groupusers.js';
 import { config } from '../config.js';
@@ -49,7 +50,7 @@ export default {
 
             // 2. ROAST & PUJI (.roast / .puji)
             if (cmd === 'roast' || cmd === 'puji') {
-                let targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
+                let targetJid = await sasaranJid(sock, m);
                 if (!targetJid) return sock.sendMessage(jid, { text: `❌ Alololo nak ${cmd} siapa tu? Tag la kawan dulu! Contoh: \`.${cmd} @user\`` }, { quoted: m });
 
                 const cleanTarget = String(targetJid).replace(/[^0-9]/g, '');

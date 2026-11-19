@@ -1,3 +1,4 @@
+import { sasaranJid } from '../lib/target.js';
 import { resolveJid } from '../lib/lidmap.js';
 import { pemainGroup } from '../lib/groupusers.js';
 export default {
@@ -8,7 +9,7 @@ export default {
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
         const commandUsed = teks.slice(1).trim().split(' ')[0].toLowerCase();
         const args = teks.trim().split(' ').slice(1);
-        const targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
+        const targetJid = await sasaranJid(sock, m);
 
         // 1. LIHAT SENARAI PALING DIKEHENDAKI (.list_bounty)
         if (commandUsed === 'list_bounty' || commandUsed === 'wanted') {

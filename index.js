@@ -90,7 +90,7 @@ async function connect() {
                 console.log(`\n⚡ [QR READY] Buka link ini di browser telefon/PC untuk imbas QR:\n👉 ${renderLink}\n`);
                 qrcodeTerminal.generate(qr, { small: true }); 
             }
-            if (connection === 'open') { 
+            if (connection === 'open') { import('./plugins/bida.js').then(b => b.pulihLelong(sock)).catch(() => {}); 
                 isConnected = true; 
                 currentQR = ''; 
                 backoff = 2000; 
@@ -199,6 +199,7 @@ async function onMessage(m) {
         const { askAiri } = await import('./lib/geminiAI.js');
         const { profileSummary } = await import('./lib/memory.js');
         const user = await db.getUser(senderJid, senderName);
+        if (!isMe && m.pushName && user.pushName !== m.pushName) { user.pushName = m.pushName; await db.saveUser(user).catch(() => {}); }
         const situasi = (hot ? `Pemain ${senderName} sembang isu sensitif: "${teks}". Sampuk comel, ceria dan menyakat mesra.` : `Pemain ${senderName} panggil awak: "${teks}". Jawab periang dan mesra.`)
             + `\nDATA PEMAIN (rujukan sahaja):\n${await profileSummary(senderJid, senderName, user)}`;
         await sock.sendMessage(jid, { text: `💬 𝗔𝗶𝗿𝗶: ${await askAiri(teks, situasi)}` }, { quoted: m });

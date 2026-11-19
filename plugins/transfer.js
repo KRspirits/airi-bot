@@ -1,3 +1,4 @@
+import { sasaranJid } from '../lib/target.js';
 import { resolveJid } from '../lib/lidmap.js';
 import { pindahDuit } from '../lib/pindah.js';
 
@@ -10,7 +11,7 @@ export default {
         const jid = m.key.remoteJid;
         const pengirimJid = m.key.participant || jid;
         const teks = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
-        const targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
+        const targetJid = await sasaranJid(sock, m);
         const nombor = parseInt(teks.trim().split(/\s+/).find(x => /^\d+$/.test(x)), 10);
         const reply = (t, mentions) => sock.sendMessage(jid, mentions ? { text: t, mentions } : { text: t }, { quoted: m });
 

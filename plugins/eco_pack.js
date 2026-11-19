@@ -1,3 +1,4 @@
+import { sasaranJid } from '../lib/target.js';
 import { resolveJid } from '../lib/lidmap.js';
 export default {
     name: 'eco_pack',
@@ -36,7 +37,7 @@ export default {
             }
 
             if (cmd === 'transfer_lama') { // digantikan oleh plugins/transfer.js
-                const targetJid = resolveJid(m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]);
+                const targetJid = await sasaranJid(sock, m);
                 const jumlah = parseInt(args[1]);
                 if (!targetJid || !jumlah || isNaN(jumlah)) return sock.sendMessage(jid, { text: `❌ Format: \`.transfer @user [jumlah]\`` }, { quoted: m });
                 if (user.wallet < jumlah) return sock.sendMessage(jid, { text: `❌ Duit poket tak cukup!` }, { quoted: m });
