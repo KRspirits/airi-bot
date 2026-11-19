@@ -19,7 +19,7 @@ export default {
     category: 'info',
     execute: async ({ sock, m }) => {
         const jid = m.key.remoteJid;
-        const sender = m.key.participant || jid;
+        const sender = m.senderJid || m.key.participant || jid;
         bukaPilihan(sender, SENARAI);
         const baris = SENARAI.map((s, i) => `${i + 1}. ${s.label}`).join('\n');
         return sock.sendMessage(jid, { text: `🚀 *MULA DI AIRI'S CORNER*\n\nBalas dengan nombor:\n\n${baris}\n\nPilihan tamat dalam 5 minit.` }, { quoted: m });

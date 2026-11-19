@@ -14,7 +14,7 @@ export default {
     category: 'kad',
     execute: async ({ sock, m, user, db, args = [] }) => {
         const jid = m.key.remoteJid;
-        const sender = m.key.participant || jid;
+        const sender = m.senderJid || m.key.participant || jid;
         const reply = (t) => sock.sendMessage(jid, { text: t }, { quoted: m });
         const teks = (m.message?.conversation || m.message?.extendedTextMessage?.text || '').trim();
         const cmd = teks.split(/\s+/)[0].slice(1).toLowerCase();

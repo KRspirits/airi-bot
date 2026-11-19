@@ -141,6 +141,7 @@ async function onMessage(m) {
     // pastikan ID sebenar (nombor) diambil dulu, supaya akaun & gambar tak bercampur
     for (const x of (m.message?.extendedTextMessage?.contextInfo?.mentionedJid || [])) await resolveAsync(x, sock);
     const senderJid = isMe ? (sock.user?.id?.split(':')[0] + '@s.whatsapp.net') : await resolveAsync(m.key.participant || jid, sock);
+    m.senderJid = senderJid; // ID pemain yang konsisten (nombor telefon bila diketahui)
     const senderName = isMe ? 'Owner' : (m.pushName || 'Warga Gelap');
     let teks = extractText(m.message);
     const pilihanNombor = resolvePilihan(senderJid, teks);
