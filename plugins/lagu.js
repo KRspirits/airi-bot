@@ -113,11 +113,11 @@ function writeCookiesFileIfAvailable() {
     }
 }
 
-function runYtDlp(binPath, args) {
+function runYtDlp(binPath, args, timeoutMs = 16000) {
     return new Promise((resolve, reject) => {
-        execFile(binPath, args, { timeout: 22000, maxBuffer: 5 * 1024 * 1024 }, (err, stdout, stderr) => {
+        execFile(binPath, args, { timeout: timeoutMs, maxBuffer: 5 * 1024 * 1024 }, (err, stdout, stderr) => {
             if (err) {
-                if (err.killed) return reject(new Error('Timeout (22s)'));
+                if (err.killed) return reject(new Error(`Timeout (${Math.round(timeoutMs / 1000)}s)`));
                 const detail = String(stderr || err.message || err)
                     .split('\n')
                     .filter(l => l.includes('ERROR:'))
@@ -137,6 +137,16 @@ function findOutputFile(outBase) {
     return path.join(dir, files[0]);
 }
 
+function cleanupPrefix(outBase) {
+    try {
+        const dir = path.dirname(outBase);
+        const prefix = path.basename(outBase) + '.';
+        for (const f of fs.readdirSync(dir)) {
+            if (f.startsWith(prefix)) fs.unlinkSync(path.join(dir, f));
+        }
+    } catch {}
+}
+
 function mimeForExt(ext) {
     const e = ext.toLowerCase();
     if (e === '.mp3') return 'audio/mpeg';
@@ -145,50 +155,102 @@ function mimeForExt(ext) {
     return 'audio/mp4';
 }
 
-// Ringan & pantas: 1 percubaan terus tanpa spawn Node kedua (elak Render OOM / bot diam)
-async function downloadFastAudio(target) {
+// Cuba 3 laluan pantas:
+// 1. YouTube android_vr (tanpa cookies — elak cookies expired/flagged di IP Render)
+// 2. YouTube dengan YT_COOKIES (jika ada)
+// 3. SoundCloud menerusi yt-dlp (scsearch5, tapis instrumental & snippet 30s — tak pernah kena bot-check YouTube)
+async function downloadFastAudio(ytTarget, query) {
     const binPath = await ensureYtDlp();
     const outBase = path.join(os.tmpdir(), `airi_lagu_${Date.now()}_${Math.random().toString(36).slice(2)}`);
     const outTemplate = `${outBase}.%(ext)s`;
     const cookieFile = writeCookiesFileIfAvailable();
 
-    const args = [
+    const base = [
         '--no-playlist',
         '--no-warnings',
         '--no-check-certificates',
         '--socket-timeout', '10',
-        '--match-filter', `duration <= ${MAX_DURATION_SEC}`,
-        '-f', 'bestaudio/best',
+        '-f', 'bestaudio[ext=m4a]/bestaudio/best',
         '-o', outTemplate,
     ];
 
+    const attempts = [
+        [
+            'YT-VR',
+            15000,
+            [
+                ...base,
+                '--match-filter', `duration <= ${MAX_DURATION_SEC}`,
+                '--extractor-args', 'youtube:player_client=android_vr',
+                ytTarget,
+            ],
+        ],
+    ];
+
     if (cookieFile) {
-        args.push('--cookies', cookieFile);
-    } else {
-        args.push('--extractor-args', 'youtube:player_client=android_vr,ios');
+        attempts.push([
+            'YT-CK',
+            15000,
+            [
+                ...base,
+                '--match-filter', `duration <= ${MAX_DURATION_SEC}`,
+                '--cookies', cookieFile,
+                '--extractor-args', 'youtube:player_client=tv_embedded,mweb',
+                ytTarget,
+            ],
+        ]);
     }
-    args.push(target);
+
+    // Fallback SoundCloud melalui enjin yt-dlp sendiri (tapis snippet <90s & versi instrumental)
+    const wantInstrumental = /instrumental|karaoke|slowed|reverb|8d|nightcore/i.test(query);
+    const scFilter = wantInstrumental
+        ? `duration >= 60 & duration <= ${MAX_DURATION_SEC}`
+        : `duration >= 90 & duration <= ${MAX_DURATION_SEC} & title !~* '(?i)(instrumental|karaoke|minus one|slowed|reverb|8d|nightcore|cover)'`;
+
+    attempts.push([
+        'SC',
+        18000,
+        [
+            ...base,
+            '--max-downloads', '1',
+            '--match-filter', scFilter,
+            `scsearch5:${query}`,
+        ],
+    ]);
+
+    const errs = [];
+    let downloadedPath = null;
 
     try {
-        await runYtDlp(binPath, args);
-        const downloadedPath = findOutputFile(outBase);
+        for (const [tag, timeoutMs, args] of attempts) {
+            cleanupPrefix(outBase);
+            try {
+                await runYtDlp(binPath, args, timeoutMs);
+            } catch (e) {
+                // --max-downloads 1 kadang-kadang pulangkan exit code 101 walaupun fail dah siap dimuat turun
+                const check = findOutputFile(outBase);
+                if (!check || fs.statSync(check).size < 15000) {
+                    errs.push(`${tag}:${String(e?.message || e).slice(0, 65)}`);
+                    continue;
+                }
+            }
+            const found = findOutputFile(outBase);
+            if (found && fs.statSync(found).size >= 15000) {
+                downloadedPath = found;
+                break;
+            }
+            errs.push(`${tag}:tiada fail`);
+        }
+
         if (!downloadedPath || !fs.existsSync(downloadedPath)) {
-            throw new Error('Fail audio tidak dijana');
+            throw new Error(errs.join(' | ') || 'Gagal muat turun audio');
         }
-        const buffer = fs.readFileSync(downloadedPath);
-        if (buffer.length < 15000) {
-            throw new Error('Fail audio terlalu kecil');
-        }
+
         const ext = path.extname(downloadedPath) || '.m4a';
+        const buffer = fs.readFileSync(downloadedPath);
         return { buffer, mimetype: mimeForExt(ext), ext };
     } finally {
-        try {
-            const dir = path.dirname(outBase);
-            const prefix = path.basename(outBase) + '.';
-            for (const f of fs.readdirSync(dir)) {
-                if (f.startsWith(prefix)) fs.unlinkSync(path.join(dir, f));
-            }
-        } catch {}
+        cleanupPrefix(outBase);
         try { if (cookieFile && fs.existsSync(cookieFile)) fs.unlinkSync(cookieFile); } catch {}
     }
 }
@@ -220,7 +282,7 @@ export default {
             try {
                 const searchRes = await Promise.race([
                     yts(query),
-                    new Promise((_, rej) => setTimeout(() => rej(new Error('yts timeout')), 6000)),
+                    new Promise((_, rej) => setTimeout(() => rej(new Error('yts timeout')), 5000)),
                 ]);
                 const allVids = searchRes?.videos || [];
                 const filtered = allVids.filter(v => !v.seconds || (v.seconds > 20 && v.seconds <= MAX_DURATION_SEC));
@@ -229,13 +291,13 @@ export default {
                 video = null;
             }
 
-            const target = video?.url || `ytsearch1:${query} official audio`;
+            const ytTarget = video?.url || `ytsearch1:${query} official audio`;
             const finalTitle = video?.title || query;
             const finalDuration = video?.timestamp || '-';
             const cleanTitle = sanitizeFilename(finalTitle);
 
             const [audio, lyrics] = await Promise.all([
-                downloadFastAudio(target),
+                downloadFastAudio(ytTarget, query),
                 fetchLyrics(query).then(res => res || (video?.title ? fetchLyrics(cleanTitle) : null)),
             ]);
 
@@ -270,7 +332,7 @@ export default {
             console.error('[LAGU ERROR]', err?.message || err);
             await sock.sendMessage(
                 jid,
-                { text: `❌ Gagal muat turun lagu *${query}*.\n_Debug: ${String(err?.message || err).slice(0, 180)}_` },
+                { text: `❌ Gagal muat turun lagu *${query}*.\n_Debug: ${String(err?.message || err).slice(0, 220)}_` },
                 { quoted: m }
             );
         }
