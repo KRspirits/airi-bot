@@ -31,6 +31,19 @@ function formatDuration(sec) {
     return `${m}:${String(rem).padStart(2, '0')}`;
 }
 
+// Elak terambil versi instrumental / karaoke / remix kecuali pengguna memang taip perkataan tu
+function isUnwantedVersion(title, query) {
+    const t = String(title || '').toLowerCase();
+    const q = String(query || '').toLowerCase();
+    const badWords = ['instrumental', 'karaoke', 'minus one', '8d audio', 'slowed', 'reverb', 'sped up', 'nightcore', 'piano cover', 'guitar cover', 'drum cover'];
+    for (const w of badWords) {
+        if (t.includes(w) && !q.includes(w.split(' ')[0])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 async function fetchLyrics(query) {
     try {
         const url = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
@@ -50,7 +63,8 @@ async function fetchLyrics(query) {
     }
 }
 
-function convertToMp3Buffer(input, inputOptions = []) {
+// Tambah watermark ID3 metadata (Title + Artist Airi's Corner) & pastikan format MP3 bersih
+function processMp3WithWatermark(input, title, inputOptions = []) {
     return new Promise((resolve, reject) => {
         const tempFile = path.join(os.tmpdir(), `airi_lagu_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`);
         let settled = false;
@@ -70,11 +84,16 @@ function convertToMp3Buffer(input, inputOptions = []) {
         const timer = setTimeout(() => {
             try { cmd.kill('SIGKILL'); } catch {}
             finish(new Error('ffmpeg timeout'));
-        }, 55000);
+        }, 60000);
 
         cmd
             .audioBitrate(128)
             .toFormat('mp3')
+            .outputOptions([
+                '-metadata', `title=${sanitizeFilename(title)} (Airi's Corner)`,
+                '-metadata', "artist=Airi's Corner",
+                '-metadata', "album=Airi's Corner Music",
+            ])
             .on('error', err => finish(err))
             .on('end', () => {
                 try {
@@ -89,8 +108,53 @@ function convertToMp3Buffer(input, inputOptions = []) {
     });
 }
 
+async function downloadBufferFromUrl(url) {
+    const res = await fetch(url, {
+        headers: { 'User-Agent': UA },
+        signal: AbortSignal.timeout(45000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 15000) throw new Error('Fail audio terlalu kecil');
+    return buf;
+}
+
 // =========================================================================
-// 1. SOUNDCLOUD (Sertakan track_authorization & cuba banyak track)
+// 1. YOUTUBE VIA OCEANSAVER / LOADER.TO (Lagu rasmi ada vokal, tak kena block IP Render)
+// =========================================================================
+async function downloadViaOceanSaver(videoUrl, title) {
+    if (!videoUrl) throw new Error('Tiada URL YouTube');
+    const initUrl = `https://p.oceansaver.in/ajax/download.php?copyright=0&format=mp3&url=${encodeURIComponent(videoUrl)}&api=dfcb6d76f2f6a9894gjkege8a4ab232222`;
+    const initRes = await fetch(initUrl, {
+        headers: { 'User-Agent': UA, 'Referer': 'https://loader.to/' },
+        signal: AbortSignal.timeout(15000),
+    });
+    if (!initRes.ok) throw new Error(`OS init HTTP ${initRes.status}`);
+    const initData = await initRes.json();
+    if (!initData?.success || !initData?.id) throw new Error('OS tiada job ID');
+
+    const progressUrl = `https://p.oceansaver.in/ajax/progress.php?id=${encodeURIComponent(initData.id)}`;
+    for (let i = 0; i < 20; i++) {
+        await new Promise(r => setTimeout(r, 1500));
+        const pRes = await fetch(progressUrl, {
+            headers: { 'User-Agent': UA, 'Referer': 'https://loader.to/' },
+            signal: AbortSignal.timeout(12000),
+        });
+        if (!pRes.ok) continue;
+        const pData = await pRes.json();
+        if (pData?.download_url) {
+            const rawBuf = await downloadBufferFromUrl(pData.download_url);
+            return { buffer: rawBuf, source: 'YouTube' };
+        }
+        if (pData?.success === 0 && pData?.text && /error|fail/i.test(pData.text)) {
+            throw new Error(`OS ${pData.text}`);
+        }
+    }
+    throw new Error('OS timeout');
+}
+
+// =========================================================================
+// 2. SOUNDCLOUD (Tapis instrumental/remix & sertakan track_authorization)
 // =========================================================================
 async function getSoundCloudClientId() {
     if (cachedScClientId && Date.now() - cachedScAt < 6 * 3600 * 1000) {
@@ -126,7 +190,7 @@ async function getSoundCloudClientId() {
 
 async function downloadViaSoundCloud(query) {
     const clientId = await getSoundCloudClientId();
-    const searchUrl = `https://api-v2.soundcloud.com/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=10`;
+    const searchUrl = `https://api-v2.soundcloud.com/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=15`;
     const res = await fetch(searchUrl, {
         headers: { 'User-Agent': UA },
         signal: AbortSignal.timeout(12000),
@@ -136,13 +200,19 @@ async function downloadViaSoundCloud(query) {
         throw new Error(`SC search HTTP ${res.status}`);
     }
     const data = await res.json();
-    const tracks = (data?.collection || []).filter(t =>
+    const allValid = (data?.collection || []).filter(t =>
         t?.media?.transcodings?.length > 0 &&
         t.policy !== 'SNIP' &&
         t.policy !== 'BLOCK' &&
-        (t.duration || 0) >= 45000 &&
+        (t.duration || 0) >= 60000 &&
         (t.duration || 0) <= MAX_DURATION_SEC * 1000
     );
+
+    // Utamakan track yang bukan instrumental/karaoke
+    const tracks = [
+        ...allValid.filter(t => !isUnwantedVersion(t.title, query)),
+        ...allValid.filter(t => isUnwantedVersion(t.title, query)),
+    ];
 
     if (!tracks.length) throw new Error('SC tiada full track');
 
@@ -180,18 +250,9 @@ async function downloadViaSoundCloud(query) {
 
                 let buffer;
                 if (chosen.format?.protocol === 'progressive') {
-                    const audioRes = await fetch(mediaJson.url, {
-                        headers: { 'User-Agent': UA },
-                        signal: AbortSignal.timeout(40000),
-                    });
-                    if (!audioRes.ok) {
-                        lastErr = new Error(`SC audio HTTP ${audioRes.status}`);
-                        continue;
-                    }
-                    buffer = Buffer.from(await audioRes.arrayBuffer());
-                    if (buffer.length < 15000) continue;
+                    buffer = await downloadBufferFromUrl(mediaJson.url);
                 } else {
-                    buffer = await convertToMp3Buffer(mediaJson.url, ['-user_agent', UA]);
+                    buffer = await processMp3WithWatermark(mediaJson.url, track.title || query, ['-user_agent', UA]);
                 }
 
                 return {
@@ -209,71 +270,22 @@ async function downloadViaSoundCloud(query) {
 }
 
 // =========================================================================
-// 2. AUDIUS (API rasmi percuma, terus dapat MP3, tak block IP Render)
-// =========================================================================
-async function downloadViaAudius(query) {
-    const hostRes = await fetch('https://api.audius.co', {
-        headers: { 'User-Agent': UA },
-        signal: AbortSignal.timeout(10000),
-    });
-    if (!hostRes.ok) throw new Error(`Audius host HTTP ${hostRes.status}`);
-    const hostJson = await hostRes.json();
-    const hosts = Array.isArray(hostJson?.data) ? hostJson.data.slice(0, 3) : [];
-    if (!hosts.length) throw new Error('Audius tiada host');
-
-    let lastErr = new Error('Audius gagal');
-    for (const host of hosts) {
-        try {
-            const sRes = await fetch(
-                `${host}/v1/tracks/search?query=${encodeURIComponent(query)}&app_name=AiriCorner`,
-                { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(12000) }
-            );
-            if (!sRes.ok) throw new Error(`HTTP ${sRes.status}`);
-            const sJson = await sRes.json();
-            const track = (sJson?.data || []).find(t =>
-                t?.id && (t.duration || 0) >= 45 && (t.duration || 0) <= MAX_DURATION_SEC
-            );
-            if (!track) throw new Error('Audius tiada lagu');
-
-            const streamUrl = `${host}/v1/tracks/${encodeURIComponent(track.id)}/stream?app_name=AiriCorner`;
-            const aRes = await fetch(streamUrl, {
-                headers: { 'User-Agent': UA },
-                signal: AbortSignal.timeout(40000),
-            });
-            if (!aRes.ok) throw new Error(`Audius stream HTTP ${aRes.status}`);
-            const buffer = Buffer.from(await aRes.arrayBuffer());
-            if (buffer.length < 15000) throw new Error('Audius audio terlalu kecil');
-
-            return {
-                buffer,
-                title: track.title || query,
-                timestamp: formatDuration(track.duration || 0),
-                source: 'Audius',
-            };
-        } catch (e) {
-            lastErr = e;
-        }
-    }
-    throw lastErr;
-}
-
-// =========================================================================
 // 3. YTDL-CORE (Backup terakhir)
 // =========================================================================
-async function downloadViaYtdl(videoUrl) {
+async function downloadViaYtdl(videoUrl, title) {
     if (!videoUrl) throw new Error('Tiada URL YouTube');
     const stream = ytdl(videoUrl, {
         filter: 'audioonly',
         quality: 'highestaudio',
         highWaterMark: 1 << 25,
     });
-    const buffer = await convertToMp3Buffer(stream);
+    const buffer = await processMp3WithWatermark(stream, title);
     return { buffer, source: 'YouTube' };
 }
 
 export default {
     name: 'lagu',
-    aliases: ['song'],
+    aliases: ['song', 'play'],
     description: "Cari lagu, hantar audio player (watermark Airi's Corner) berserta lirik teks.",
     async execute({ sock, m, args }) {
         const jid = m.key.remoteJid;
@@ -297,20 +309,13 @@ export default {
         let video = null;
 
         try {
-            // Cari metadata di YouTube dulu (untuk tajuk yang cantik & lirik)
+            // Cari lagu di YouTube & tapis versi instrumental/karaoke
             try {
                 const searchRes = await yts(query);
-                video = searchRes?.videos?.[0] || null;
+                const vids = (searchRes?.videos || []).filter(v => v.seconds > 30 && v.seconds <= MAX_DURATION_SEC);
+                video = vids.find(v => !isUnwantedVersion(v.title, query)) || vids[0] || null;
             } catch (e) {
                 errors.push(`YTS:${e?.message || 'err'}`);
-            }
-
-            if (video && video.seconds > MAX_DURATION_SEC) {
-                return sock.sendMessage(
-                    jid,
-                    { text: `⚠️ Lagu terlalu panjang (${video.timestamp}). Had maksimum ialah 10 minit.` },
-                    { quoted: m }
-                );
             }
 
             // Cari lirik serentak di latar belakang
@@ -318,12 +323,12 @@ export default {
                 res || (video?.title ? fetchLyrics(sanitizeFilename(video.title)) : null)
             );
 
-            // Cuba muat turun dari sumber yang mesra IP Render
+            // Utamakan YouTube (OceanSaver) dulu supaya dapat lagu rasmi bervokal
             let result = null;
             const attempts = [
+                ['YT', () => downloadViaOceanSaver(video?.url, video?.title || query)],
                 ['SC', () => downloadViaSoundCloud(query)],
-                ['AUD', () => downloadViaAudius(query)],
-                ['YTDL', () => downloadViaYtdl(video?.url)],
+                ['YTDL', () => downloadViaYtdl(video?.url, video?.title || query)],
             ];
 
             for (const [label, fn] of attempts) {
@@ -348,12 +353,12 @@ export default {
                 );
             }
 
-            const finalTitle = result.title || video?.title || query;
-            const finalDuration = result.timestamp || video?.timestamp || '-';
+            const finalTitle = video?.title || result.title || query;
+            const finalDuration = video?.timestamp || result.timestamp || '-';
             const cleanTitle = sanitizeFilename(finalTitle);
             const watermarkedName = `${cleanTitle} Airi's Corner.mp3`;
 
-            // Hantar sebagai audio player terus (ikon headphone oren, boleh tekan play dalam chat)
+            // Hantar sebagai audio player terus (ikon headphone oren)
             await sock.sendMessage(
                 jid,
                 {
