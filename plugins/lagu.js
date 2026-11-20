@@ -90,7 +90,7 @@ function convertToMp3Buffer(input, inputOptions = []) {
 }
 
 // =========================================================================
-// 1. SOUNDCLOUD (Diperbaiki: sertakan track_authorization & cuba banyak track)
+// 1. SOUNDCLOUD (Sertakan track_authorization & cuba banyak track)
 // =========================================================================
 async function getSoundCloudClientId() {
     if (cachedScClientId && Date.now() - cachedScAt < 6 * 3600 * 1000) {
@@ -274,7 +274,7 @@ async function downloadViaYtdl(videoUrl) {
 export default {
     name: 'lagu',
     aliases: ['song'],
-    description: "Cari lagu, hantar audio MP3 (watermark Airi's Corner) berserta lirik teks.",
+    description: "Cari lagu, hantar audio player (watermark Airi's Corner) berserta lirik teks.",
     async execute({ sock, m, args }) {
         const jid = m.key.remoteJid;
         const query = (args || []).join(' ').trim();
@@ -353,32 +353,33 @@ export default {
             const cleanTitle = sanitizeFilename(finalTitle);
             const watermarkedName = `${cleanTitle} Airi's Corner.mp3`;
 
-            // Hantar sebagai dokumen audio/mpeg supaya nama fail watermark kelihatan jelas di WhatsApp
+            // Hantar sebagai audio player terus (ikon headphone oren, boleh tekan play dalam chat)
             await sock.sendMessage(
                 jid,
                 {
-                    document: result.buffer,
+                    audio: result.buffer,
                     mimetype: 'audio/mpeg',
+                    ptt: false,
                     fileName: watermarkedName,
-                    caption: `🎧 *${finalTitle}*\n⏱️ Durasi: ${finalDuration}\n✨ _Airi's Corner_`,
                 },
                 { quoted: m }
             );
 
-            // Hantar lirik dalam bentuk teks
+            // Hantar info lagu + lirik dalam bentuk teks
             const lyrics = await lyricsPromise;
+            const header = `🎧 *${finalTitle}*\n⏱️ Durasi: ${finalDuration} | ✨ _Airi's Corner_`;
             if (lyrics) {
-                const maxLen = 3800;
+                const maxLen = 3700;
                 const teksLirik = lyrics.length > maxLen ? `${lyrics.slice(0, maxLen)}\n\n...(lirik dipendekkan)` : lyrics;
                 await sock.sendMessage(
                     jid,
-                    { text: `📝 *Lirik: ${finalTitle}*\n\n${teksLirik}` },
+                    { text: `${header}\n\n📝 *Lirik:*\n${teksLirik}` },
                     { quoted: m }
                 );
             } else {
                 await sock.sendMessage(
                     jid,
-                    { text: `📝 *${finalTitle}*\n_(Lirik teks tak dijumpai untuk lagu ni)_` },
+                    { text: `${header}\n\n_(Lirik teks tak dijumpai untuk lagu ni)_` },
                     { quoted: m }
                 );
             }
