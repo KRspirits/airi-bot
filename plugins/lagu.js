@@ -83,7 +83,7 @@ async function ensureYtDlp() {
     }
 }
 
-// Pre-download yt-dlp di latar belakang masa bot mula jalan supaya command pertama pun laju
+// Pre-download yt-dlp di latar belakang masa bot mula jalan
 ensureYtDlp().catch(() => {});
 
 function writeCookiesFileIfAvailable() {
@@ -140,11 +140,11 @@ function mimeForExt(ext) {
     const e = ext.toLowerCase();
     if (e === '.mp3') return 'audio/mpeg';
     if (e === '.m4a' || e === '.mp4') return 'audio/mp4';
-    if (e === '.ogg' || e === '.opus') return 'audio/ogg; codecs=opus';
+    if (e === '.ogg' || e === '.opus' || e === '.webm') return 'audio/ogg; codecs=opus';
     return 'audio/mp4';
 }
 
-// Muat turun audio terus (m4a/mp3) TANPA re-encode ffmpeg supaya sangat laju di Render
+// Guna Node.js runtime sedia ada di Render (--js-runtimes node) supaya yt-dlp dapat selesaikan JS challenge YouTube
 async function downloadFastAudio(videoUrl) {
     const binPath = await ensureYtDlp();
     const outBase = path.join(os.tmpdir(), `airi_lagu_${Date.now()}_${Math.random().toString(36).slice(2)}`);
@@ -156,24 +156,24 @@ async function downloadFastAudio(videoUrl) {
         '--no-warnings',
         '--no-check-certificates',
         '--socket-timeout', '15',
-        '-f', 'ba[ext=m4a]/ba/b',
+        '--js-runtimes', `node:${process.execPath}`,
+        '--remote-components', 'ejs:github',
+        '-f', 'bestaudio[ext=m4a]/bestaudio/best',
         '-o', outTemplate,
     ];
 
-    // Cuba beberapa profil client YouTube paling stabil & laju
     const profiles = [];
     if (cookieFile) {
-        profiles.push([...common, '--cookies', cookieFile, '--extractor-args', 'youtube:player_client=tv,web_safari,mweb', videoUrl]);
-        profiles.push([...common, '--cookies', cookieFile, videoUrl]);
+        profiles.push(['CK1', [...common, '--cookies', cookieFile, videoUrl]]);
+        profiles.push(['CK2', [...common, '--cookies', cookieFile, '--extractor-args', 'youtube:player_client=web,mweb', videoUrl]]);
     }
-    profiles.push([...common, '--extractor-args', 'youtube:player_client=android_vr,ios', videoUrl]);
-    profiles.push([...common, '--extractor-args', 'youtube:player_client=tv_embedded,mweb', videoUrl]);
+    profiles.push(['VR', [...common, '--extractor-args', 'youtube:player_client=android_vr', videoUrl]]);
 
-    let lastErr = new Error('Gagal muat turun audio');
+    const errs = [];
     let downloadedPath = null;
 
     try {
-        for (const args of profiles) {
+        for (const [tag, args] of profiles) {
             try {
                 await runYtDlp(binPath, args);
                 downloadedPath = findOutputFile(outBase);
@@ -181,12 +181,12 @@ async function downloadFastAudio(videoUrl) {
                     break;
                 }
             } catch (e) {
-                lastErr = e;
+                errs.push(`${tag}:${String(e?.message || e).slice(0, 75)}`);
             }
         }
 
         if (!downloadedPath || !fs.existsSync(downloadedPath)) {
-            throw lastErr;
+            throw new Error(errs.join(' | ') || 'Gagal muat turun audio');
         }
 
         const ext = path.extname(downloadedPath) || '.m4a';
@@ -280,7 +280,7 @@ export default {
             console.error('[LAGU ERROR]', err?.message || err);
             await sock.sendMessage(
                 jid,
-                { text: `❌ Gagal muat turun lagu *${query}* buat masa ni.\n_Debug: ${String(err?.message || err).slice(0, 180)}_` },
+                { text: `❌ Gagal muat turun lagu *${query}* buat masa ni.\n_Debug: ${String(err?.message || err).slice(0, 220)}_` },
                 { quoted: m }
             );
         }
