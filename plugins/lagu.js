@@ -1,5 +1,4 @@
 import yts from 'yt-search';
-import ffmpegPath from 'ffmpeg-static';
 import { execFile } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -41,7 +40,7 @@ async function fetchLyrics(query) {
         const url = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
         const res = await fetch(url, {
             headers: { 'User-Agent': 'AiriCornerBot/2.0' },
-            signal: AbortSignal.timeout(8000),
+            signal: AbortSignal.timeout(6000),
         });
         if (!res.ok) return null;
         const data = await res.json();
@@ -55,7 +54,6 @@ async function fetchLyrics(query) {
     }
 }
 
-// Muat turun binary yt-dlp rasmi sekali sahaja ke folder /tmp (tak perlu install Python)
 async function ensureYtDlp() {
     if (fs.existsSync(YTDLP_BIN) && fs.statSync(YTDLP_BIN).size > 1_000_000) {
         return YTDLP_BIN;
@@ -85,7 +83,9 @@ async function ensureYtDlp() {
     }
 }
 
-// Tukar YT_COOKIES (JSON dari Cookie-Editor) kepada format Netscape cookies.txt untuk yt-dlp
+// Pre-download yt-dlp di latar belakang masa bot mula jalan supaya command pertama pun laju
+ensureYtDlp().catch(() => {});
+
 function writeCookiesFileIfAvailable() {
     const raw = process.env.YT_COOKIES;
     if (!raw) return null;
@@ -115,7 +115,7 @@ function writeCookiesFileIfAvailable() {
 
 function runYtDlp(binPath, args) {
     return new Promise((resolve, reject) => {
-        execFile(binPath, args, { timeout: 90000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+        execFile(binPath, args, { timeout: 45000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
             if (err) {
                 const detail = String(stderr || err.message || err)
                     .split('\n')
@@ -128,56 +128,78 @@ function runYtDlp(binPath, args) {
     });
 }
 
-async function downloadMp3WithYtDlp(videoUrl, title) {
+function findOutputFile(outBase) {
+    const dir = path.dirname(outBase);
+    const prefix = path.basename(outBase) + '.';
+    const files = fs.readdirSync(dir).filter(f => f.startsWith(prefix) && !f.endsWith('.part'));
+    if (!files.length) return null;
+    return path.join(dir, files[0]);
+}
+
+function mimeForExt(ext) {
+    const e = ext.toLowerCase();
+    if (e === '.mp3') return 'audio/mpeg';
+    if (e === '.m4a' || e === '.mp4') return 'audio/mp4';
+    if (e === '.ogg' || e === '.opus') return 'audio/ogg; codecs=opus';
+    return 'audio/mp4';
+}
+
+// Muat turun audio terus (m4a/mp3) TANPA re-encode ffmpeg supaya sangat laju di Render
+async function downloadFastAudio(videoUrl) {
     const binPath = await ensureYtDlp();
     const outBase = path.join(os.tmpdir(), `airi_lagu_${Date.now()}_${Math.random().toString(36).slice(2)}`);
     const outTemplate = `${outBase}.%(ext)s`;
-    const outMp3 = `${outBase}.mp3`;
     const cookieFile = writeCookiesFileIfAvailable();
 
-    const baseArgs = [
+    const common = [
         '--no-playlist',
         '--no-warnings',
-        '-x',
-        '--audio-format', 'mp3',
-        '--audio-quality', '128K',
-        '--postprocessor-args', `ffmpeg:-metadata title="${sanitizeFilename(title)} (Airi's Corner)" -metadata artist="Airi's Corner"`,
+        '--no-check-certificates',
+        '--socket-timeout', '15',
+        '-f', 'ba[ext=m4a]/ba/b',
         '-o', outTemplate,
     ];
-    if (ffmpegPath) {
-        baseArgs.push('--ffmpeg-location', ffmpegPath);
+
+    // Cuba beberapa profil client YouTube paling stabil & laju
+    const profiles = [];
+    if (cookieFile) {
+        profiles.push([...common, '--cookies', cookieFile, '--extractor-args', 'youtube:player_client=tv,web_safari,mweb', videoUrl]);
+        profiles.push([...common, '--cookies', cookieFile, videoUrl]);
     }
+    profiles.push([...common, '--extractor-args', 'youtube:player_client=android_vr,ios', videoUrl]);
+    profiles.push([...common, '--extractor-args', 'youtube:player_client=tv_embedded,mweb', videoUrl]);
+
+    let lastErr = new Error('Gagal muat turun audio');
+    let downloadedPath = null;
 
     try {
-        try {
-            const args = [...baseArgs];
-            if (cookieFile) args.push('--cookies', cookieFile);
-            args.push(videoUrl);
-            await runYtDlp(binPath, args);
-        } catch (firstErr) {
-            // Backup: cuba client android/ios jika percubaan pertama sangkut
-            const fallbackArgs = [
-                ...baseArgs,
-                '--extractor-args', 'youtube:player_client=android,ios',
-                videoUrl,
-            ];
+        for (const args of profiles) {
             try {
-                await runYtDlp(binPath, fallbackArgs);
-            } catch {
-                throw firstErr;
+                await runYtDlp(binPath, args);
+                downloadedPath = findOutputFile(outBase);
+                if (downloadedPath && fs.statSync(downloadedPath).size >= 15000) {
+                    break;
+                }
+            } catch (e) {
+                lastErr = e;
             }
         }
 
-        if (!fs.existsSync(outMp3)) {
-            throw new Error('Fail MP3 tidak dijana');
+        if (!downloadedPath || !fs.existsSync(downloadedPath)) {
+            throw lastErr;
         }
-        const buf = fs.readFileSync(outMp3);
-        if (buf.length < 15000) {
-            throw new Error('Fail MP3 terlalu kecil');
-        }
-        return buf;
+
+        const ext = path.extname(downloadedPath) || '.m4a';
+        const buffer = fs.readFileSync(downloadedPath);
+        return { buffer, mimetype: mimeForExt(ext), ext };
     } finally {
-        try { if (fs.existsSync(outMp3)) fs.unlinkSync(outMp3); } catch {}
+        try {
+            const dir = path.dirname(outBase);
+            const prefix = path.basename(outBase) + '.';
+            for (const f of fs.readdirSync(dir)) {
+                if (f.startsWith(prefix)) fs.unlinkSync(path.join(dir, f));
+            }
+        } catch {}
         try { if (cookieFile && fs.existsSync(cookieFile)) fs.unlinkSync(cookieFile); } catch {}
     }
 }
@@ -185,7 +207,7 @@ async function downloadMp3WithYtDlp(videoUrl, title) {
 export default {
     name: 'lagu',
     aliases: ['song', 'play'],
-    description: "Cari lagu, hantar audio player (watermark Airi's Corner) berserta lirik teks.",
+    description: "Cari lagu, hantar audio player pantas berserta lirik teks.",
     async execute({ sock, m, args }) {
         const jid = m.key.remoteJid;
         const query = (args || []).join(' ').trim();
@@ -218,11 +240,10 @@ export default {
             }
 
             const cleanTitle = sanitizeFilename(video.title);
-            const watermarkedName = `${cleanTitle} Airi's Corner.mp3`;
 
-            // Muat turun audio (yt-dlp) & cari lirik serentak
-            const [audioBuffer, lyrics] = await Promise.all([
-                downloadMp3WithYtDlp(video.url, video.title),
+            // Muat turun audio & cari lirik serentak
+            const [audio, lyrics] = await Promise.all([
+                downloadFastAudio(video.url),
                 fetchLyrics(query).then(res => res || fetchLyrics(cleanTitle)),
             ]);
 
@@ -230,10 +251,10 @@ export default {
             await sock.sendMessage(
                 jid,
                 {
-                    audio: audioBuffer,
-                    mimetype: 'audio/mpeg',
+                    audio: audio.buffer,
+                    mimetype: audio.mimetype,
                     ptt: false,
-                    fileName: watermarkedName,
+                    fileName: `${cleanTitle} Airi's Corner${audio.ext}`,
                 },
                 { quoted: m }
             );
