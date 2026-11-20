@@ -13,9 +13,6 @@ if (ffmpegPath) {
 const MAX_DURATION_SEC = 600; // Had 10 minit supaya server Render tak berat / OOM
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
-let cachedScClientId = '';
-let cachedScAt = 0;
-
 function sanitizeFilename(name) {
     return String(name || 'Lagu')
         .replace(/[\\/:*?"<>|]/g, '')
@@ -31,7 +28,6 @@ function formatDuration(sec) {
     return `${m}:${String(rem).padStart(2, '0')}`;
 }
 
-// Elak terambil versi instrumental / karaoke / remix kecuali pengguna memang taip perkataan tu
 function isUnwantedVersion(title, query) {
     const t = String(title || '').toLowerCase();
     const q = String(query || '').toLowerCase();
@@ -63,7 +59,17 @@ async function fetchLyrics(query) {
     }
 }
 
-// Tambah watermark ID3 metadata (Title + Artist Airi's Corner) & pastikan format MP3 bersih
+async function downloadBufferFromUrl(url, extraHeaders = {}) {
+    const res = await fetch(url, {
+        headers: { 'User-Agent': UA, ...extraHeaders },
+        signal: AbortSignal.timeout(45000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 15000) throw new Error('Fail audio terlalu kecil');
+    return buf;
+}
+
 function processMp3WithWatermark(input, title, inputOptions = []) {
     return new Promise((resolve, reject) => {
         const tempFile = path.join(os.tmpdir(), `airi_lagu_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`);
@@ -108,177 +114,117 @@ function processMp3WithWatermark(input, title, inputOptions = []) {
     });
 }
 
-async function downloadBufferFromUrl(url) {
-    const res = await fetch(url, {
-        headers: { 'User-Agent': UA },
-        signal: AbortSignal.timeout(45000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length < 15000) throw new Error('Fail audio terlalu kecil');
-    return buf;
-}
-
 // =========================================================================
-// 1. YOUTUBE VIA OCEANSAVER / LOADER.TO (Lagu rasmi ada vokal, tak kena block IP Render)
+// 1. SAVETUBE (YouTube -> MP3, popular untuk bot WA, tak kena block IP Render)
 // =========================================================================
-async function downloadViaOceanSaver(videoUrl, title) {
+async function downloadViaSaveTube(videoUrl) {
     if (!videoUrl) throw new Error('Tiada URL YouTube');
-    const initUrl = `https://p.oceansaver.in/ajax/download.php?copyright=0&format=mp3&url=${encodeURIComponent(videoUrl)}&api=dfcb6d76f2f6a9894gjkege8a4ab232222`;
-    const initRes = await fetch(initUrl, {
-        headers: { 'User-Agent': UA, 'Referer': 'https://loader.to/' },
-        signal: AbortSignal.timeout(15000),
-    });
-    if (!initRes.ok) throw new Error(`OS init HTTP ${initRes.status}`);
-    const initData = await initRes.json();
-    if (!initData?.success || !initData?.id) throw new Error('OS tiada job ID');
-
-    const progressUrl = `https://p.oceansaver.in/ajax/progress.php?id=${encodeURIComponent(initData.id)}`;
-    for (let i = 0; i < 20; i++) {
-        await new Promise(r => setTimeout(r, 1500));
-        const pRes = await fetch(progressUrl, {
-            headers: { 'User-Agent': UA, 'Referer': 'https://loader.to/' },
-            signal: AbortSignal.timeout(12000),
-        });
-        if (!pRes.ok) continue;
-        const pData = await pRes.json();
-        if (pData?.download_url) {
-            const rawBuf = await downloadBufferFromUrl(pData.download_url);
-            return { buffer: rawBuf, source: 'YouTube' };
-        }
-        if (pData?.success === 0 && pData?.text && /error|fail/i.test(pData.text)) {
-            throw new Error(`OS ${pData.text}`);
-        }
-    }
-    throw new Error('OS timeout');
-}
-
-// =========================================================================
-// 2. SOUNDCLOUD (Tapis instrumental/remix & sertakan track_authorization)
-// =========================================================================
-async function getSoundCloudClientId() {
-    if (cachedScClientId && Date.now() - cachedScAt < 6 * 3600 * 1000) {
-        return cachedScClientId;
-    }
-    const homeRes = await fetch('https://soundcloud.com', {
-        headers: { 'User-Agent': UA },
+    const cdnRes = await fetch('https://media.savetube.me/api/random-cdn', {
+        headers: { 'User-Agent': UA, 'Origin': 'https://yt.savetube.me', 'Referer': 'https://yt.savetube.me/' },
         signal: AbortSignal.timeout(12000),
     });
-    if (!homeRes.ok) throw new Error(`SC home HTTP ${homeRes.status}`);
-    const html = await homeRes.text();
-    const scripts = [...html.matchAll(/src="(https:\/\/a-v2\.sndcdn\.com\/assets\/[^"]+\.js)"/g)].map(m => m[1]);
-    if (!scripts.length) throw new Error('SC tiada skrip aset');
+    if (!cdnRes.ok) throw new Error(`ST cdn HTTP ${cdnRes.status}`);
+    const cdnJson = await cdnRes.json();
+    const cdn = cdnJson?.cdn;
+    if (!cdn) throw new Error('ST tiada CDN');
 
-    for (const scriptUrl of scripts.reverse().slice(0, 8)) {
-        try {
-            const sRes = await fetch(scriptUrl, {
-                headers: { 'User-Agent': UA },
-                signal: AbortSignal.timeout(10000),
-            });
-            if (!sRes.ok) continue;
-            const js = await sRes.text();
-            const m = js.match(/client_id\s*[:=]\s*["']([a-zA-Z0-9]{20,40})["']/);
-            if (m) {
-                cachedScClientId = m[1];
-                cachedScAt = Date.now();
-                return cachedScClientId;
-            }
-        } catch { /* cuba skrip seterusnya */ }
-    }
-    throw new Error('SC gagal ekstrak client_id');
+    const infoRes = await fetch(`https://${cdn}/v2/info`, {
+        method: 'POST',
+        headers: {
+            'User-Agent': UA,
+            'Content-Type': 'application/json',
+            'Origin': 'https://yt.savetube.me',
+            'Referer': 'https://yt.savetube.me/',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+        signal: AbortSignal.timeout(15000),
+    });
+    if (!infoRes.ok) throw new Error(`ST info HTTP ${infoRes.status}`);
+    const infoJson = await infoRes.json();
+    const key = infoJson?.data?.key;
+    if (!key) throw new Error('ST tiada key');
+
+    const dlRes = await fetch(`https://${cdn}/download`, {
+        method: 'POST',
+        headers: {
+            'User-Agent': UA,
+            'Content-Type': 'application/json',
+            'Origin': 'https://yt.savetube.me',
+            'Referer': 'https://yt.savetube.me/',
+        },
+        body: JSON.stringify({
+            downloadType: 'audio',
+            quality: '128',
+            key,
+        }),
+        signal: AbortSignal.timeout(20000),
+    });
+    if (!dlRes.ok) throw new Error(`ST dl HTTP ${dlRes.status}`);
+    const dlJson = await dlRes.json();
+    const dlUrl = dlJson?.data?.downloadUrl;
+    if (!dlUrl) throw new Error('ST tiada downloadUrl');
+
+    const buffer = await downloadBufferFromUrl(dlUrl);
+    return { buffer, source: 'YouTube' };
 }
 
-async function downloadViaSoundCloud(query) {
-    const clientId = await getSoundCloudClientId();
-    const searchUrl = `https://api-v2.soundcloud.com/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=15`;
+// =========================================================================
+// 2. SAAVN (Lagu rasmi penuh bervokal, laju, tiada bot-check YouTube)
+// =========================================================================
+async function downloadViaSaavn(query) {
+    const searchUrl = `https://saavn.dev/api/search/songs?query=${encodeURIComponent(query)}&limit=5`;
     const res = await fetch(searchUrl, {
         headers: { 'User-Agent': UA },
         signal: AbortSignal.timeout(12000),
     });
-    if (!res.ok) {
-        if (res.status === 401 || res.status === 403) cachedScClientId = '';
-        throw new Error(`SC search HTTP ${res.status}`);
-    }
-    const data = await res.json();
-    const allValid = (data?.collection || []).filter(t =>
-        t?.media?.transcodings?.length > 0 &&
-        t.policy !== 'SNIP' &&
-        t.policy !== 'BLOCK' &&
-        (t.duration || 0) >= 60000 &&
-        (t.duration || 0) <= MAX_DURATION_SEC * 1000
+    if (!res.ok) throw new Error(`Saavn HTTP ${res.status}`);
+    const json = await res.json();
+    const results = json?.data?.results || [];
+    const song = results.find(s =>
+        Array.isArray(s?.downloadUrl) &&
+        s.downloadUrl.length > 0 &&
+        (!s.duration || Number(s.duration) <= MAX_DURATION_SEC)
     );
+    if (!song) throw new Error('Saavn tiada lagu');
 
-    // Utamakan track yang bukan instrumental/karaoke
-    const tracks = [
-        ...allValid.filter(t => !isUnwantedVersion(t.title, query)),
-        ...allValid.filter(t => isUnwantedVersion(t.title, query)),
-    ];
+    // Pilih kualiti 160kbps atau tertinggi yang ada
+    const urls = song.downloadUrl;
+    const picked = urls.find(u => u.quality === '160kbps') || urls[urls.length - 1];
+    if (!picked?.url) throw new Error('Saavn tiada URL');
 
-    if (!tracks.length) throw new Error('SC tiada full track');
-
-    let lastErr = new Error('SC semua track gagal');
-    for (const track of tracks.slice(0, 6)) {
-        const transcodings = [
-            ...track.media.transcodings.filter(t => t.format?.protocol === 'progressive'),
-            ...track.media.transcodings.filter(t => t.format?.protocol === 'hls'),
-        ];
-
-        for (const chosen of transcodings) {
-            if (!chosen?.url) continue;
-            try {
-                const u = new URL(chosen.url);
-                u.searchParams.set('client_id', clientId);
-                if (track.track_authorization) {
-                    u.searchParams.set('track_authorization', track.track_authorization);
-                }
-
-                const mediaRes = await fetch(u.toString(), {
-                    headers: {
-                        'User-Agent': UA,
-                        'Origin': 'https://soundcloud.com',
-                        'Referer': 'https://soundcloud.com/',
-                    },
-                    signal: AbortSignal.timeout(12000),
-                });
-                if (!mediaRes.ok) {
-                    lastErr = new Error(`SC media HTTP ${mediaRes.status}`);
-                    continue;
-                }
-
-                const mediaJson = await mediaRes.json();
-                if (!mediaJson?.url) continue;
-
-                let buffer;
-                if (chosen.format?.protocol === 'progressive') {
-                    buffer = await downloadBufferFromUrl(mediaJson.url);
-                } else {
-                    buffer = await processMp3WithWatermark(mediaJson.url, track.title || query, ['-user_agent', UA]);
-                }
-
-                return {
-                    buffer,
-                    title: track.title || query,
-                    timestamp: formatDuration((track.duration || 0) / 1000),
-                    source: 'SoundCloud',
-                };
-            } catch (e) {
-                lastErr = e;
-            }
-        }
-    }
-    throw lastErr;
+    const title = song.name || query;
+    const buffer = await processMp3WithWatermark(picked.url, title, ['-user_agent', UA]);
+    return {
+        buffer,
+        title,
+        timestamp: song.duration ? formatDuration(Number(song.duration)) : '-',
+        source: 'Saavn',
+    };
 }
 
 // =========================================================================
-// 3. YTDL-CORE (Backup terakhir)
+// 3. YTDL-CORE (Sokong YT_COOKIES dari Render Environment jika diset)
 // =========================================================================
 async function downloadViaYtdl(videoUrl, title) {
     if (!videoUrl) throw new Error('Tiada URL YouTube');
-    const stream = ytdl(videoUrl, {
+    const opts = {
         filter: 'audioonly',
         quality: 'highestaudio',
         highWaterMark: 1 << 25,
-    });
+    };
+
+    if (process.env.YT_COOKIES) {
+        try {
+            const parsed = JSON.parse(process.env.YT_COOKIES);
+            if (Array.isArray(parsed)) {
+                opts.agent = ytdl.createAgent(parsed);
+            }
+        } catch {
+            // Abaikan jika format JSON cookies tidak sah
+        }
+    }
+
+    const stream = ytdl(videoUrl, opts);
     const buffer = await processMp3WithWatermark(stream, title);
     return { buffer, source: 'YouTube' };
 }
@@ -309,7 +255,6 @@ export default {
         let video = null;
 
         try {
-            // Cari lagu di YouTube & tapis versi instrumental/karaoke
             try {
                 const searchRes = await yts(query);
                 const vids = (searchRes?.videos || []).filter(v => v.seconds > 30 && v.seconds <= MAX_DURATION_SEC);
@@ -318,16 +263,14 @@ export default {
                 errors.push(`YTS:${e?.message || 'err'}`);
             }
 
-            // Cari lirik serentak di latar belakang
             const lyricsPromise = fetchLyrics(query).then(res =>
                 res || (video?.title ? fetchLyrics(sanitizeFilename(video.title)) : null)
             );
 
-            // Utamakan YouTube (OceanSaver) dulu supaya dapat lagu rasmi bervokal
             let result = null;
             const attempts = [
-                ['YT', () => downloadViaOceanSaver(video?.url, video?.title || query)],
-                ['SC', () => downloadViaSoundCloud(query)],
+                ['ST', () => downloadViaSaveTube(video?.url)],
+                ['SVN', () => downloadViaSaavn(query)],
                 ['YTDL', () => downloadViaYtdl(video?.url, video?.title || query)],
             ];
 
@@ -353,12 +296,11 @@ export default {
                 );
             }
 
-            const finalTitle = video?.title || result.title || query;
-            const finalDuration = video?.timestamp || result.timestamp || '-';
+            const finalTitle = result.title || video?.title || query;
+            const finalDuration = result.timestamp || video?.timestamp || '-';
             const cleanTitle = sanitizeFilename(finalTitle);
             const watermarkedName = `${cleanTitle} Airi's Corner.mp3`;
 
-            // Hantar sebagai audio player terus (ikon headphone oren)
             await sock.sendMessage(
                 jid,
                 {
@@ -370,7 +312,6 @@ export default {
                 { quoted: m }
             );
 
-            // Hantar info lagu + lirik dalam bentuk teks
             const lyrics = await lyricsPromise;
             const header = `🎧 *${finalTitle}*\n⏱️ Durasi: ${finalDuration} | ✨ _Airi's Corner_`;
             if (lyrics) {
