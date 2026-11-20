@@ -113,7 +113,7 @@ function writeCookiesFileIfAvailable() {
     }
 }
 
-function runYtDlp(binPath, args, timeoutMs = 16000) {
+function runYtDlp(binPath, args, timeoutMs = 18000) {
     return new Promise((resolve, reject) => {
         execFile(binPath, args, { timeout: timeoutMs, maxBuffer: 5 * 1024 * 1024 }, (err, stdout, stderr) => {
             if (err) {
@@ -155,10 +155,8 @@ function mimeForExt(ext) {
     return 'audio/mp4';
 }
 
-// Cuba 3 laluan pantas:
-// 1. YouTube android_vr (tanpa cookies — elak cookies expired/flagged di IP Render)
-// 2. YouTube dengan YT_COOKIES (jika ada)
-// 3. SoundCloud menerusi yt-dlp (scsearch5, tapis instrumental & snippet 30s — tak pernah kena bot-check YouTube)
+// Utamakan SoundCloud via yt-dlp dulu (laju di Render, tiada bot-check YouTube),
+// kemudian baru fallback ke YouTube jika SoundCloud tak jumpa.
 async function downloadFastAudio(ytTarget, query) {
     const binPath = await ensureYtDlp();
     const outBase = path.join(os.tmpdir(), `airi_lagu_${Date.now()}_${Math.random().toString(36).slice(2)}`);
@@ -170,14 +168,26 @@ async function downloadFastAudio(ytTarget, query) {
         '--no-warnings',
         '--no-check-certificates',
         '--socket-timeout', '10',
-        '-f', 'bestaudio[ext=m4a]/bestaudio/best',
+        '-f', 'bestaudio[ext=mp3]/bestaudio[ext=m4a]/bestaudio/best',
         '-o', outTemplate,
     ];
 
+    const wantSpecial = /instrumental|karaoke|slowed|reverb|8d|nightcore|cover/i.test(query);
+    const scArgs = [
+        ...base,
+        '--max-downloads', '1',
+        '--match-filter', `duration >= 90 & duration <= ${MAX_DURATION_SEC}`,
+    ];
+    if (!wantSpecial) {
+        scArgs.push('--reject-title', '(?i)(instrumental|karaoke|minus one|slowed|reverb|8d|nightcore|cover)');
+    }
+    scArgs.push(`scsearch8:${query}`);
+
     const attempts = [
+        ['SC', 20000, scArgs],
         [
             'YT-VR',
-            15000,
+            12000,
             [
                 ...base,
                 '--match-filter', `duration <= ${MAX_DURATION_SEC}`,
@@ -190,7 +200,7 @@ async function downloadFastAudio(ytTarget, query) {
     if (cookieFile) {
         attempts.push([
             'YT-CK',
-            15000,
+            12000,
             [
                 ...base,
                 '--match-filter', `duration <= ${MAX_DURATION_SEC}`,
@@ -201,23 +211,6 @@ async function downloadFastAudio(ytTarget, query) {
         ]);
     }
 
-    // Fallback SoundCloud melalui enjin yt-dlp sendiri (tapis snippet <90s & versi instrumental)
-    const wantInstrumental = /instrumental|karaoke|slowed|reverb|8d|nightcore/i.test(query);
-    const scFilter = wantInstrumental
-        ? `duration >= 60 & duration <= ${MAX_DURATION_SEC}`
-        : `duration >= 90 & duration <= ${MAX_DURATION_SEC} & title !~* '(?i)(instrumental|karaoke|minus one|slowed|reverb|8d|nightcore|cover)'`;
-
-    attempts.push([
-        'SC',
-        18000,
-        [
-            ...base,
-            '--max-downloads', '1',
-            '--match-filter', scFilter,
-            `scsearch5:${query}`,
-        ],
-    ]);
-
     const errs = [];
     let downloadedPath = null;
 
@@ -227,7 +220,7 @@ async function downloadFastAudio(ytTarget, query) {
             try {
                 await runYtDlp(binPath, args, timeoutMs);
             } catch (e) {
-                // --max-downloads 1 kadang-kadang pulangkan exit code 101 walaupun fail dah siap dimuat turun
+                // --max-downloads 1 pulangkan exit code 101 walaupun fail dah siap dimuat turun
                 const check = findOutputFile(outBase);
                 if (!check || fs.statSync(check).size < 15000) {
                     errs.push(`${tag}:${String(e?.message || e).slice(0, 65)}`);
@@ -246,7 +239,7 @@ async function downloadFastAudio(ytTarget, query) {
             throw new Error(errs.join(' | ') || 'Gagal muat turun audio');
         }
 
-        const ext = path.extname(downloadedPath) || '.m4a';
+        const ext = path.extname(downloadedPath) || '.mp3';
         const buffer = fs.readFileSync(downloadedPath);
         return { buffer, mimetype: mimeForExt(ext), ext };
     } finally {
@@ -282,7 +275,7 @@ export default {
             try {
                 const searchRes = await Promise.race([
                     yts(query),
-                    new Promise((_, rej) => setTimeout(() => rej(new Error('yts timeout')), 5000)),
+                    new Promise((_, rej) => setTimeout(() => rej(new Error('yts timeout')), 4500)),
                 ]);
                 const allVids = searchRes?.videos || [];
                 const filtered = allVids.filter(v => !v.seconds || (v.seconds > 20 && v.seconds <= MAX_DURATION_SEC));
