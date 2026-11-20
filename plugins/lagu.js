@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-const MAX_DURATION_SEC = 600; // Had 10 minit supaya server Render tak berat / OOM
+const MAX_DURATION_SEC = 600; // Had 10 minit
 const YTDLP_BIN = path.join(os.tmpdir(), process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
 const YTDLP_URL = process.platform === 'win32'
     ? 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
@@ -83,7 +83,7 @@ async function ensureYtDlp() {
     }
 }
 
-// Pre-download yt-dlp di latar belakang masa bot mula jalan
+// Pre-download yt-dlp di latar belakang masa bot mula hidup
 ensureYtDlp().catch(() => {});
 
 function writeCookiesFileIfAvailable() {
@@ -115,7 +115,7 @@ function writeCookiesFileIfAvailable() {
 
 function runYtDlp(binPath, args) {
     return new Promise((resolve, reject) => {
-        execFile(binPath, args, { timeout: 45000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+        execFile(binPath, args, { timeout: 50000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
             if (err) {
                 const detail = String(stderr || err.message || err)
                     .split('\n')
@@ -144,8 +144,8 @@ function mimeForExt(ext) {
     return 'audio/mp4';
 }
 
-// Guna Node.js runtime sedia ada di Render (--js-runtimes node) supaya yt-dlp dapat selesaikan JS challenge YouTube
-async function downloadFastAudio(videoUrl) {
+// Terima sama ada URL YouTube terus ATAU carian ytsearch1: (kalau yt-search kena block/kosong)
+async function downloadFastAudio(target) {
     const binPath = await ensureYtDlp();
     const outBase = path.join(os.tmpdir(), `airi_lagu_${Date.now()}_${Math.random().toString(36).slice(2)}`);
     const outTemplate = `${outBase}.%(ext)s`;
@@ -156,6 +156,7 @@ async function downloadFastAudio(videoUrl) {
         '--no-warnings',
         '--no-check-certificates',
         '--socket-timeout', '15',
+        '--match-filter', `duration <= ${MAX_DURATION_SEC}`,
         '--js-runtimes', `node:${process.execPath}`,
         '--remote-components', 'ejs:github',
         '-f', 'bestaudio[ext=m4a]/bestaudio/best',
@@ -164,10 +165,10 @@ async function downloadFastAudio(videoUrl) {
 
     const profiles = [];
     if (cookieFile) {
-        profiles.push(['CK1', [...common, '--cookies', cookieFile, videoUrl]]);
-        profiles.push(['CK2', [...common, '--cookies', cookieFile, '--extractor-args', 'youtube:player_client=web,mweb', videoUrl]]);
+        profiles.push(['CK1', [...common, '--cookies', cookieFile, target]]);
+        profiles.push(['CK2', [...common, '--cookies', cookieFile, '--extractor-args', 'youtube:player_client=web,mweb', target]]);
     }
-    profiles.push(['VR', [...common, '--extractor-args', 'youtube:player_client=android_vr', videoUrl]]);
+    profiles.push(['VR', [...common, '--extractor-args', 'youtube:player_client=android_vr', target]]);
 
     const errs = [];
     let downloadedPath = null;
@@ -227,27 +228,30 @@ export default {
         );
 
         try {
-            const searchRes = await yts(query);
-            const vids = (searchRes?.videos || []).filter(v => v.seconds > 30 && v.seconds <= MAX_DURATION_SEC);
-            const video = vids.find(v => !isUnwantedVersion(v.title, query)) || vids[0];
-
-            if (!video) {
-                return sock.sendMessage(
-                    jid,
-                    { text: `❌ Lagu *${query}* tak dijumpai (atau melebihi had 10 minit).` },
-                    { quoted: m }
-                );
+            // 1. Cuba cari metadata dengan yt-search dulu (laju)
+            let video = null;
+            try {
+                const searchRes = await yts(query);
+                const allVids = searchRes?.videos || [];
+                const filtered = allVids.filter(v => !v.seconds || (v.seconds > 20 && v.seconds <= MAX_DURATION_SEC));
+                video = filtered.find(v => !isUnwantedVersion(v.title, query)) || filtered[0] || allVids[0] || null;
+            } catch {
+                video = null;
             }
 
-            const cleanTitle = sanitizeFilename(video.title);
+            // 2. Kalau yt-search kosong/gagal di Render, terus guna ytsearch1: dalam yt-dlp
+            const target = video?.url || `ytsearch1:${query} official audio`;
+            const finalTitle = video?.title || query;
+            const finalDuration = video?.timestamp || '-';
+            const cleanTitle = sanitizeFilename(finalTitle);
 
-            // Muat turun audio & cari lirik serentak
+            // 3. Muat turun audio & cari lirik serentak
             const [audio, lyrics] = await Promise.all([
-                downloadFastAudio(video.url),
-                fetchLyrics(query).then(res => res || fetchLyrics(cleanTitle)),
+                downloadFastAudio(target),
+                fetchLyrics(query).then(res => res || (video?.title ? fetchLyrics(cleanTitle) : null)),
             ]);
 
-            // Hantar sebagai audio player terus (ikon headphone oren)
+            // 4. Hantar sebagai audio player terus (ikon headphone oren)
             await sock.sendMessage(
                 jid,
                 {
@@ -259,8 +263,8 @@ export default {
                 { quoted: m }
             );
 
-            // Hantar info lagu + lirik teks
-            const header = `🎧 *${video.title}*\n⏱️ Durasi: ${video.timestamp} | ✨ _Airi's Corner_`;
+            // 5. Hantar info lagu + lirik teks
+            const header = `🎧 *${finalTitle}*\n⏱️ Durasi: ${finalDuration} | ✨ _Airi's Corner_`;
             if (lyrics) {
                 const maxLen = 3700;
                 const teksLirik = lyrics.length > maxLen ? `${lyrics.slice(0, maxLen)}\n\n...(lirik dipendekkan)` : lyrics;
