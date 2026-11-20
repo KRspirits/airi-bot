@@ -40,7 +40,7 @@ async function fetchLyrics(query) {
         const url = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
         const res = await fetch(url, {
             headers: { 'User-Agent': 'AiriCornerBot/2.0' },
-            signal: AbortSignal.timeout(6000),
+            signal: AbortSignal.timeout(5000),
         });
         if (!res.ok) return null;
         const data = await res.json();
@@ -63,7 +63,7 @@ async function ensureYtDlp() {
     downloadingBin = (async () => {
         const res = await fetch(YTDLP_URL, {
             redirect: 'follow',
-            signal: AbortSignal.timeout(60000),
+            signal: AbortSignal.timeout(30000),
         });
         if (!res.ok) throw new Error(`Gagal muat turun yt-dlp (HTTP ${res.status})`);
         const buf = Buffer.from(await res.arrayBuffer());
@@ -115,8 +115,9 @@ function writeCookiesFileIfAvailable() {
 
 function runYtDlp(binPath, args) {
     return new Promise((resolve, reject) => {
-        execFile(binPath, args, { timeout: 50000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+        execFile(binPath, args, { timeout: 22000, maxBuffer: 5 * 1024 * 1024 }, (err, stdout, stderr) => {
             if (err) {
+                if (err.killed) return reject(new Error('Timeout (22s)'));
                 const detail = String(stderr || err.message || err)
                     .split('\n')
                     .filter(l => l.includes('ERROR:'))
@@ -144,54 +145,41 @@ function mimeForExt(ext) {
     return 'audio/mp4';
 }
 
-// Terima sama ada URL YouTube terus ATAU carian ytsearch1: (kalau yt-search kena block/kosong)
+// Ringan & pantas: 1 percubaan terus tanpa spawn Node kedua (elak Render OOM / bot diam)
 async function downloadFastAudio(target) {
     const binPath = await ensureYtDlp();
     const outBase = path.join(os.tmpdir(), `airi_lagu_${Date.now()}_${Math.random().toString(36).slice(2)}`);
     const outTemplate = `${outBase}.%(ext)s`;
     const cookieFile = writeCookiesFileIfAvailable();
 
-    const common = [
+    const args = [
         '--no-playlist',
         '--no-warnings',
         '--no-check-certificates',
-        '--socket-timeout', '15',
+        '--socket-timeout', '10',
         '--match-filter', `duration <= ${MAX_DURATION_SEC}`,
-        '--js-runtimes', `node:${process.execPath}`,
-        '--remote-components', 'ejs:github',
-        '-f', 'bestaudio[ext=m4a]/bestaudio/best',
+        '-f', 'bestaudio/best',
         '-o', outTemplate,
     ];
 
-    const profiles = [];
     if (cookieFile) {
-        profiles.push(['CK1', [...common, '--cookies', cookieFile, target]]);
-        profiles.push(['CK2', [...common, '--cookies', cookieFile, '--extractor-args', 'youtube:player_client=web,mweb', target]]);
+        args.push('--cookies', cookieFile);
+    } else {
+        args.push('--extractor-args', 'youtube:player_client=android_vr,ios');
     }
-    profiles.push(['VR', [...common, '--extractor-args', 'youtube:player_client=android_vr', target]]);
-
-    const errs = [];
-    let downloadedPath = null;
+    args.push(target);
 
     try {
-        for (const [tag, args] of profiles) {
-            try {
-                await runYtDlp(binPath, args);
-                downloadedPath = findOutputFile(outBase);
-                if (downloadedPath && fs.statSync(downloadedPath).size >= 15000) {
-                    break;
-                }
-            } catch (e) {
-                errs.push(`${tag}:${String(e?.message || e).slice(0, 75)}`);
-            }
-        }
-
+        await runYtDlp(binPath, args);
+        const downloadedPath = findOutputFile(outBase);
         if (!downloadedPath || !fs.existsSync(downloadedPath)) {
-            throw new Error(errs.join(' | ') || 'Gagal muat turun audio');
+            throw new Error('Fail audio tidak dijana');
         }
-
-        const ext = path.extname(downloadedPath) || '.m4a';
         const buffer = fs.readFileSync(downloadedPath);
+        if (buffer.length < 15000) {
+            throw new Error('Fail audio terlalu kecil');
+        }
+        const ext = path.extname(downloadedPath) || '.m4a';
         return { buffer, mimetype: mimeForExt(ext), ext };
     } finally {
         try {
@@ -228,10 +216,12 @@ export default {
         );
 
         try {
-            // 1. Cuba cari metadata dengan yt-search dulu (laju)
             let video = null;
             try {
-                const searchRes = await yts(query);
+                const searchRes = await Promise.race([
+                    yts(query),
+                    new Promise((_, rej) => setTimeout(() => rej(new Error('yts timeout')), 6000)),
+                ]);
                 const allVids = searchRes?.videos || [];
                 const filtered = allVids.filter(v => !v.seconds || (v.seconds > 20 && v.seconds <= MAX_DURATION_SEC));
                 video = filtered.find(v => !isUnwantedVersion(v.title, query)) || filtered[0] || allVids[0] || null;
@@ -239,19 +229,16 @@ export default {
                 video = null;
             }
 
-            // 2. Kalau yt-search kosong/gagal di Render, terus guna ytsearch1: dalam yt-dlp
             const target = video?.url || `ytsearch1:${query} official audio`;
             const finalTitle = video?.title || query;
             const finalDuration = video?.timestamp || '-';
             const cleanTitle = sanitizeFilename(finalTitle);
 
-            // 3. Muat turun audio & cari lirik serentak
             const [audio, lyrics] = await Promise.all([
                 downloadFastAudio(target),
                 fetchLyrics(query).then(res => res || (video?.title ? fetchLyrics(cleanTitle) : null)),
             ]);
 
-            // 4. Hantar sebagai audio player terus (ikon headphone oren)
             await sock.sendMessage(
                 jid,
                 {
@@ -263,7 +250,6 @@ export default {
                 { quoted: m }
             );
 
-            // 5. Hantar info lagu + lirik teks
             const header = `🎧 *${finalTitle}*\n⏱️ Durasi: ${finalDuration} | ✨ _Airi's Corner_`;
             if (lyrics) {
                 const maxLen = 3700;
@@ -284,7 +270,7 @@ export default {
             console.error('[LAGU ERROR]', err?.message || err);
             await sock.sendMessage(
                 jid,
-                { text: `❌ Gagal muat turun lagu *${query}* buat masa ni.\n_Debug: ${String(err?.message || err).slice(0, 220)}_` },
+                { text: `❌ Gagal muat turun lagu *${query}*.\n_Debug: ${String(err?.message || err).slice(0, 180)}_` },
                 { quoted: m }
             );
         }
