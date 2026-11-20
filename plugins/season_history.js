@@ -14,7 +14,7 @@ export default {
             const pemenang = musim.winners.length
                 ? musim.winners.map((w, k) => `${['🥇', '🥈', '🥉'][k]} ${w.name} (+RM ${w.gain.toLocaleString('en-US')})`).join('\n')
                 : 'Tiada pemenang';
-            return `*Musim ${h.length - i} · ${tarikh}*\n${pemenang}`;
+            return `*Season ${musim.musim ?? (h.length - i)} · ${tarikh}*\n${pemenang}`;
         }).join('\n\n');
         return sock.sendMessage(jid, { text: `🏆 *SEJARAH MUSIM*\n\n${teks}` }, { quoted: m });
     }

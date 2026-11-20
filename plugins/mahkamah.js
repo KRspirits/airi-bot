@@ -1,3 +1,4 @@
+import { tambahMasaLokap } from '../lib/util.js';
 import { sasaranJid } from '../lib/target.js';
 import { resolveJid } from '../lib/lidmap.js';
 export default {
@@ -87,7 +88,7 @@ Pintu sel dibuka serta-merta! Tanda setia kawan sejati.
 
             // Jika undi tambah capai 3 orang, tambah 3 minit lokap
             if (banduan.jail.vote_jail >= 3) {
-                banduan.jail.release_at += (3 * 60 * 1000);
+                banduan.jail.release_at = tambahMasaLokap(banduan.jail, 3 * 60 * 1000);
                 banduan.jail.vote_jail = 0;
                 await db.saveUser(banduan);
 

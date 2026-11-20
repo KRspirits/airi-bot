@@ -1,5 +1,4 @@
 import fs from 'fs';
-import { klipScene } from '../lib/klip.js';
 import { beritaPasaran } from './pasaran.js';
 import { VEHICLES, PHONE_DEVICES } from '../lib/gamedata.js';
 import { toItem, kadBarang } from '../lib/items.js';
@@ -182,7 +181,6 @@ export async function triggerRandomAuction(sock, chatId) {
     } else {
         await sock.sendMessage(chatId, { text: notis }).catch(() => {});
     }
-    klipScene('lelong', { tapak }).then(buf => buf && sock.sendMessage(chatId, { video: buf, mimetype: 'video/mp4', caption: '🔨 Lelongan dibuka!' })).catch(() => {});
     if (config.voice) speak(sock, chatId, 'auction').catch(() => {});
 
     // Tamat Lelongan Selepas 60 Saat

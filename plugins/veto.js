@@ -19,29 +19,13 @@ import { triggerRandomAuction } from './bida.js';
 // DIKUATKUASAKAN oleh lib/effects.js. Kuasa baharu: .siar .mythic .purge .maintenance .bulletin_now .testwelcome
 // =========================================================================
 export const VETO_EVENTS = {
-    AMAR_BLESSING: { name: '👑 Berkat Bos Amar', desc: '100x ganda SEMUA hasil pendapatan!' },
-    GOLD_RUSH: { name: '💰 Gelombang Emas', desc: 'Jualan emas, ikan & besi terpakai 3x ganda!' },
-    CRYPTO_MOON: { name: '🚀 Ledakan Bullrun BTC', desc: 'Untung jual BTC naik 2.5x!' },
-    MEGA_HARVEST: { name: '🌊 Badai Laut Dalam', desc: 'Tangkapan pancing: hampir pasti Rare ke atas!' },
-    CYBER_REBATE: { name: '🏷️ Rebat Tunai Madani', desc: 'Cashback 50% beli showroom, gear & pancing!' },
-    BLACK_MARKET_CARNIVAL: { name: '🎪 Karnival Pasar Gelap', desc: 'Cashback 50% barang pasar gelap!' },
-    SPEED_DEMON: { name: '🏁 Pelesit Malam Karak', desc: 'Hasil lumba digandakan 4x!' },
-    OVERTIME_FRENZY: { name: '⚡ Kerja Lebih Masa', desc: 'Gaji kerja 2x ganda!' },
-    TREASURE_SURGE: { name: '🧲 Arus Khazanah Sungai', desc: 'Hasil buka peti & jual besi 2.5x!' },
-    CASINO_FIESTA: { name: '🎰 Pesta Jackpot Kasino', desc: 'Kemenangan slot digandakan 2x!' },
-    LANDLORD_BOOM: { name: '🏢 Dividen Hartanah Mega', desc: 'Kutipan sewa 3x ganda!' },
-    ZERO_JAIL_DAY: { name: '🕊️ Hari Pengampunan', desc: 'Polis bercuti; tiada lokap!' },
-    SUBSIDI_MINYAK: { name: '🚛 Subsidi Seludup', desc: 'Hasil seludup 2x ganda!' },
-    FESTIVAL_IKAN: { name: '🐟 Festival Ikan Pasar', desc: 'Jual ikan & akuarium 2x ganda!' },
-    HARI_JUDI_GILA: { name: '🎲 Hari Judi Gila', desc: 'Menang permainan judi (tekaan, roda, kad_besar, dadu7, peti, kupon) 1.5x!' },
-    TEKA_BERHADIAH: { name: '📸 Teka Gambar Berhadiah', desc: 'Jual barang guna gambar (.jual_gambar) 2x ganda!' },
-    BAYAR_BALIK_HUTANG: { name: '💳 Diskaun Bayar Hutang', desc: 'Bayar ahlong, 30% dipulangkan!' },
-    ROYAL_AIRDROP: { name: '🎁 Royal Airdrop Amar', desc: 'Sesiapa yang guna command dapat RM 10,000 setiap 10 minit!' },
-    BOUNTY_HUNTER_RUSH: { name: '🎯 Pesta Pemburu Kepala', desc: 'Ganjaran buru +50%!' },
-    HACKER_PARADISE: { name: '💻 Kelemahan Induk Bank', desc: 'Hasil hackbank 2x ganda!' },
-    GOD_OF_FORTUNE: { name: '🌟 Restu Dewa Rezeki', desc: 'Kemenangan game nasib 2x ganda!' },
-    MYTHIC_TIDE: { name: '🌀 Pasang Mitos', desc: 'Makhluk mitos muncul lebih kerap & peluang mitos pancing naik!' },
-    DAILY_FIESTA: { name: '🎉 Pesta Hadiah Harian', desc: 'Hadiah .daily 3x ganda!' },
+    PESTA_NELAYAN: { name: '🎣 Pesta Nelayan', desc: 'Jual ikan & akuarium 2x ganda + peluang ikan rare naik. Cukai 10%.' },
+    TUAIAN_BERLIMPAH: { name: '🌾 Tuaian Berlimpah', desc: 'Hasil tuai tanaman 2x ganda. Cukai 10%.' },
+    RUSH_RIDER: { name: '🛵 Rush Rider', desc: 'Hasil order Grab, Foodpanda & kurier 1.5x ganda. Cukai 10%.' },
+    KOPI_RAYA: { name: '☕ Kopi Raya', desc: 'Gaji kerja 1.5x ganda. Cukai 10%.' },
+    HARI_JUDI_GILA: { name: '🎲 Hari Judi Gila', desc: 'Menang judi (tekaan, roda, kad, dadu, peti, kupon) 1.5x. Cukai 20%.' },
+    TAHUN_BARU_2027: { name: '🎆 Tahun Baru 2027', desc: 'Hadiah .daily 2x ganda.' },
+    AIRDROP_DIRAJA: { name: '🪂 Airdrop Diraja', desc: 'Setiap pemain dapat RM 10,000.' },
 };
 export const activeGlobalEvent = null; // dikekalkan untuk keserasian import lama; guna state.event
 

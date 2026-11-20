@@ -21,7 +21,6 @@ export const config = {
     voice: process.env.AIRI_VOICE !== '0',          // suara Airi
     purgeAuto: process.env.PURGE_AUTO !== '0',      // Hari Pembersihan automatik (Jumaat malam)
     mythicEveryMin: Number(process.env.MYTHIC_EVERY_MIN || 90),
-    bossEveryMin: Number(process.env.BOSS_EVERY_MIN || 240)
 };
 
 // Padanan TEPAT sahaja (kod lama guna includes() yang boleh dipintas).

@@ -1,3 +1,4 @@
+import { tambahMasaLokap } from '../lib/util.js';
 import { sasaranJid } from '../lib/target.js';
 import { resolveJid } from '../lib/lidmap.js';
 import { pemainGroup } from '../lib/groupusers.js';
@@ -101,7 +102,7 @@ export default {
                     user.jail.status = false; user.jail.release_at = 0; await db.saveUser(user);
                     return sock.sendMessage(jid, { text: `⚖️ *MAHKAMAH MAJISTRET AIRI*\nStatus: 🟢 *DIBEBASKAN!*\n\n💬 Hakim Airi: "${keputusan.ulasan}"\nYeay awak bebas! ✨` }, { quoted: m });
                 } else {
-                    user.jail.release_at += (2 * 60 * 1000); await db.saveUser(user);
+                    user.jail.release_at = tambahMasaLokap(user.jail, 2 * 60 * 1000); await db.saveUser(user);
                     return sock.sendMessage(jid, { text: `⚖️ *MAHKAMAH MAJISTRET AIRI*\nStatus: 🔴 *RAYUAN DITOLAK!*\n\n💬 Hakim Airi: "${keputusan.ulasan}"\nKena tambah 2 minit lagi! 😜🔒` }, { quoted: m });
                 }
             }

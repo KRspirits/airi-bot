@@ -1,3 +1,4 @@
+import { tambahMasaLokap } from '../lib/util.js';
 import { beriXp } from '../lib/xp.js';
 import { buffKenderaan } from '../lib/kenderaanbuff.js';
 import { hantarKlip } from '../lib/klipkongsi.js';
@@ -88,10 +89,10 @@ export default {
             if ((user.wallet || 0) < pilih.fi) return reply(`❌ Yuran peguam ${rp(pilih.fi)} tak cukup.`);
             user.wallet -= pilih.fi;
             if (Math.random() < pilih.peluang) {
-                const baru = Math.round(sisaLokap * (1 - pilih.kurang));
-                user.jail.release_at = now + baru;
+                // Peguam berjaya = terus dibebaskan dari lokap
+                user.jail = { ...user.jail, status: false, release_at: 0 };
                 await db.saveUser(user);
-                return reply(`⚖️ *PEGUAM BERJAYA!* Hukuman dikurangkan. Sisa baru ${minit(baru)} minit.`);
+                return reply(`⚖️ *PEGUAM BERJAYA!* Awak dibebaskan dari lokap. Jangan ulang jenayah yang sama ya.`);
             }
             await db.saveUser(user);
             return reply(`⚖️ Peguam kalah dalam perbicaraan. Yuran ${rp(pilih.fi)} hangus, hukuman kekal.`);
@@ -113,7 +114,7 @@ export default {
             }
             const denda = Math.min(user.wallet || 0, RASUAH.denda);
             user.wallet -= denda;
-            user.jail.release_at = user.jail.release_at + RASUAH.lanjut * 60e3;
+            user.jail.release_at = tambahMasaLokap(user.jail, RASUAH.lanjut * 60e3);
             await db.saveUser(user);
             return reply(`🚨 Rasuah gagal! Pegawai tu rakam semuanya. Denda ${rp(denda)} dan hukuman tambah ${RASUAH.lanjut} minit.`);
         }

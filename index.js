@@ -1,3 +1,4 @@
+import { usingMongo } from './lib/store.js';
 import { catatLid, resolveJid, resolveAsync } from './lib/lidmap.js';
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
 import pino from 'pino';
@@ -91,6 +92,12 @@ async function connect() {
                 qrcodeTerminal.generate(qr, { small: true }); 
             }
             if (connection === 'open') { import('./plugins/bida.js').then(b => b.pulihLelong(sock)).catch(() => {}); 
+                // Amaran kepada owner kalau data tak disimpan kekal (tanpa MONGO_URI)
+                if (!usingMongo()) {
+                    const nombor = config.ownerNumbers.map(x => String(x).replace(/\D/g, '')).filter(x => x.length >= 10 && x.length <= 15);
+                    for (const n of [...new Set(nombor)]) sock.sendMessage(`${n}@s.whatsapp.net`, { text: '⚠️ *AMARAN*: MONGO_URI belum diset. Data pemain (umpan, akuarium, wallet, dll.) akan HILANG bila bot deploy semula. Set MONGO_URI di Render sekarang.' }).catch(() => {});
+                }
+
                 isConnected = true; 
                 currentQR = ''; 
                 backoff = 2000; 
@@ -171,6 +178,16 @@ async function onMessage(m) {
 
         return withUserLock(senderJid, async () => {
         const user = await db.getUser(senderJid, senderName), before = snapshot(user);
+        // ⛓️ LOKAP: bila dalam lokap, hanya arahan lokap/peguam/rasuah/bank/maklumat dibenarkan.
+        // Jenayah, kerja, judi & sebagainya disekat. Owner dikecualikan.
+        {
+            const LOKAP_BOLEH = new Set(['lokap', 'peguam', 'rasuah', 'mahkamah', 'bal', 'balance', 'ic', 'menu', 'mula', 'panduan', 'help', 'status', 'lb', 'leaderboard', 'papan', 'ringkasan', 'dep', 'wd', 'bank', 'kad_saya', 'jual_kad']);
+            const dalamLokapNow = !!user.jail?.status && (user.jail.release_at || 0) > Date.now();
+            if (dalamLokapNow && !LOKAP_BOLEH.has(parsed.cmd) && !isOwnerMsg(m)) {
+                const sisa = Math.ceil((user.jail.release_at - Date.now()) / 60000);
+                return sock.sendMessage(jid, { text: `⛓️ Awak dalam lokap, sisa ${sisa} minit.\nGuna \`.lokap\` untuk pilihan peguam atau rasuah, atau tunggu.` }, { quoted: m });
+            }
+        }
         await panduanSekali(sock, m, user, db, parsed.cmd);
         trackQuest(senderJid, parsed.cmd).catch(() => {});
         const perlu = LEVEL_REQUIRED[parsed.cmd];

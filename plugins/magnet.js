@@ -23,7 +23,8 @@ export default {
         // 1. UPGRADE MAGNET
         if (commandUsed === 'upgrade_magnet') {
             try {
-                const nextTier = (user.magnet?.tier || 1) + 1;
+                const tierSemasa = Math.max(1, parseInt(user.magnet?.tier, 10) || 1); // elak '1'+1='11'
+                const nextTier = tierSemasa + 1;
                 const targetGear = MAGNET_TIERS[nextTier];
 
                 if (!targetGear) {

@@ -21,7 +21,7 @@ export default {
         user.inventory = user.inventory || {};
         user.inventory.kad = Array.isArray(user.inventory.kad) ? user.inventory.kad : [];
 
-        if (cmd === 'beli_pokemon') {
+        if (cmd === 'beli_pokemon' && !args[0]) {
             const senarai = Object.entries(PEK).map(([n, p]) => `${n}. ${p.nama} · ${rp(p.harga)}`).join('\n');
             bukaPilihan(sender, Object.keys(PEK).map(n => ({ arahan: `.buka_pek ${n}` })));
             const gambar = await gambarKedai();
@@ -31,7 +31,7 @@ export default {
             }, { quoted: m });
         }
 
-        if (cmd === 'buka_pek') {
+        if (cmd === 'buka_pek' || cmd === 'beli_pokemon') {
             const nomor = Number(args[0]);
             const pek = PEK[nomor];
             if (!pek) return reply('❌ Pilih pek 1 hingga 4. Taip `.beli_pokemon`.');
