@@ -90,7 +90,7 @@ function convertToMp3Buffer(input, inputOptions = []) {
 }
 
 // =========================================================================
-// 1. SOUNDCLOUD (Tak kena block IP Render, cari full track bukan preview 30s)
+// 1. SOUNDCLOUD (Diperbaiki: sertakan track_authorization & cuba banyak track)
 // =========================================================================
 async function getSoundCloudClientId() {
     if (cachedScClientId && Date.now() - cachedScAt < 6 * 3600 * 1000) {
@@ -126,7 +126,7 @@ async function getSoundCloudClientId() {
 
 async function downloadViaSoundCloud(query) {
     const clientId = await getSoundCloudClientId();
-    const searchUrl = `https://api-v2.soundcloud.com/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=8`;
+    const searchUrl = `https://api-v2.soundcloud.com/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=10`;
     const res = await fetch(searchUrl, {
         headers: { 'User-Agent': UA },
         signal: AbortSignal.timeout(12000),
@@ -136,86 +136,120 @@ async function downloadViaSoundCloud(query) {
         throw new Error(`SC search HTTP ${res.status}`);
     }
     const data = await res.json();
-    const tracks = data?.collection || [];
-
-    // Utamakan lagu penuh (bukan Go+ preview 30 saat)
-    const track = tracks.find(t =>
+    const tracks = (data?.collection || []).filter(t =>
         t?.media?.transcodings?.length > 0 &&
         t.policy !== 'SNIP' &&
         t.policy !== 'BLOCK' &&
         (t.duration || 0) >= 45000 &&
         (t.duration || 0) <= MAX_DURATION_SEC * 1000
     );
-    if (!track) throw new Error('SC tiada full track');
 
-    const transcodings = track.media.transcodings;
-    const progressive = transcodings.find(t => t.format?.protocol === 'progressive');
-    const hls = transcodings.find(t => t.format?.protocol === 'hls' && t.format?.mime_type?.includes('mpeg')) ||
-                transcodings.find(t => t.format?.protocol === 'hls');
-    const chosen = progressive || hls;
-    if (!chosen?.url) throw new Error('SC tiada stream');
+    if (!tracks.length) throw new Error('SC tiada full track');
 
-    const sep = chosen.url.includes('?') ? '&' : '?';
-    const mediaRes = await fetch(`${chosen.url}${sep}client_id=${clientId}`, {
-        headers: { 'User-Agent': UA },
-        signal: AbortSignal.timeout(12000),
-    });
-    if (!mediaRes.ok) throw new Error(`SC media HTTP ${mediaRes.status}`);
-    const mediaJson = await mediaRes.json();
-    if (!mediaJson?.url) throw new Error('SC tiada URL audio');
+    let lastErr = new Error('SC semua track gagal');
+    for (const track of tracks.slice(0, 6)) {
+        const transcodings = [
+            ...track.media.transcodings.filter(t => t.format?.protocol === 'progressive'),
+            ...track.media.transcodings.filter(t => t.format?.protocol === 'hls'),
+        ];
 
-    let buffer;
-    if (chosen.format?.protocol === 'progressive') {
-        const audioRes = await fetch(mediaJson.url, {
-            headers: { 'User-Agent': UA },
-            signal: AbortSignal.timeout(40000),
-        });
-        if (!audioRes.ok) throw new Error(`SC audio HTTP ${audioRes.status}`);
-        buffer = Buffer.from(await audioRes.arrayBuffer());
-        if (buffer.length < 15000) throw new Error('SC audio terlalu kecil');
-    } else {
-        buffer = await convertToMp3Buffer(mediaJson.url);
+        for (const chosen of transcodings) {
+            if (!chosen?.url) continue;
+            try {
+                const u = new URL(chosen.url);
+                u.searchParams.set('client_id', clientId);
+                if (track.track_authorization) {
+                    u.searchParams.set('track_authorization', track.track_authorization);
+                }
+
+                const mediaRes = await fetch(u.toString(), {
+                    headers: {
+                        'User-Agent': UA,
+                        'Origin': 'https://soundcloud.com',
+                        'Referer': 'https://soundcloud.com/',
+                    },
+                    signal: AbortSignal.timeout(12000),
+                });
+                if (!mediaRes.ok) {
+                    lastErr = new Error(`SC media HTTP ${mediaRes.status}`);
+                    continue;
+                }
+
+                const mediaJson = await mediaRes.json();
+                if (!mediaJson?.url) continue;
+
+                let buffer;
+                if (chosen.format?.protocol === 'progressive') {
+                    const audioRes = await fetch(mediaJson.url, {
+                        headers: { 'User-Agent': UA },
+                        signal: AbortSignal.timeout(40000),
+                    });
+                    if (!audioRes.ok) {
+                        lastErr = new Error(`SC audio HTTP ${audioRes.status}`);
+                        continue;
+                    }
+                    buffer = Buffer.from(await audioRes.arrayBuffer());
+                    if (buffer.length < 15000) continue;
+                } else {
+                    buffer = await convertToMp3Buffer(mediaJson.url, ['-user_agent', UA]);
+                }
+
+                return {
+                    buffer,
+                    title: track.title || query,
+                    timestamp: formatDuration((track.duration || 0) / 1000),
+                    source: 'SoundCloud',
+                };
+            } catch (e) {
+                lastErr = e;
+            }
+        }
     }
-
-    return {
-        buffer,
-        title: track.title || query,
-        timestamp: formatDuration((track.duration || 0) / 1000),
-        source: 'SoundCloud',
-    };
+    throw lastErr;
 }
 
 // =========================================================================
-// 2. INVIDIOUS (Tarik senarai instance aktif secara dinamik & proxy audio)
+// 2. AUDIUS (API rasmi percuma, terus dapat MP3, tak block IP Render)
 // =========================================================================
-async function downloadViaInvidious(videoId) {
-    if (!videoId) throw new Error('Tiada videoId');
-    const listRes = await fetch('https://api.invidious.io/instances.json?sort_by=health', {
+async function downloadViaAudius(query) {
+    const hostRes = await fetch('https://api.audius.co', {
         headers: { 'User-Agent': UA },
         signal: AbortSignal.timeout(10000),
     });
-    if (!listRes.ok) throw new Error(`INV list HTTP ${listRes.status}`);
-    const list = await listRes.json();
+    if (!hostRes.ok) throw new Error(`Audius host HTTP ${hostRes.status}`);
+    const hostJson = await hostRes.json();
+    const hosts = Array.isArray(hostJson?.data) ? hostJson.data.slice(0, 3) : [];
+    if (!hosts.length) throw new Error('Audius tiada host');
 
-    const instances = list
-        .filter(([, info]) => info?.type === 'https' && info?.api === true && info?.uri)
-        .slice(0, 4)
-        .map(([, info]) => info.uri.replace(/\/$/, ''));
-
-    if (!instances.length) throw new Error('Tiada instance Invidious');
-
-    let lastErr = new Error('Invidious gagal');
-    for (const uri of instances) {
+    let lastErr = new Error('Audius gagal');
+    for (const host of hosts) {
         try {
-            const proxyUrl = `${uri}/latest_version?id=${encodeURIComponent(videoId)}&itag=140&local=true`;
-            const headRes = await fetch(proxyUrl, {
-                method: 'HEAD',
+            const sRes = await fetch(
+                `${host}/v1/tracks/search?query=${encodeURIComponent(query)}&app_name=AiriCorner`,
+                { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(12000) }
+            );
+            if (!sRes.ok) throw new Error(`HTTP ${sRes.status}`);
+            const sJson = await sRes.json();
+            const track = (sJson?.data || []).find(t =>
+                t?.id && (t.duration || 0) >= 45 && (t.duration || 0) <= MAX_DURATION_SEC
+            );
+            if (!track) throw new Error('Audius tiada lagu');
+
+            const streamUrl = `${host}/v1/tracks/${encodeURIComponent(track.id)}/stream?app_name=AiriCorner`;
+            const aRes = await fetch(streamUrl, {
                 headers: { 'User-Agent': UA },
-                signal: AbortSignal.timeout(10000),
+                signal: AbortSignal.timeout(40000),
             });
-            if (!headRes.ok) throw new Error(`HTTP ${headRes.status}`);
-            const buffer = await convertToMp3Buffer(proxyUrl, ['-user_agent', UA]);
-            return { buffer, source: 'Invidious' };
+            if (!aRes.ok) throw new Error(`Audius stream HTTP ${aRes.status}`);
+            const buffer = Buffer.from(await aRes.arrayBuffer());
+            if (buffer.length < 15000) throw new Error('Audius audio terlalu kecil');
+
+            return {
+                buffer,
+                title: track.title || query,
+                timestamp: formatDuration(track.duration || 0),
+                source: 'Audius',
+            };
         } catch (e) {
             lastErr = e;
         }
@@ -224,47 +258,7 @@ async function downloadViaInvidious(videoId) {
 }
 
 // =========================================================================
-// 3. PIPED (Tarik senarai instance aktif secara dinamik)
-// =========================================================================
-async function downloadViaPiped(videoId) {
-    if (!videoId) throw new Error('Tiada videoId');
-    const listRes = await fetch('https://piped-instances.kavin.rocks/', {
-        headers: { 'User-Agent': UA },
-        signal: AbortSignal.timeout(10000),
-    });
-    if (!listRes.ok) throw new Error(`PIP list HTTP ${listRes.status}`);
-    const list = await listRes.json();
-    const instances = (Array.isArray(list) ? list : [])
-        .filter(i => i?.api_url)
-        .slice(0, 4)
-        .map(i => i.api_url.replace(/\/$/, ''));
-
-    if (!instances.length) throw new Error('Tiada instance Piped');
-
-    let lastErr = new Error('Piped gagal');
-    for (const apiUrl of instances) {
-        try {
-            const r = await fetch(`${apiUrl}/streams/${encodeURIComponent(videoId)}`, {
-                headers: { 'User-Agent': UA },
-                signal: AbortSignal.timeout(12000),
-            });
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            const data = await r.json();
-            const audio = (data?.audioStreams || [])
-                .filter(s => s?.url)
-                .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0];
-            if (!audio?.url) throw new Error('Tiada audioStream');
-            const buffer = await convertToMp3Buffer(audio.url, ['-user_agent', UA]);
-            return { buffer, source: 'Piped' };
-        } catch (e) {
-            lastErr = e;
-        }
-    }
-    throw lastErr;
-}
-
-// =========================================================================
-// 4. YTDL-CORE (Backup terakhir)
+// 3. YTDL-CORE (Backup terakhir)
 // =========================================================================
 async function downloadViaYtdl(videoUrl) {
     if (!videoUrl) throw new Error('Tiada URL YouTube');
@@ -303,7 +297,7 @@ export default {
         let video = null;
 
         try {
-            // Cari metadata di YouTube dulu (untuk tajuk/videoId)
+            // Cari metadata di YouTube dulu (untuk tajuk yang cantik & lirik)
             try {
                 const searchRes = await yts(query);
                 video = searchRes?.videos?.[0] || null;
@@ -324,13 +318,11 @@ export default {
                 res || (video?.title ? fetchLyrics(sanitizeFilename(video.title)) : null)
             );
 
-            // Cuba muat turun dari pelbagai sumber secara berturutan
+            // Cuba muat turun dari sumber yang mesra IP Render
             let result = null;
-
             const attempts = [
                 ['SC', () => downloadViaSoundCloud(query)],
-                ['INV', () => downloadViaInvidious(video?.videoId)],
-                ['PIP', () => downloadViaPiped(video?.videoId)],
+                ['AUD', () => downloadViaAudius(query)],
                 ['YTDL', () => downloadViaYtdl(video?.url)],
             ];
 
@@ -356,7 +348,7 @@ export default {
                 );
             }
 
-            const finalTitle = video?.title || result.title || query;
+            const finalTitle = result.title || video?.title || query;
             const finalDuration = result.timestamp || video?.timestamp || '-';
             const cleanTitle = sanitizeFilename(finalTitle);
             const watermarkedName = `${cleanTitle} Airi's Corner.mp3`;
