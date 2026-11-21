@@ -12,12 +12,14 @@ import { VEHICLES } from '../lib/gamedata.js';
 // Koleksi: album, gabung ikan (hibrid), liga mingguan, tangkap makhluk mitos.
 const ORDER = ['sampah', 'biasa', 'rare', 'mitos'];
 // Hadiah lengkap set (sekali je per set). Besar sengaja, ikut arahan owner.
-const SET_REWARD = { biasa: 1000000, rare: 10000000, mitos: 100000000 }; // ganjaran set penuh
-const PAGE_REWARD = { biasa: 500000, rare: 3000000, mitos: 20000000 };  // ganjaran setiap halaman (12 ikan) lengkap
+const SET_REWARD = { biasa: 1000000, rare: 10000000, legend: 50000000, mitos: 100000000, secret: 1000000000 }; // ganjaran set penuh
+const PAGE_REWARD = { biasa: 500000, rare: 3000000, legend: 25000000, mitos: 20000000, secret: 250000000 };  // ganjaran setiap halaman (12 ikan) lengkap
 const IKAN_PER_HALAMAN = 12;
 // Nombor album: 1 = biasa, 2 = rare, 3 = mitos.
-const ALBUM_NO = { '1': 'biasa', '2': 'rare', '3': 'mitos' };
-const ALBUM_LABEL = { biasa: 'ALBUM 1 · BIASA', rare: 'ALBUM 2 · RARE', mitos: 'ALBUM 3 · MITOS' };
+const ALBUM_NO = { '1': 'biasa', '2': 'rare', '3': 'mitos', '4': 'legend', '5': 'secret' };
+const ALBUM_LABEL = { biasa: 'ALBUM 1 · BIASA', rare: 'ALBUM 2 · RARE', mitos: 'ALBUM 3 · MITOS', legend: 'ALBUM 4 · LEGEND', secret: 'ALBUM 5 · SECRET' };
+const TIER_TAJUK = { biasa: 'Biasa', rare: 'Rare', legend: 'Legend', mitos: 'Mythic', secret: 'Secret' };
+const hadiahAlbum = sub => `🎁 *Hadiah ${TIER_TAJUK[sub] || sub}*\n📄 Setiap halaman lengkap (${IKAN_PER_HALAMAN} ikan): RM ${(PAGE_REWARD[sub] || 0).toLocaleString('en-US')}\n📚 Set penuh: RM ${(SET_REWARD[sub] || 0).toLocaleString('en-US')}`;
 const noEmoji = s => String(s || '').replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').trim();
 const part = (n, first) => { const w = noEmoji(n).replace(/^(Ikan|Pari|Bawal|Keli)\s+/i, '').split(/\s+/); return first ? w[0] : w[w.length - 1]; };
 
@@ -59,7 +61,7 @@ export default {
                 }
                 // album penuh: ketiga-tiga set siap -> kenderaan paling mahal dalam showroom (barang, boleh pakai)
                 let kenderaanTxt = '';
-                if (!user.album_kenderaan && ['biasa', 'rare', 'mitos'].every(r => user.album_claim[r])) {
+                if (!user.album_kenderaan && ['biasa', 'rare', 'legend', 'mitos', 'secret'].every(r => user.album_claim[r])) {
                     const v = [...VEHICLES].sort((a, b) => b.price - a.price)[0];
                     user.items = Array.isArray(user.items) ? user.items : [];
                     user.items.push({ id: 'AL' + Date.now().toString(36).slice(-4), nama: v.name, desc: 'Ganjaran album penuh', nilai: v.price, bida: 0, kategori: 'Kenderaan', nadir: 'LEGENDARI', kind: 'vehicle', ref: v.id, t: Date.now() });
@@ -74,7 +76,8 @@ export default {
                 return reply(`🎉 *GANJARAN ALBUM!*\n${bahagian.join('\n')}\nHadiah tunai: ${rm(total)}${kenderaanTxt}`);
             }
             sub = ALBUM_NO[sub] || sub;
-            if (!CATALOG[sub] || sub === 'sampah') return reply('Pilihan: `.album 1` (biasa) | `.album 2` (rare) | `.album 3` (mitos) | `.album klaim`\nTambah nombor halaman, contoh: `.album mitos 2`');
+            if (!CATALOG[sub] || sub === 'sampah') return reply('Pilihan: `.album 1` (biasa) | `.album 2` (rare) | `.album 4` (legend) | `.album 3` (mythic) | `.album 5` (secret) | `.album klaim`\nTambah nombor halaman, contoh: `.album mitos 2`');
+            await reply(hadiahAlbum(sub));
             const semua = CATALOG[sub].map(f => ({ nama: f.nama, rarity: sub, owned: owned.has(f.nama) }));
             semua.sort((a, b) => Number(b.owned) - Number(a.owned)); // yang dah dapat dulu
             const PER = 200; // semua ikan dalam satu gambar (tak ada halaman lagi)

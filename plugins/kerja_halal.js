@@ -9,7 +9,7 @@ import { KERJA, suasana, kiraGaji, cdMinit, syaratGagal } from '../lib/jobs.js';
 import { mulUntuk, musimSemasa } from '../lib/musimkerja.js';
 import { panelCard } from '../lib/cards.js';
 import { pilih, KERJA_SIAP, ORDER_DITERIMA } from '../lib/suara.js';
-import { klipRider } from '../lib/klip.js';
+import { renderPetaPin } from '../lib/petapin.js';
 import { kadPekerja } from '../lib/kadkerja.js';
 import { hasApp } from '../lib/apps.js';
 import { DAERAH, jarakDaerah, pickPasangan } from '../lib/daerah.js';
@@ -100,9 +100,9 @@ async function kirimKlip(sock, jid, m, { dari, ke, bayar, brand }) {
     const kini = Date.now();
     if (kini - (klipLepas.get(jid) || 0) < 2 * 60e3) return;
     klipLepas.set(jid, kini);
-    const buf = await klipRider({ dari, ke, bayar, brand });
-    if (!buf) return;
-    await sock.sendMessage(jid, { video: buf, mimetype: 'video/mp4', caption: `🎬 Penghantaran ${dari} → ${ke} selesai` }, { quoted: m }).catch(() => {});
+    const gambar = await renderPetaPin({ dari, ke }).catch(() => null);
+    if (!gambar) return;
+    await sock.sendMessage(jid, { image: gambar, caption: `📍 ${brand}: ${dari} → ${ke}\n🛵 Rider di 📍, tujuan di 🏁\n💵 Bayaran: RM ${bayar}` }, { quoted: m }).catch(() => {});
 }
 
 export default {

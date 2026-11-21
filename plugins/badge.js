@@ -2,6 +2,9 @@ export default {
     name: 'badge',
     alias: ['gelaran', 'claim_badge'],
     execute: async ({ sock, m, user, db }) => {
+        // Tanpa argumen: papar gelaran yang ada & pilih mana nak dipapar dalam .myid
+        const args = String(m.cmdTeks || m.message?.conversation || m.message?.extendedTextMessage?.text || '').trim().split(/\s+/).slice(1);
+        if (!args.length) return (await import('./title.js')).default.execute({ sock, m, user, db, args: [] });
         const jid = m.key.remoteJid;
         const badgesEarned = [];
 

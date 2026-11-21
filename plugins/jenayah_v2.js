@@ -1,3 +1,4 @@
+import { adaKenderaan } from '../lib/kenderaan.js';
 import { tambahMasaLokap } from '../lib/util.js';
 import { beriXp } from '../lib/xp.js';
 import { buffKenderaan } from '../lib/kenderaanbuff.js';
@@ -131,7 +132,7 @@ export default {
         const cdTinggal = (user.stats[`jen_${j.id}`] || 0) + j.cd * 60e3 - now;
         if (cdTinggal > 0) return reply(`⏳ ${j.nama} belum boleh, tunggu ${minit(cdTinggal)} minit lagi.`);
         // syarat & kos: sesetengah jenayah perlukan kenderaan atau barang blackmarket, dan modal
-        if (j.perlu?.kereta && !user.vehicle) return reply(`🚗 ${j.nama} perlukan kenderaan. Beli dulu di \`.showroom\`.`);
+        if (j.perlu?.kereta && !adaKenderaan(user)) return reply(`🚗 ${j.nama} perlukan kenderaan. Beli dulu di \`.showroom\`.`);
         const idxBm = j.perlu?.bm ? (user.bm_items || []).findIndex(b => b.nama === j.perlu.bm) : -1;
         if (j.perlu?.bm && idxBm < 0) return reply(`🕶️ ${j.nama} perlukan *${j.perlu.bm}* dari \`.gelap\`.`);
         if (j.kos && (user.wallet || 0) < j.kos) return reply(`❌ ${j.nama} perlukan modal ${rp(j.kos)}. Duit awak ${rp(user.wallet || 0)}.`);

@@ -1,3 +1,4 @@
+import { adaKenderaan } from '../lib/kenderaan.js';
 // =========================================================================
 // 🎵 1. PANGKALAN DATA LAGU TRENDING & SAMBUNG LIRIK
 // =========================================================================
@@ -251,7 +252,7 @@ export default {
             }
 
             user.wallet -= platDipilih.price;
-            if (!user.vehicle) {
+            if (!adaKenderaan(user)) {
                 user.vehicle = { name: 'Motosikal Asas', speed: 40, tier: 'F' };
             }
             user.vehicle.plate = platDipilih.plate;

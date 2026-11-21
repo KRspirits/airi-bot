@@ -133,6 +133,87 @@ const IKAN_MITOS = [
 
 const BELI_CMD = { beli_rod: 'rod', beli_reel: 'reel', beli_umpan: 'umpan', beli_jala: 'jala', beli_akuarium: 'akuarium' };
 
+export const IKAN_LEGEND = [
+    { nama: 'Ikan Pari Kristal Biru', harga: 1000000, buff: 'Tiada' }, { nama: 'Jerung Bayang Samudera', harga: 1020200, buff: 'Tiada' },
+    { nama: 'Ikan Kaca Berlapis Perak', harga: 1040400, buff: 'Tiada' }, { nama: 'Siakap Mahkota Karang', harga: 1060610, buff: 'Tiada' },
+    { nama: 'Kerapu Sisik Zamrud', harga: 1080810, buff: 'Tiada' }, { nama: 'Ikan Layar Gerhana', harga: 1101010, buff: 'Tiada' },
+    { nama: 'Tenggiri Petir Laut', harga: 1121210, buff: 'Tiada' }, { nama: 'Ikan Bulan Pasang', harga: 1141410, buff: 'Tiada' },
+    { nama: 'Barakuda Api Biru', harga: 1161620, buff: 'Tiada' }, { nama: 'Ikan Kelisa Gergasi', harga: 1181820, buff: 'Tiada' },
+    { nama: 'Ikan Gelombang Perak', harga: 1202020, buff: 'Tiada' }, { nama: 'Ikan Sirip Kristal', harga: 1222220, buff: 'Tiada' },
+    { nama: 'Ikan Bunga Karang Emas', harga: 1242420, buff: 'Tiada' }, { nama: 'Ikan Arus Pusaran', harga: 1262630, buff: 'Tiada' },
+    { nama: 'Kerapu Taring Besi', harga: 1282830, buff: 'Tiada' }, { nama: 'Ikan Layang Bintang', harga: 1303030, buff: 'Tiada' },
+    { nama: 'Ikan Mutiara Samudera', harga: 1323230, buff: 'Tiada' }, { nama: 'Ikan Tanduk Laut', harga: 1343430, buff: 'Tiada' },
+    { nama: 'Ikan Sisik Obsidian', harga: 1363640, buff: 'Tiada' }, { nama: 'Ikan Pelangi Pusar', harga: 1383840, buff: 'Tiada' },
+    { nama: 'Ikan Kabus Biru', harga: 1404040, buff: 'Tiada' }, { nama: 'Siakap Kilat Malam', harga: 1424240, buff: 'Tiada' },
+    { nama: 'Ikan Ombak Berapi', harga: 1444440, buff: 'Tiada' }, { nama: 'Ikan Taming Sari', harga: 1464650, buff: 'Tiada' },
+    { nama: 'Ikan Paus Kecil Berkilau', harga: 1484850, buff: 'Tiada' }, { nama: 'Sotong Gerhana', harga: 1505050, buff: 'Tiada' },
+    { nama: 'Sotong Kaca Biru', harga: 1525250, buff: 'Tiada' }, { nama: 'Gurita Arus Hitam', harga: 1545450, buff: 'Tiada' },
+    { nama: 'Gurita Bintang Laut', harga: 1565660, buff: 'Tiada' }, { nama: 'Sotong Lava', harga: 1585860, buff: 'Tiada' },
+    { nama: 'Gurita Permata', harga: 1606060, buff: 'Tiada' }, { nama: 'Sotong Berlian', harga: 1626260, buff: 'Tiada' },
+    { nama: 'Gurita Ombak Perak', harga: 1646460, buff: 'Tiada' }, { nama: 'Sotong Halilintar', harga: 1666670, buff: 'Tiada' },
+    { nama: 'Gurita Kabus Ungu', harga: 1686870, buff: 'Tiada' }, { nama: 'Ketam Karang Obsidian', harga: 1707070, buff: 'Tiada' },
+    { nama: 'Ketam Mutiara Biru', harga: 1727270, buff: 'Tiada' }, { nama: 'Udang Galah Api', harga: 1747470, buff: 'Tiada' },
+    { nama: 'Udang Kristal Malam', harga: 1767680, buff: 'Tiada' }, { nama: 'Ketam Ombak Emas', harga: 1787880, buff: 'Tiada' },
+    { nama: 'Udang Bunga Karang', harga: 1808080, buff: 'Tiada' }, { nama: 'Ketam Batu Lava', harga: 1828280, buff: 'Tiada' },
+    { nama: 'Udang Pelangi Dasar', harga: 1848480, buff: 'Tiada' }, { nama: 'Ketam Gerhana', harga: 1868690, buff: 'Tiada' },
+    { nama: 'Udang Karang Sakti', harga: 1888890, buff: 'Tiada' }, { nama: 'Penyu Samudera Berbintang', harga: 1909090, buff: 'Tiada' },
+    { nama: 'Penyu Karang Lava', harga: 1929290, buff: 'Tiada' }, { nama: 'Penyu Kristal Biru', harga: 1949490, buff: 'Tiada' },
+    { nama: 'Kura-Kura Gerhana', harga: 1969700, buff: 'Tiada' }, { nama: 'Penyu Mutiara Pusar', harga: 1989900, buff: 'Tiada' },
+    { nama: 'Lumba-Lumba Kabus', harga: 2010100, buff: 'Tiada' }, { nama: 'Paus Bayang Biru', harga: 2030300, buff: 'Tiada' },
+    { nama: 'Ular Laut Halilintar', harga: 2050510, buff: 'Tiada' }, { nama: 'Belut Kristal Dasar', harga: 2070710, buff: 'Tiada' },
+    { nama: 'Kuda Laut Api', harga: 2090910, buff: 'Tiada' }, { nama: 'Karang Bercahaya Emas', harga: 2111110, buff: 'Tiada' },
+    { nama: 'Anemon Kristal Biru', harga: 2131310, buff: 'Tiada' }, { nama: 'Bunga Karang Halilintar', harga: 2151520, buff: 'Tiada' },
+    { nama: 'Karang Api Lagenda', harga: 2171720, buff: 'Tiada' }, { nama: 'Terumbu Pelangi Abadi', harga: 2191920, buff: 'Tiada' },
+    { nama: 'Anemon Gerhana', harga: 2212120, buff: 'Tiada' }, { nama: 'Karang Mutiara Malam', harga: 2232320, buff: 'Tiada' },
+    { nama: 'Lumut Laut Bercahaya', harga: 2252530, buff: 'Tiada' }, { nama: 'Rumpai Laut Perak', harga: 2272730, buff: 'Tiada' },
+    { nama: 'Karang Obsidian', harga: 2292930, buff: 'Tiada' }, { nama: 'Ikan Kunang-Kunang Laut', harga: 2313130, buff: 'Tiada' },
+    { nama: 'Ikan Lentera Dasar', harga: 2333330, buff: 'Tiada' }, { nama: 'Ikan Pendar Biru', harga: 2353540, buff: 'Tiada' },
+    { nama: 'Ikan Bintang Berkilau', harga: 2373740, buff: 'Tiada' }, { nama: 'Ikan Suluh Malam', harga: 2393940, buff: 'Tiada' },
+    { nama: 'Ikan Sinar Pasang', harga: 2414140, buff: 'Tiada' }, { nama: 'Ikan Lampu Samudera', harga: 2434340, buff: 'Tiada' },
+    { nama: 'Ikan Kilau Bulan', harga: 2454550, buff: 'Tiada' }, { nama: 'Ikan Pendar Ungu', harga: 2474750, buff: 'Tiada' },
+    { nama: 'Ikan Lentera Gerhana', harga: 2494950, buff: 'Tiada' }, { nama: 'Ikan Bara Laut', harga: 2515150, buff: 'Tiada' },
+    { nama: 'Ikan Lava Samudera', harga: 2535350, buff: 'Tiada' }, { nama: 'Ikan Api Pusaran', harga: 2555560, buff: 'Tiada' },
+    { nama: 'Ikan Merah Halilintar', harga: 2575760, buff: 'Tiada' }, { nama: 'Ikan Obor Dasar', harga: 2595960, buff: 'Tiada' },
+    { nama: 'Ikan Bara Kristal', harga: 2616160, buff: 'Tiada' }, { nama: 'Ikan Api Gerhana', harga: 2636360, buff: 'Tiada' },
+    { nama: 'Ikan Cendana Api', harga: 2656570, buff: 'Tiada' }, { nama: 'Ikan Kobaran Laut', harga: 2676770, buff: 'Tiada' },
+    { nama: 'Ikan Bara Emas', harga: 2696970, buff: 'Tiada' }, { nama: 'Ikan Hantu Dasar', harga: 2717170, buff: 'Tiada' },
+    { nama: 'Ikan Bayang Kabus', harga: 2737370, buff: 'Tiada' }, { nama: 'Ikan Roh Samudera', harga: 2757580, buff: 'Tiada' },
+    { nama: 'Ikan Kabut Abadi', harga: 2777780, buff: 'Tiada' }, { nama: 'Ikan Tengkorak Laut', harga: 2797980, buff: 'Tiada' },
+    { nama: 'Ikan Hitam Gerhana', harga: 2818180, buff: 'Tiada' }, { nama: 'Ikan Bisikan Ombak', harga: 2838380, buff: 'Tiada' },
+    { nama: 'Ikan Kabus Ungu', harga: 2858590, buff: 'Tiada' }, { nama: 'Ikan Bayu Laut', harga: 2878790, buff: 'Tiada' },
+    { nama: 'Ikan Sunyi Dasar', harga: 2898990, buff: 'Tiada' }, { nama: 'Ikan Bayang Kristal', harga: 2919190, buff: 'Tiada' },
+    { nama: 'Ikan Penjaga Dasar', harga: 2939390, buff: 'Tiada' }, { nama: 'Ikan Pembisik Karang', harga: 2959600, buff: 'Tiada' },
+    { nama: 'Ikan Pelindung Abadi', harga: 2979800, buff: 'Tiada' }, { nama: 'Ikan Kabus Biru Malam', harga: 3000000, buff: 'Tiada' },
+];
+
+export const IKAN_SECRET = [
+    { nama: 'Naga Kristal Kosmik', harga: 10000000, buff: 'Tiada' }, { nama: 'Jerung Tanpa Bayang', harga: 10816330, buff: 'Tiada' },
+    { nama: 'Ikan Dewa Waktu', harga: 11632650, buff: 'Tiada' }, { nama: 'Leviathan Berbisik', harga: 12448980, buff: 'Tiada' },
+    { nama: 'Duyung Abadi Kosmos', harga: 13265310, buff: 'Tiada' }, { nama: 'Sotong Tanpa Mata', harga: 14081630, buff: 'Tiada' },
+    { nama: 'Gurita Dimensi', harga: 14897960, buff: 'Tiada' }, { nama: 'Ikan Matahari Hitam', harga: 15714290, buff: 'Tiada' },
+    { nama: 'Penyu Ribuan Zaman', harga: 16530610, buff: 'Tiada' }, { nama: 'Kraken Berbintang', harga: 17346940, buff: 'Tiada' },
+    { nama: 'Ikan Bintang Terakhir', harga: 18163270, buff: 'Tiada' }, { nama: 'Ikan Tujuh Lautan', harga: 18979590, buff: 'Tiada' },
+    { nama: 'Ikan Rahsia Dasar Abadi', harga: 19795920, buff: 'Tiada' }, { nama: 'Naga Samudera Biru Tua', harga: 20612240, buff: 'Tiada' },
+    { nama: 'Burung Ombak Abadi', harga: 21428570, buff: 'Tiada' }, { nama: 'Ikan Kiamat Perak', harga: 22244900, buff: 'Tiada' },
+    { nama: 'Ikan Mahkota Bulan Hitam', harga: 23061220, buff: 'Tiada' }, { nama: 'Penyu Permata Kosmos', harga: 23877550, buff: 'Tiada' },
+    { nama: 'Ikan Zamrud Abadi', harga: 24693880, buff: 'Tiada' }, { nama: 'Jerung Kabut Purba', harga: 25510200, buff: 'Tiada' },
+    { nama: 'Ikan Cermin Samudera', harga: 26326530, buff: 'Tiada' }, { nama: 'Gurita Mahkota Bintang', harga: 27142860, buff: 'Tiada' },
+    { nama: 'Ikan Kunci Dasar', harga: 27959180, buff: 'Tiada' }, { nama: 'Naga Lautan Tanpa Hujung', harga: 28775510, buff: 'Tiada' },
+    { nama: 'Duyung Kristal Hitam', harga: 29591840, buff: 'Tiada' }, { nama: 'Ikan Api Kosmik', harga: 30408160, buff: 'Tiada' },
+    { nama: 'Leviathan Gerhana Bulan', harga: 31224490, buff: 'Tiada' }, { nama: 'Ikan Waktu Berputar', harga: 32040820, buff: 'Tiada' },
+    { nama: 'Sotong Kosmos Sakti', harga: 32857140, buff: 'Tiada' }, { nama: 'Ikan Halimunan Lautan', harga: 33673470, buff: 'Tiada' },
+    { nama: 'Ikan Rubi Abadi', harga: 34489800, buff: 'Tiada' }, { nama: 'Penyu Bintang Hitam', harga: 35306120, buff: 'Tiada' },
+    { nama: 'Jerung Bulan Tenggelam', harga: 36122450, buff: 'Tiada' }, { nama: 'Ikan Jiwa Samudera', harga: 36938780, buff: 'Tiada' },
+    { nama: 'Gurita Waktu Lama', harga: 37755100, buff: 'Tiada' }, { nama: 'Ikan Angin Dasar Laut', harga: 38571430, buff: 'Tiada' },
+    { nama: 'Naga Kristal Biru Malam', harga: 39387760, buff: 'Tiada' }, { nama: 'Ikan Hujan Kosmos', harga: 40204080, buff: 'Tiada' },
+    { nama: 'Penyu Kabus Purba', harga: 41020410, buff: 'Tiada' }, { nama: 'Ikan Gelombang Abadi', harga: 41836730, buff: 'Tiada' },
+    { nama: 'Ikan Cahaya Kosmik', harga: 42653060, buff: 'Tiada' }, { nama: 'Jerung Kristal Bintang', harga: 43469390, buff: 'Tiada' },
+    { nama: 'Ikan Lukisan Dasar', harga: 44285710, buff: 'Tiada' }, { nama: 'Duyung Abadi Hitam', harga: 45102040, buff: 'Tiada' },
+    { nama: 'Ikan Mahkota Samudera', harga: 45918370, buff: 'Tiada' }, { nama: 'Gurita Kabus Kosmik', harga: 46734690, buff: 'Tiada' },
+    { nama: 'Naga Bintang Lautan', harga: 47551020, buff: 'Tiada' }, { nama: 'Ikan Jam Dasar', harga: 48367350, buff: 'Tiada' },
+    { nama: 'Penyu Tujuh Bintang', harga: 49183670, buff: 'Tiada' }, { nama: 'Ikan Takdir Samudera', harga: 50000000, buff: 'Tiada' },
+];
+
 export default {
     name: 'mancing',
     alias: ['ikan', 'akuarium', 'bela_ikan', 'jual_ikan', 'jual_akuarium', 'kedai_pancing', 'beli_pancing', 'beli_rod', 'beli_reel', 'beli_umpan', 'beli_jala', 'beli_akuarium', 'jala'],
@@ -229,14 +310,24 @@ export default {
                 const pilih = arr => arr[Math.floor(Math.random() * arr.length)];
                 let rarity, ikanDapat;
                 const ev = activeEvent(), tide = ev?.code === 'MYTHIC_TIDE' ? 0.03 : 0, frenzy = ev?.code === 'MEGA_HARVEST' ? 0.08 : 0;
-                if (rng < (0.0001 + tide + (pData.reel.buff_mitos || 0) + (pData.umpan.bonus_all || 0))) { rarity = 'mitos'; ikanDapat = pilih(IKAN_MITOS); }
-                else if (rng < (0.009 + Math.min(0.02, frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0) * 0.3))) { rarity = 'rare'; ikanDapat = pilih(IKAN_RARE); }
-                else if (rng < 0.80) { rarity = 'biasa'; ikanDapat = pilih(IKAN_BIASA); }
+                // Kadar tangkapan (jumlah 100%): secret 0.05%, mythic 0.45%, legend 1.5%, rare 12%, biasa 65%, sampah selebihnya
+                const bufMitos = (pData.reel.buff_mitos || 0) + (pData.umpan.bonus_all || 0) * 0.1;
+                const rareBuf = Math.min(0.02, frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0) * 0.3);
+                const T_SECRET = 0.0005 + bufMitos * 0.1;
+                const T_MITOS = T_SECRET + 0.0045 + tide + bufMitos;
+                const T_LEGEND = T_MITOS + 0.015;
+                const T_RARE = T_LEGEND + 0.12 + rareBuf;
+                const T_BIASA = T_RARE + 0.65;
+                if (rng < T_SECRET) { rarity = 'secret'; ikanDapat = pilih(IKAN_SECRET); }
+                else if (rng < T_MITOS) { rarity = 'mitos'; ikanDapat = pilih(IKAN_MITOS); }
+                else if (rng < T_LEGEND) { rarity = 'legend'; ikanDapat = pilih(IKAN_LEGEND); }
+                else if (rng < T_RARE) { rarity = 'rare'; ikanDapat = pilih(IKAN_RARE); }
+                else if (rng < T_BIASA) { rarity = 'biasa'; ikanDapat = pilih(IKAN_BIASA); }
                 else { rarity = 'sampah'; ikanDapat = pilih(SAMPAH); }
 
                 ikanDapat = { ...ikanDapat, rarity, harga: Math.round(ikanDapat.harga * penggandaMancing(user)) };
                 (pData.dex ||= {})[ikanDapat.nama] = true;
-                beriXp(user, rarity === 'mitos' ? 50 : rarity === 'rare' ? 15 : 5, 'mancing');
+                beriXp(user, rarity === 'secret' ? 120 : rarity === 'mitos' ? 50 : rarity === 'legend' ? 30 : rarity === 'rare' ? 15 : 5, 'mancing');
                 pData.tong_ikan.push(ikanDapat);
                 try {
                     user.stats = user.stats || {}; user.stats.fish_caught = (user.stats.fish_caught || 0) + 1;
@@ -295,11 +386,14 @@ let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: R
                 for (let i = 0; i < jumlahTangkapan; i++) {
                     const rngJala = Math.random();
                     // Drop rate Hardcore untuk Jala
-                    let tangkapan = rngJala < (0.0001 + (pData.jala.bonus_mitos || 0)) ? IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)] :
-                                    rngJala < (0.009 + Math.min(0.02, pData.jala.bonus_rare || 0)) ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
-                                    rngJala < 0.80 ? IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)] : SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
+                    const jSecret = 0.0005, jMitos = jSecret + 0.0045 + (pData.jala.bonus_mitos || 0), jLegend = jMitos + 0.015, jRare = jLegend + 0.12 + Math.min(0.02, pData.jala.bonus_rare || 0), jBiasa = jRare + 0.65;
+                    let tangkapan = rngJala < jSecret ? IKAN_SECRET[Math.floor(Math.random() * IKAN_SECRET.length)] :
+                                    rngJala < jMitos ? IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)] :
+                                    rngJala < jLegend ? IKAN_LEGEND[Math.floor(Math.random() * IKAN_LEGEND.length)] :
+                                    rngJala < jRare ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
+                                    rngJala < jBiasa ? IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)] : SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
 
-                    const rarJala = IKAN_MITOS.includes(tangkapan) ? 'mitos' : IKAN_RARE.includes(tangkapan) ? 'rare' : SAMPAH.includes(tangkapan) ? 'sampah' : 'biasa';
+                    const rarJala = IKAN_SECRET.includes(tangkapan) ? 'secret' : IKAN_MITOS.includes(tangkapan) ? 'mitos' : IKAN_LEGEND.includes(tangkapan) ? 'legend' : IKAN_RARE.includes(tangkapan) ? 'rare' : SAMPAH.includes(tangkapan) ? 'sampah' : 'biasa';
                     tangkapan = { ...tangkapan, rarity: rarJala, harga: Math.round(tangkapan.harga * penggandaJala(user)) };
                     koleksiJala.push({ nama: tangkapan.nama, harga: tangkapan.harga, rarity: rarJala });
                     pData.tong_ikan.push(tangkapan);
@@ -397,3 +491,4 @@ let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: R
 };
 
 export { SAMPAH, IKAN_BIASA, IKAN_RARE, IKAN_MITOS };
+

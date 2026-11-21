@@ -26,6 +26,8 @@ export const VETO_EVENTS = {
     HARI_JUDI_GILA: { name: '🎲 Hari Judi Gila', desc: 'Menang judi (tekaan, roda, kad, dadu, peti, kupon) 1.5x. Cukai 20%.' },
     TAHUN_BARU_2027: { name: '🎆 Tahun Baru 2027', desc: 'Hadiah .daily 2x ganda.' },
     AIRDROP_DIRAJA: { name: '🪂 Airdrop Diraja', desc: 'Setiap pemain dapat RM 10,000.' },
+    MALAM_GANGSTER: { name: '🕶️ Malam Gangster', desc: 'Hasil curi kereta, scam, peras ugut & rompak kedai 1.5x. Cukai 20%.' },
+    PASAR_KAMPUNG: { name: '🏪 Pasar Kampung', desc: 'Jual emas & BTC 1.5x. Cukai 10%.' },
 };
 export const activeGlobalEvent = null; // dikekalkan untuk keserasian import lama; guna state.event
 

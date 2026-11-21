@@ -160,6 +160,7 @@ async function onMessage(m) {
         console.log(`[MSG IN] Dari: ${senderJid} | Teks: "${teks}" | fromMe: ${isMe}`);
     }
 
+    m.cmdTeks = teks; // teks arahan sebenar (balasan nombor dah ditukar kepada arahan)
     const parsed = parseCmd(teks, config.prefix);
     if (parsed) {
         console.log(`[CMD DETECTED] Mencari arahan: ".${parsed.cmd}"`);

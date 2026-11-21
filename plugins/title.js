@@ -20,7 +20,7 @@ export default {
         const jid = m.key.remoteJid;
         const sender = m.senderJid || m.key.participant || jid;
         const reply = (t) => sock.sendMessage(jid, { text: t }, { quoted: m });
-        const teks = (m.message?.conversation || m.message?.extendedTextMessage?.text || '').trim();
+        const teks = (m.cmdTeks || m.message?.conversation || m.message?.extendedTextMessage?.text || '').trim();
         const cmd = teks.split(/\s+/)[0].slice(1).toLowerCase();
         const senarai = senaraiGelaranUser(user);
 
