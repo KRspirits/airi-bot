@@ -306,13 +306,14 @@ export default {
                 const ev = activeEvent(), tide = ev?.code === 'MYTHIC_TIDE' ? 0.03 : 0, frenzy = ev?.code === 'MEGA_HARVEST' ? 0.08 : 0;
                 // Kadar tangkapan (jumlah 100%): secret 0.05%, mythic 0.45%, legend 1.5%, rare 12%, biasa 65%, sampah selebihnya
                 const bufMitos = (pData.umpan.bonus_all || 0) * 0.1; // reel tak tambah chance Mythic (reel tambah saiz tangkapan)
-                const rareBuf = Math.min(0.02, frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0) * 0.3);
+                const umpanBonus = pData.umpan?.bonus_all || 0;   // umpan: +0.3% Rare & +0.05% Legend setiap 1%
+                const rareBuf = Math.min(0.10, frenzy + (pData.rod.buff_rare || 0) + umpanBonus * 0.3);
                 const rodLuck = pData.rod?.buff_luck || 0;          // luck joran (%): tambah Legend & Secret
                 const akuLegend = pData.akuarium?.luck_legend || 0; // luck akuarium
                 const akuSecret = pData.akuarium?.luck_secret || 0;
-                const T_SECRET = 0.0005 + bufMitos * 0.1 + rodLuck * 0.01 + akuSecret;
+                const T_SECRET = 0.0005 + rodLuck * 0.01 + akuSecret;
                 const T_MITOS = T_SECRET + 0.0045 + tide + Math.min(0.01, bufMitos); // luck mythic max +1%
-                const T_LEGEND = T_MITOS + 0.015 + rodLuck * 0.1 + akuLegend;
+                const T_LEGEND = T_MITOS + 0.015 + rodLuck * 0.1 + akuLegend + umpanBonus * 0.05;
                 const T_RARE = T_LEGEND + 0.12 + rareBuf;
                 const T_BIASA = T_RARE + 0.65;
                 if (rng < T_SECRET) { rarity = 'secret'; ikanDapat = pilih(IKAN_SECRET); }
