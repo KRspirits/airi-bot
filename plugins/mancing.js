@@ -262,25 +262,19 @@ export default {
 
                 user.wallet -= item.harga;
                 
+                // Simpan semua medan buff item (bukan sebahagian sahaja)
+                const { harga: _h, ket: _k, ...simpanItem } = item;
                 if (kategori === 'akuarium') {
                     const ikanLama = pData.akuarium.ikan || [];
-                    pData.akuarium = { nama: item.nama, slot: item.slot, ikan: ikanLama };
+                    pData.akuarium = { ...simpanItem, ikan: ikanLama };
                 } else if (kategori === 'umpan' || kategori === 'jala') {
                     if (pData[kategori].nama === item.nama) {
                         pData[kategori].qty += item.qty;
                     } else {
-                        pData[kategori] = { 
-                            nama: item.nama, 
-                            qty: item.qty, 
-                            bonus_all: item.bonus_all || 0,
-                            min_tangkapan: item.min_tangkapan || 0,
-                            max_tangkapan: item.max_tangkapan || 0,
-                            bonus_rare: item.bonus_rare || 0,
-                            bonus_mitos: item.bonus_mitos || 0
-                        };
+                        pData[kategori] = { ...simpanItem };
                     }
                 } else {
-                    pData[kategori] = { nama: item.nama, [`buff_${kategori === 'rod'?'rare':'mitos'}`]: item[`buff_${kategori === 'rod'?'rare':'mitos'}`] };
+                    pData[kategori] = { ...simpanItem };
                 }
 
                 savePancingDB(); 
@@ -311,11 +305,14 @@ export default {
                 let rarity, ikanDapat;
                 const ev = activeEvent(), tide = ev?.code === 'MYTHIC_TIDE' ? 0.03 : 0, frenzy = ev?.code === 'MEGA_HARVEST' ? 0.08 : 0;
                 // Kadar tangkapan (jumlah 100%): secret 0.05%, mythic 0.45%, legend 1.5%, rare 12%, biasa 65%, sampah selebihnya
-                const bufMitos = (pData.reel.buff_mitos || 0) + (pData.umpan.bonus_all || 0) * 0.1;
+                const bufMitos = (pData.umpan.bonus_all || 0) * 0.1; // reel tak tambah chance Mythic (reel tambah saiz tangkapan)
                 const rareBuf = Math.min(0.02, frenzy + (pData.rod.buff_rare || 0) + (pData.umpan.bonus_all || 0) * 0.3);
-                const T_SECRET = 0.0005 + bufMitos * 0.1;
-                const T_MITOS = T_SECRET + 0.0045 + tide + bufMitos;
-                const T_LEGEND = T_MITOS + 0.015;
+                const rodLuck = pData.rod?.buff_luck || 0;          // luck joran (%): tambah Legend & Secret
+                const akuLegend = pData.akuarium?.luck_legend || 0; // luck akuarium
+                const akuSecret = pData.akuarium?.luck_secret || 0;
+                const T_SECRET = 0.0005 + bufMitos * 0.1 + rodLuck * 0.01 + akuSecret;
+                const T_MITOS = T_SECRET + 0.0045 + tide + Math.min(0.01, bufMitos); // luck mythic max +1%
+                const T_LEGEND = T_MITOS + 0.015 + rodLuck * 0.1 + akuLegend;
                 const T_RARE = T_LEGEND + 0.12 + rareBuf;
                 const T_BIASA = T_RARE + 0.65;
                 if (rng < T_SECRET) { rarity = 'secret'; ikanDapat = pilih(IKAN_SECRET); }
@@ -345,7 +342,7 @@ export default {
 
 let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: RM ${ikanDapat.harga.toLocaleString()}${displayBuff}\n\n🎣 Sisa Umpan (${pData.umpan.nama || 'Tiada'}): ${pData.umpan.qty}x`;
                 try {
-                    const img = renderCatchCard({ nama: ikanDapat.nama, rarity, harga: ikanDapat.harga, owner: user?.name || 'Warga Gelap', arahan: 'SIMPAN: .ikan  |  .akuarium [no]     JUAL: .jual_ikan' });
+                    const img = renderCatchCard({ nama: ikanDapat.nama, rarity, harga: ikanDapat.harga, saiz: 1 + (pData.reel.buff_saiz || 0), owner: user?.name || 'Warga Gelap', arahan: 'SIMPAN: .ikan  |  .akuarium [no]     JUAL: .jual_ikan' });
                     const tag = rarity === 'mitos' ? `🚨🚨 *BERITA UTAMA!* @${senderId.split('@')[0]} tangkap *${ikanDapat.nama}*! 🚨🚨\n\n` : '';
                     return sock.sendMessage(jid, { image: img, caption: tag + caption, mentions: rarity === 'mitos' ? [senderId] : [] }, { quoted: m });
                 } catch (e) {
@@ -386,7 +383,7 @@ let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: R
                 for (let i = 0; i < jumlahTangkapan; i++) {
                     const rngJala = Math.random();
                     // Drop rate Hardcore untuk Jala
-                    const jSecret = 0.0005, jMitos = jSecret + 0.0045 + (pData.jala.bonus_mitos || 0), jLegend = jMitos + 0.015, jRare = jLegend + 0.12 + Math.min(0.02, pData.jala.bonus_rare || 0), jBiasa = jRare + 0.65;
+                    const jSecret = 0.0005 + (pData.jala.bonus_secret || 0) + (pData.rod?.buff_luck || 0) * 0.01 + (pData.akuarium?.luck_secret || 0), jMitos = jSecret + 0.0045 + Math.min(0.01, pData.jala.bonus_mitos || 0), jLegend = jMitos + 0.015 + (pData.jala.bonus_legend || 0) + (pData.rod?.buff_luck || 0) * 0.1 + (pData.akuarium?.luck_legend || 0), jRare = jLegend + 0.12 + Math.min(0.02, pData.jala.bonus_rare || 0), jBiasa = jRare + 0.65;
                     let tangkapan = rngJala < jSecret ? IKAN_SECRET[Math.floor(Math.random() * IKAN_SECRET.length)] :
                                     rngJala < jMitos ? IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)] :
                                     rngJala < jLegend ? IKAN_LEGEND[Math.floor(Math.random() * IKAN_LEGEND.length)] :
