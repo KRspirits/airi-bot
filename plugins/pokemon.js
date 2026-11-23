@@ -37,7 +37,8 @@ export default {
             if (!pek) return reply('❌ Pilih pek 1 hingga 4. Taip `.beli_pokemon`.');
             if ((user.wallet || 0) < pek.harga) return reply(`❌ Duit tak cukup. ${pek.nama} ${rp(pek.harga)}, awak ada ${rp(user.wallet || 0)}.`);
             user.wallet -= pek.harga;
-            const kad = bukaPek(nomor);
+            const kad = bukaPek(nomor, user.inventory.pek_pity || {});
+            user.inventory.pek_pity = kad.pity;
             user.inventory.kad.push({ kod: kad.kod, nama: kad.nama, harga: kad.harga, tier: kad.tier, t: Date.now() });
             await db.saveUser(user);
             const gambar = await renderKad(kad);

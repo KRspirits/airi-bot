@@ -214,6 +214,34 @@ export const IKAN_SECRET = [
     { nama: 'Penyu Tujuh Bintang', harga: 49183670, buff: 'Tiada' }, { nama: 'Ikan Takdir Samudera', harga: 50000000, buff: 'Tiada' },
 ];
 
+export const IKAN_FOSSIL = [
+    { nama: 'Ikan Trilobit Purba', harga: 50000000, buff: 'Tiada' }, { nama: 'Ikan Ammonit Batu', harga: 51020000, buff: 'Tiada' },
+    { nama: 'Ikan Coelacanth Lama', harga: 52040000, buff: 'Tiada' }, { nama: 'Ikan Zirah Purba', harga: 53060000, buff: 'Tiada' },
+    { nama: 'Ikan Hiu Purba Berduri', harga: 54080000, buff: 'Tiada' }, { nama: 'Ikan Bersisik Batu Kapur', harga: 55100000, buff: 'Tiada' },
+    { nama: 'Ikan Tulang Fosil', harga: 56120000, buff: 'Tiada' }, { nama: 'Ketam Purba Berbatu', harga: 57140000, buff: 'Tiada' },
+    { nama: 'Udang Purba Fosil', harga: 58160000, buff: 'Tiada' }, { nama: 'Ikan Kura Purba Bersisik', harga: 59180000, buff: 'Tiada' },
+    { nama: 'Ikan Gigi Pedang Purba', harga: 60200000, buff: 'Tiada' }, { nama: 'Ikan Pari Batu Lama', harga: 61220000, buff: 'Tiada' },
+    { nama: 'Ikan Sisik Amber', harga: 62240000, buff: 'Tiada' }, { nama: 'Ikan Resin Purba', harga: 63270000, buff: 'Tiada' },
+    { nama: 'Ikan Bersisik Karang Lama', harga: 64290000, buff: 'Tiada' }, { nama: 'Ikan Lumpur Purba', harga: 65310000, buff: 'Tiada' },
+    { nama: 'Ikan Rahang Besi Purba', harga: 66330000, buff: 'Tiada' }, { nama: 'Ikan Batu Berkilau', harga: 67350000, buff: 'Tiada' },
+    { nama: 'Ikan Sirip Fosil Hijau', harga: 68370000, buff: 'Tiada' }, { nama: 'Ikan Purba Bertanduk', harga: 69390000, buff: 'Tiada' },
+    { nama: 'Ikan Ammonit Emas', harga: 70410000, buff: 'Tiada' }, { nama: 'Ikan Gerigi Purba', harga: 71430000, buff: 'Tiada' },
+    { nama: 'Ikan Batu Samudera Lama', harga: 72450000, buff: 'Tiada' }, { nama: 'Ikan Kristal Purba', harga: 73470000, buff: 'Tiada' },
+    { nama: 'Ikan Telur Batu', harga: 74490000, buff: 'Tiada' }, { nama: 'Ikan Purba Bertatah', harga: 75510000, buff: 'Tiada' },
+    { nama: 'Ikan Sisik Karbon', harga: 76530000, buff: 'Tiada' }, { nama: 'Ikan Tapak Purba', harga: 77550000, buff: 'Tiada' },
+    { nama: 'Ikan Garis Batu', harga: 78570000, buff: 'Tiada' }, { nama: 'Ikan Purba Berlumut', harga: 79590000, buff: 'Tiada' },
+    { nama: 'Ikan Tanduk Batu', harga: 80610000, buff: 'Tiada' }, { nama: 'Ikan Lipan Purba', harga: 81630000, buff: 'Tiada' },
+    { nama: 'Ikan Kelawar Fosil', harga: 82650000, buff: 'Tiada' }, { nama: 'Ikan Sirip Tulang', harga: 83670000, buff: 'Tiada' },
+    { nama: 'Ikan Serpihan Purba', harga: 84690000, buff: 'Tiada' }, { nama: 'Ikan Batu Zamrud Lama', harga: 85710000, buff: 'Tiada' },
+    { nama: 'Ikan Batu Jet Hitam', harga: 86730000, buff: 'Tiada' }, { nama: 'Ikan Pari Purba Berbatu', harga: 87760000, buff: 'Tiada' },
+    { nama: 'Ikan Bunga Fosil', harga: 88780000, buff: 'Tiada' }, { nama: 'Ikan Purba Berukir', harga: 89800000, buff: 'Tiada' },
+    { nama: 'Ikan Gelombang Batu', harga: 90820000, buff: 'Tiada' }, { nama: 'Ikan Purba Berlapis', harga: 91840000, buff: 'Tiada' },
+    { nama: 'Ikan Cangkerang Purba', harga: 92860000, buff: 'Tiada' }, { nama: 'Ikan Purba Berkilau Pasir', harga: 93880000, buff: 'Tiada' },
+    { nama: 'Ikan Batu Pasir Lama', harga: 94900000, buff: 'Tiada' }, { nama: 'Ikan Purba Bersayap', harga: 95920000, buff: 'Tiada' },
+    { nama: 'Ikan Lumut Fosil', harga: 96940000, buff: 'Tiada' }, { nama: 'Ikan Kerangka Purba', harga: 97960000, buff: 'Tiada' },
+    { nama: 'Ikan Mata Batu', harga: 98980000, buff: 'Tiada' }, { nama: 'Ikan Purba Tanpa Nama', harga: 100000000, buff: 'Tiada' },
+];
+
 export default {
     name: 'mancing',
     alias: ['ikan', 'akuarium', 'bela_ikan', 'jual_ikan', 'jual_akuarium', 'kedai_pancing', 'beli_pancing', 'beli_rod', 'beli_reel', 'beli_umpan', 'beli_jala', 'beli_akuarium', 'jala'],
@@ -311,12 +339,14 @@ export default {
                 const rodLuck = pData.rod?.buff_luck || 0;          // luck joran (%): tambah Legend & Secret
                 const akuLegend = pData.akuarium?.luck_legend || 0; // luck akuarium
                 const akuSecret = pData.akuarium?.luck_secret || 0;
-                const T_SECRET = 0.0005 + rodLuck * 0.01 + akuSecret;
+                const T_FOSSIL = 0.0002;                       // fosil: 0.02% (lebih rendah dari Secret)
+                const T_SECRET = T_FOSSIL + 0.0005 + rodLuck * 0.01 + akuSecret;
                 const T_MITOS = T_SECRET + 0.0045 + tide + Math.min(0.01, bufMitos); // luck mythic max +1%
                 const T_LEGEND = T_MITOS + 0.015 + rodLuck * 0.1 + akuLegend + umpanBonus * 0.05;
                 const T_RARE = T_LEGEND + 0.12 + rareBuf;
                 const T_BIASA = T_RARE + 0.65;
-                if (rng < T_SECRET) { rarity = 'secret'; ikanDapat = pilih(IKAN_SECRET); }
+                if (rng < T_FOSSIL) { rarity = 'fossil'; ikanDapat = pilih(IKAN_FOSSIL); }
+                else if (rng < T_SECRET) { rarity = 'secret'; ikanDapat = pilih(IKAN_SECRET); }
                 else if (rng < T_MITOS) { rarity = 'mitos'; ikanDapat = pilih(IKAN_MITOS); }
                 else if (rng < T_LEGEND) { rarity = 'legend'; ikanDapat = pilih(IKAN_LEGEND); }
                 else if (rng < T_RARE) { rarity = 'rare'; ikanDapat = pilih(IKAN_RARE); }
@@ -325,7 +355,7 @@ export default {
 
                 ikanDapat = { ...ikanDapat, rarity, harga: Math.round(ikanDapat.harga * penggandaMancing(user)) };
                 (pData.dex ||= {})[ikanDapat.nama] = true;
-                beriXp(user, rarity === 'secret' ? 120 : rarity === 'mitos' ? 50 : rarity === 'legend' ? 30 : rarity === 'rare' ? 15 : 5, 'mancing');
+                beriXp(user, rarity === 'fossil' ? 150 : rarity === 'secret' ? 120 : rarity === 'mitos' ? 50 : rarity === 'legend' ? 30 : rarity === 'rare' ? 15 : 5, 'mancing');
                 pData.tong_ikan.push(ikanDapat);
                 try {
                     user.stats = user.stats || {}; user.stats.fish_caught = (user.stats.fish_caught || 0) + 1;
@@ -384,14 +414,14 @@ let caption = `🎣 *TANGKAPAN JORAN*\n\n🐟 *${ikanDapat.nama}*\n💵 Nilai: R
                 for (let i = 0; i < jumlahTangkapan; i++) {
                     const rngJala = Math.random();
                     // Drop rate Hardcore untuk Jala
-                    const jSecret = 0.0005 + (pData.jala.bonus_secret || 0) + (pData.rod?.buff_luck || 0) * 0.01 + (pData.akuarium?.luck_secret || 0), jMitos = jSecret + 0.0045 + Math.min(0.01, pData.jala.bonus_mitos || 0), jLegend = jMitos + 0.015 + (pData.jala.bonus_legend || 0) + (pData.rod?.buff_luck || 0) * 0.1 + (pData.akuarium?.luck_legend || 0), jRare = jLegend + 0.12 + Math.min(0.02, pData.jala.bonus_rare || 0), jBiasa = jRare + 0.65;
-                    let tangkapan = rngJala < jSecret ? IKAN_SECRET[Math.floor(Math.random() * IKAN_SECRET.length)] :
+                    const jFossil = 0.0002, jSecret = jFossil + 0.0005 + (pData.jala.bonus_secret || 0) + (pData.rod?.buff_luck || 0) * 0.01 + (pData.akuarium?.luck_secret || 0), jMitos = jSecret + 0.0045 + Math.min(0.01, pData.jala.bonus_mitos || 0), jLegend = jMitos + 0.015 + (pData.jala.bonus_legend || 0) + (pData.rod?.buff_luck || 0) * 0.1 + (pData.akuarium?.luck_legend || 0), jRare = jLegend + 0.12 + Math.min(0.02, pData.jala.bonus_rare || 0), jBiasa = jRare + 0.65;
+                    let tangkapan = rngJala < jFossil ? IKAN_FOSSIL[Math.floor(Math.random() * IKAN_FOSSIL.length)] : rngJala < jSecret ? IKAN_SECRET[Math.floor(Math.random() * IKAN_SECRET.length)] :
                                     rngJala < jMitos ? IKAN_MITOS[Math.floor(Math.random() * IKAN_MITOS.length)] :
                                     rngJala < jLegend ? IKAN_LEGEND[Math.floor(Math.random() * IKAN_LEGEND.length)] :
                                     rngJala < jRare ? IKAN_RARE[Math.floor(Math.random() * IKAN_RARE.length)] :
                                     rngJala < jBiasa ? IKAN_BIASA[Math.floor(Math.random() * IKAN_BIASA.length)] : SAMPAH[Math.floor(Math.random() * SAMPAH.length)];
 
-                    const rarJala = IKAN_SECRET.includes(tangkapan) ? 'secret' : IKAN_MITOS.includes(tangkapan) ? 'mitos' : IKAN_LEGEND.includes(tangkapan) ? 'legend' : IKAN_RARE.includes(tangkapan) ? 'rare' : SAMPAH.includes(tangkapan) ? 'sampah' : 'biasa';
+                    const rarJala = IKAN_FOSSIL.includes(tangkapan) ? 'fossil' : IKAN_SECRET.includes(tangkapan) ? 'secret' : IKAN_MITOS.includes(tangkapan) ? 'mitos' : IKAN_LEGEND.includes(tangkapan) ? 'legend' : IKAN_RARE.includes(tangkapan) ? 'rare' : SAMPAH.includes(tangkapan) ? 'sampah' : 'biasa';
                     tangkapan = { ...tangkapan, rarity: rarJala, harga: Math.round(tangkapan.harga * penggandaJala(user)) };
                     koleksiJala.push({ nama: tangkapan.nama, harga: tangkapan.harga, rarity: rarJala });
                     pData.tong_ikan.push(tangkapan);

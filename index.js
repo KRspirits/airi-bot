@@ -1,3 +1,4 @@
+import { catatMedia } from './lib/mediaSimpan.js';
 import { usingMongo } from './lib/store.js';
 import { catatLid, resolveJid, resolveAsync } from './lib/lidmap.js';
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
@@ -80,6 +81,15 @@ async function connect() {
             browser: ['Airi OS', 'Safari', '2.0.0'], 
             markOnlineOnConnect: false 
         });
+        // Rekod setiap gambar & video yang bot hantar (untuk dipadam tengah malam)
+        {
+            const _hantar = sock.sendMessage.bind(sock);
+            sock.sendMessage = async (jid, kandungan, pilihan) => {
+                const hasil = await _hantar(jid, kandungan, pilihan);
+                if (hasil?.key && (kandungan?.image || kandungan?.video)) catatMedia(jid, hasil.key);
+                return hasil;
+            };
+        }
         
         sock.ev.on('creds.update', auth.saveCreds);
 
@@ -91,7 +101,7 @@ async function connect() {
                 console.log(`\n⚡ [QR READY] Buka link ini di browser telefon/PC untuk imbas QR:\n👉 ${renderLink}\n`);
                 qrcodeTerminal.generate(qr, { small: true }); 
             }
-            if (connection === 'open') { import('./plugins/bida.js').then(b => b.pulihLelong(sock)).catch(() => {}); 
+            if (connection === 'open') { import('./plugins/bida.js').then(b => b.pulihLelong(sock)).catch(() => {}); import('./lib/bersih.js').then(b => b.mulaBersih(sock)).catch(() => {}); 
                 // Amaran kepada owner kalau data tak disimpan kekal (tanpa MONGO_URI)
                 if (!usingMongo()) {
                     const nombor = config.ownerNumbers.map(x => String(x).replace(/\D/g, '')).filter(x => x.length >= 10 && x.length <= 15);
