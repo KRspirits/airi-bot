@@ -1,0 +1,6 @@
+node_modules
+.env
+session_*
+auth_session
+store.json*
+database*.json
