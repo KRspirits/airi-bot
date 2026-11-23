@@ -5,6 +5,7 @@ import { padamSemuaMedia } from '../lib/mediaSimpan.js';
 export default {
     name: 'padam_media',
     alias: [],
+    category: 'owner',
     execute: async ({ sock, m }) => {
         const jid = m.key.remoteJid;
         if (!isOwnerMsg(m)) return;
