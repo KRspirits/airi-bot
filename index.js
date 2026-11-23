@@ -34,18 +34,7 @@ import { handleParticipants } from './lib/welcome.js';
 import { startScheduler } from './lib/scheduler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// === PINTASAN PENJIMATAN BANDWIDTH RENDER (0 MB UNTUK GAMBAR) ===
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/KRspirits/airi-bot/main';
-const _originalSendMessage = sock.sendMessage.bind(sock);
-
-sock.sendMessage = async (jid, content, options) => {
-    if (content?.image && typeof content.image === 'string') {
-        const cleanPath = content.image.replace(/^\.?\//, '');
-        content.image = { url: `${GITHUB_RAW_BASE}/${cleanPath}` };
-    }
-    return _originalSendMessage(jid, content, options);
-};
 
 // =========================================================================
 // 🌐 1. PELAYAN WEB (KEEPALIVE UNTUK RENDER + QR) - letak UptimeRobot ke /ping
@@ -93,10 +82,20 @@ async function connect() {
             browser: ['Airi OS', 'Safari', '2.0.0'], 
             markOnlineOnConnect: false 
         });
-        // Rekod setiap gambar & video yang bot hantar (untuk dipadam tengah malam)
+
+        // Rekod media + pintasan penjimatan bandwidth Render (tarik gambar tempatan dari GitHub Raw)
         {
             const _hantar = sock.sendMessage.bind(sock);
             sock.sendMessage = async (jid, kandungan, pilihan) => {
+                if (kandungan?.image) {
+                    if (typeof kandungan.image === 'string' && !kandungan.image.startsWith('http')) {
+                        const cleanPath = kandungan.image.replace(/^\.?\//, '');
+                        kandungan.image = { url: `${GITHUB_RAW_BASE}/${cleanPath}` };
+                    } else if (kandungan.image?.url && typeof kandungan.image.url === 'string' && !kandungan.image.url.startsWith('http')) {
+                        const cleanPath = kandungan.image.url.replace(/^\.?\//, '');
+                        kandungan.image.url = `${GITHUB_RAW_BASE}/${cleanPath}`;
+                    }
+                }
                 const hasil = await _hantar(jid, kandungan, pilihan);
                 if (hasil?.key && (kandungan?.image || kandungan?.video)) catatMedia(jid, hasil.key);
                 return hasil;
